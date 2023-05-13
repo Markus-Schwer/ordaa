@@ -1,16 +1,23 @@
 import asyncio
 import time
-import configparser
+import os
+import configparser 
+
 from nio import AsyncClient, MatrixRoom, RoomMessageText
 
-config = configparser.ConfigParser(interpolation=None)
-config.read("config.ini")
+config_present = os.path.isfile("config.ini") 
+
+config = configparser.ConfigParser(interpolation=None) 
+if config_present:
+    config.read("config.ini")
 
 # get matrix settings
-matrix_homeserver = config.get("MATRIX", "homeserver")
-matrix_user = config.get("MATRIX", "user")
-matrix_password = config.get("MATRIX", "password")
-matrix_room_id = config.get("MATRIX", "room_id")
+matrix_homeserver = config.get("MATRIX", "homeserver") if config_present else os.environ.get("MATRIX_HOMESERVER")
+matrix_user = config.get("MATRIX", "user") if config_present else os.environ.get("MATRIX_USER")
+matrix_password = config.get("MATRIX", "password") if config_present else os.environ.get("MATRIX_PASSWORD")
+matrix_room_id = config.get("MATRIX", "room_id") if config_present else os.environ.get("MATRIX_ROOM_ID")
+
+#print(matrix_homeserver, matrix_user, matrix_password, matrix_room_id)
 
 async def parse_message(event: RoomMessageText) -> None:
     global order_mode_active

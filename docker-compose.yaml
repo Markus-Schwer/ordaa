@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  dotinder:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: dotinder
+    restart: always
+    environment:
+      - MATRIX_HOMESERVER=$MATRIX_HOMESERVER
+      - MATRIX_USER=$MATRIX_USER
+      - MATRIX_PASSWORD=$MATRIX_PASSWORD
+      - MATRIX_ROOM_ID=$MATRIX_ROOM_ID
+
