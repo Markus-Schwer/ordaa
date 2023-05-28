@@ -1,0 +1,29 @@
+{
+  "name": "dotinder",
+  "version": "1.0.0",
+  "description": "This project was created to automate our orders from out preferred indian restaurant.",
+  "main": "build/app.js",
+  "scripts": {
+    "start": "tsc && node build/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/sfz.aalen/hackwerk/dotinder.git"
+  },
+  "author": "Ruben Hoenle",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/sfz.aalen/hackwerk/dotinder/issues"
+  },
+  "homepage": "https://gitlab.com/sfz.aalen/hackwerk/dotinder#readme",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "matrix-js-sdk": "^25.1.1",
+    "typescript": "^5.0.4"
+  },
+  "devDependencies": {
+    "@matrix-org/olm": "https://packages.matrix.org/npm/olm/olm-3.2.1.tgz",
+    "@types/node": "^20.2.5"
+  }
+}

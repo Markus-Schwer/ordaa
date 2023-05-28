@@ -1,8 +1,12 @@
-FROM python:3.9
+FROM node:18
 
-ADD bot.py .
+WORKDIR /usr/dotinder/app
 
-RUN pip3 install configparser matrix-nio
+ADD package*.json .
+ADD tsconfig.json .
+ADD src/ ./src/
 
-CMD ["python3", "-u", "./bot.py"]
- 
+# TODO: change to npm ci for production use
+RUN npm install
+
+CMD [ "npm", "start" ]

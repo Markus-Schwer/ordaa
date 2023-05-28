@@ -1,6 +1,0 @@
-[MATRIX]
-homeserver = https://matrix.org
-user = @YOUR_USERNAME:matrix.org
-password = YOUR_PASSWORD_USED_TO_LOGIN_INTO_MATRIX
-room_id = !YOUR_ROOM_ID:matrix.org
-

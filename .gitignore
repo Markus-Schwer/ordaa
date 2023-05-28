@@ -1,2 +1,6 @@
 config.ini
 .env
+
+/node_modules/*
+/build/*
+*.js
