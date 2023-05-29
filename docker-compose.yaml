@@ -9,5 +9,3 @@ services:
     restart: no
     environment:
       - USER_ID=trololololol
-    
-

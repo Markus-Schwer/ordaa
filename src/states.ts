@@ -1,6 +1,6 @@
 export enum State {
-    IDLE,
-    TAKE_ORDERS,
-    ORDERED,
-    DELIVERED
+  IDLE,
+  TAKE_ORDERS,
+  ORDERED,
+  DELIVERED,
 }
