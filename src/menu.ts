@@ -4,9 +4,11 @@ import * as crypto from "crypto";
 export class MenuItem {
   public readonly id: string | undefined;
   public readonly name: string;
-  constructor(id: string | undefined, name: string) {
+  public readonly price: number | undefined;
+  constructor(id: string | undefined, name: string, price: number | undefined) {
     this.id = id;
     this.name = name;
+    this.price = price;
   }
 }
 
@@ -34,6 +36,7 @@ export class Menu {
     this.menuItemList = [];
     menuParser(".menuItemBox").map((_, b) => {
       const menuName = menuParser(".menuItemName", b).text();
+      const menuPrice = parseFloat(menuParser(".menuItemPrice", b).text().replace(",", "."));
       const regexResult = this.menuItemNameRegex.exec(menuName);
       if (
         regexResult == null ||
@@ -43,7 +46,7 @@ export class Menu {
         return;
       }
       this.menuItemList.push(
-        new MenuItem(regexResult.groups.id, regexResult.groups.name.trim())
+        new MenuItem(regexResult.groups.id, regexResult.groups.name.trim(), menuPrice)
       );
     });
     // set this at the end so it's only set when parsing was successful
