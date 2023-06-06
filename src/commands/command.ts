@@ -1,7 +1,15 @@
+import { App } from "../app";
 import { State, Transition } from "../states";
 
-export interface Command {
-  readonly command: string;
-  readonly transition: Transition;
-  process(cmd: string, state: State): void;
+export abstract class Command {
+  protected app: App;
+
+  public abstract readonly command: string;
+  public abstract readonly transition: Transition;
+
+  public constructor(app: App) {
+    this.app = app;
+  }
+
+  abstract process(): void;
 }

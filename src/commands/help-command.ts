@@ -1,12 +1,13 @@
-import { State } from "../states";
+import { State, Transition } from "../states";
 import { Command } from "./command";
 import { App } from "../app";
 
-export class HelpCommand implements Command {
-  public command: string = ".help";
+export class HelpCommand extends Command {
+  public readonly command: string = ".help";
+  public readonly transition: Transition = Transition.HELP;
 
-  public process(cmd: string, state: State): void {
-    App.getInstance().sendMessage("+++ HELP +++");
+  public process(): void {
+    this.app.sendMessage("+++ HELP +++");
 
     // TODO: add help message
   }

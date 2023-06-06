@@ -8,8 +8,6 @@ import { OrderCommand } from "./commands/order-command";
 import { HelpCommand } from "./commands/help-command";
 
 export class App {
-  private static _instance: App;
-
   private config: Config = new Config();
 
   // TODO: use a map here for efficency
@@ -23,17 +21,17 @@ export class App {
     userId: this.config.getUserId(),
   });
 
-  private constructor() {
+  public constructor() {
     this.matrixClient.startClient();
     this.sendMessage(".inder is back!");
 
     console.log(this.config.getRoomId());
 
     // register your commands here
-    this.commandList.push(new StartCommand());
-    this.commandList.push(new DeliveredCommand());
-    this.commandList.push(new OrderCommand());
-    this.commandList.push(new HelpCommand());
+    this.commandList.push(new StartCommand(this));
+    this.commandList.push(new DeliveredCommand(this));
+    this.commandList.push(new OrderCommand(this));
+    this.commandList.push(new HelpCommand(this));
 
     /* listen to matrix messages */
     this.matrixClient.on(
@@ -60,17 +58,13 @@ export class App {
     );
   }
 
-  public static getInstance(): App {
-    return this._instance || (this._instance = new this());
-  }
-
   private processMessage(message: string): void {
     const command: Command | undefined = this.commandList.find(
       (e) => e.command === message
     );
 
     if (command) {
-      command.process(message, this.state);
+      command.process();
     }
   }
 
@@ -100,4 +94,4 @@ export class App {
 }
 
 require("dotenv").config();
-const app: App = App.getInstance();
+new App();

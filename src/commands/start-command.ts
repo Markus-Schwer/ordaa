@@ -1,19 +1,20 @@
 import { App } from "../app";
-import { State } from "../states";
+import { State, Transition } from "../states";
 import { Command } from "./command";
 
-export class StartCommand implements Command {
+export class StartCommand extends Command {
+  public transition: Transition = Transition.START_ORDER;
   public command: string = ".inder";
 
-  public process(cmd: string, state: State): void {
-    if (state != State.IDLE) {
-      App.getInstance().sendMessage("Hey! I'm already running.");
+  public process(): void {
+    /*if (state != State.IDLE) {
+      this.app.sendMessage("Hey! I'm already running.");
       return;
-    }
+    }*/
 
-    App.getInstance().sendMessage(
+    this.app.sendMessage(
       "Hey, dotinder here. I'm able to take your orders now."
     );
-    App.getInstance().setState(State.TAKE_ORDERS);
+    this.app.setState(State.TAKE_ORDERS);
   }
 }

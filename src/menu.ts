@@ -36,7 +36,9 @@ export class Menu {
     this.menuItemList = [];
     menuParser(".menuItemBox").map((_, b) => {
       const menuName = menuParser(".menuItemName", b).text();
-      const menuPrice = parseFloat(menuParser(".menuItemPrice", b).text().replace(",", "."));
+      const menuPrice = parseFloat(
+        menuParser(".menuItemPrice", b).text().replace(",", ".")
+      );
       const regexResult = this.menuItemNameRegex.exec(menuName);
       if (
         regexResult == null ||
@@ -46,7 +48,11 @@ export class Menu {
         return;
       }
       this.menuItemList.push(
-        new MenuItem(regexResult.groups.id, regexResult.groups.name.trim(), menuPrice)
+        new MenuItem(
+          regexResult.groups.id,
+          regexResult.groups.name.trim(),
+          menuPrice
+        )
       );
     });
     // set this at the end so it's only set when parsing was successful

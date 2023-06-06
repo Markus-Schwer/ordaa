@@ -1,13 +1,14 @@
-import { State } from "../states";
+import { State, Transition } from "../states";
 import { Command } from "./command";
 import { App } from "../app";
 
-export class DeliveredCommand implements Command {
-  public command: string = ".delivered";
+export class DeliveredCommand extends Command {
+  public readonly transition: Transition = Transition.ARRIVED;
+  public readonly command: string = ".delivered";
 
-  public process(cmd: string, state: State): void {
-    App.getInstance().sendMessage("@ALL: Food is here!");
-    App.getInstance().sendMessage("Bon appetit!");
+  public process(): void {
+    this.app.sendMessage("@ALL: Food is here!");
+    this.app.sendMessage("Bon appetit!");
 
     // TODO: Abrechnung
   }
