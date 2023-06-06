@@ -1,5 +1,5 @@
 import { App } from "../app";
-import { State, Transition } from "../states";
+import { Transition } from "../states";
 
 export abstract class Command {
   protected app: App;
