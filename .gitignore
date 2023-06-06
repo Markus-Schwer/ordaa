@@ -3,4 +3,3 @@ config.ini
 
 /node_modules/*
 /build/*
-*.js
