@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { Menu } from "../menu";
+import { Menu, MenuItem } from "../menu";
 import * as fs from "fs";
 
 describe("menu scraper", () => {
@@ -7,8 +7,14 @@ describe("menu scraper", () => {
     "src/test/resources/test_menu.html",
     "utf8"
   );
-  test("parsing", () => {
+  test("find all items", () => {
     const menu = new Menu(srcString);
-    expect(menu.items.length).toBe(136);
+    expect(menu.items).toHaveLength(136);
+  });
+  test("entries", () => {
+    const menu = new Menu(srcString);
+    expect(menu.items).toContainEqual(new MenuItem("62", "Butter Chicken"));
+    expect(menu.items).toContainEqual(new MenuItem("42", "Chicken Tikka"));
+    expect(menu.items).toContainEqual(new MenuItem("174", "Nan"));
   });
 });

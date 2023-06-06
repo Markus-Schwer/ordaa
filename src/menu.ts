@@ -43,7 +43,7 @@ export class Menu {
         return;
       }
       this.menuItemList.push(
-        new MenuItem(regexResult.groups.id, regexResult.groups.name)
+        new MenuItem(regexResult.groups.id, regexResult.groups.name.trim())
       );
     });
     // set this at the end so it's only set when parsing was successful
