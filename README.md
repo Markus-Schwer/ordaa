@@ -3,8 +3,10 @@
 This project was created to automate our orders from out preferred indian restaurant.
 
 ## Configuration
+
 For configuration create a `.env` file and place this lines in there. If you run the app in docker, you can configure these values easily via docker environment variables.
-``` bash
+
+```bash
 USER_ID=@your_username:matrix.org
 ACCESS_TOKEN=your_access_token
 BASE_URL=https://matrix.org
@@ -13,7 +15,7 @@ ROOM_ID=!your_room_id:matrix.org
 
 ## Commands
 
-``` bash
+```bash
 # build and run the application
 npm start
 
