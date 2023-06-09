@@ -1,19 +1,17 @@
 import * as sdk from "matrix-js-sdk";
 import { Command } from "./commands/command";
 import { StartCommand } from "./commands/start-command";
-import { State } from "./states";
 import { Config } from "./config";
 import { DeliveredCommand } from "./commands/delivered-command";
 import { OrderCommand } from "./commands/order-command";
 import { HelpCommand } from "./commands/help-command";
+import { StateMachine } from "./state-machine";
 
 export class App {
   private config: Config = new Config();
 
-  // TODO: use a map here for efficency
   private commandList: Command[] = [];
-
-  private state: State = State.IDLE;
+  private stateMachine: StateMachine;
 
   private matrixClient: sdk.MatrixClient = sdk.createClient({
     baseUrl: this.config.getBaseUrl(),
@@ -22,6 +20,7 @@ export class App {
   });
 
   public constructor() {
+    this.stateMachine = new StateMachine();
     this.matrixClient.startClient();
     this.sendMessage(".inder is back!");
 
@@ -59,13 +58,14 @@ export class App {
   }
 
   private processMessage(message: string): void {
-    const command: Command | undefined = this.commandList.find(
-      (e) => e.command === message
+    const command: Command | undefined = this.commandList.find((c) =>
+      c.matcher.test(message)
     );
-
-    if (command) {
-      command.process();
+    if (!command) {
+      this.sendMessage(`what is '${message}'???`);
+      return;
     }
+    this.stateMachine.handleState(command, message);
   }
 
   /* send a matrix message */
@@ -82,14 +82,6 @@ export class App {
       content,
       ""
     );
-  }
-
-  public setState(newState: State): void {
-    this.state = newState;
-  }
-
-  public getState(): State {
-    return this.state;
   }
 }
 

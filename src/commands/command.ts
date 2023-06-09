@@ -11,5 +11,9 @@ export abstract class Command {
     this.app = app;
   }
 
-  abstract process(): void;
+  public onError(rawInput: string): void {
+    this.app.sendMessage(`command could not handle input '${rawInput}'`);
+  }
+
+  abstract process(rawInput: string): void;
 }
