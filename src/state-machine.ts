@@ -31,6 +31,7 @@ export class StateMachineImpl implements StateMachine {
             [Transition.CANCEL]: null,
             [Transition.FINALIZE]: null,
             [Transition.ARRIVED]: null,
+            [Transition.HELP]: State.IDLE,
         },
         [State.TAKE_ORDERS]: {
             [Transition.START_ORDER]: null,
@@ -38,20 +39,15 @@ export class StateMachineImpl implements StateMachine {
             [Transition.CANCEL]: State.IDLE,
             [Transition.FINALIZE]: State.ORDERED,
             [Transition.ARRIVED]: null,
+            [Transition.HELP]: State.TAKE_ORDERS,
         },
         [State.ORDERED]: {
             [Transition.START_ORDER]: null,
             [Transition.ADD_ITEM]: null,
             [Transition.CANCEL]: null,
             [Transition.FINALIZE]: null,
-            [Transition.ARRIVED]: State.DELIVERED,
-        },
-        [State.DELIVERED]: {
-            [Transition.START_ORDER]: null,
-            [Transition.ADD_ITEM]: null,
-            [Transition.CANCEL]: null,
-            [Transition.FINALIZE]: State.IDLE,
-            [Transition.ARRIVED]: null,
+            [Transition.ARRIVED]: State.IDLE,
+            [Transition.HELP]: State.ORDERED,
         },
     };
 

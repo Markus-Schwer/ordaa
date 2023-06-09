@@ -13,7 +13,7 @@ class MockCommand extends Command {
     get transition() {
         return this.internalTransition;
     }
-    command = "mock";
+    matcher = new RegExp("mock");
 }
 
 describe("state machine", () => {
@@ -34,9 +34,6 @@ describe("state machine", () => {
       machine.handleState(cmd, () => {});
       expect(machine.getCurrentState()).toEqual(State.ORDERED);
       cmd.internalTransition = Transition.ARRIVED;
-      machine.handleState(cmd, () => {});
-      expect(machine.getCurrentState()).toEqual(State.DELIVERED);
-      cmd.internalTransition = Transition.FINALIZE;
       machine.handleState(cmd, () => {});
       expect(machine.getCurrentState()).toEqual(State.IDLE);
   });

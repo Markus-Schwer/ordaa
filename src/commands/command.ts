@@ -4,7 +4,7 @@ import { Transition } from "../states";
 export abstract class Command {
   protected app: App;
 
-  public abstract readonly command: string;
+  public abstract readonly matcher: RegExp;
   public abstract readonly transition: Transition;
 
   public constructor(app: App) {
