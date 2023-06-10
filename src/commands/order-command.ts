@@ -1,10 +1,8 @@
-import { appendFile } from "fs";
-import { State, Transition } from "../states";
+import { Transition } from "../states";
 import { Command } from "./command";
-import { App } from "../app";
 
 export class OrderCommand extends Command {
-  public readonly command: string = ".order";
+  public readonly matcher: RegExp = new RegExp("^!order (\\w{0,1}\\d+)$");
   public readonly transition: Transition = Transition.ADD_ITEM;
 
   public process(): void {

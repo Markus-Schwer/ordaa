@@ -5,6 +5,7 @@
   "main": "build/app.js",
   "scripts": {
     "start": "tsc && node build/app.js",
+    "build": "tsc",
     "test": "jest",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
