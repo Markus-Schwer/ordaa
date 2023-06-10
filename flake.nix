@@ -33,8 +33,11 @@
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
+
         packages = with pkgs;[
           nodejs_18
+          podman
+          podman-compose
         ];
       };
       formatter.x86_64-linux = treefmt-nix.lib.mkWrapper

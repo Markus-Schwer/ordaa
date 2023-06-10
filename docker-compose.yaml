@@ -2,10 +2,6 @@ version: "3.9"
 
 services:
   dotinder:
-    container_name: dotinder
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    restart: no
+    build: .
     environment:
       - USER_ID=trololololol
