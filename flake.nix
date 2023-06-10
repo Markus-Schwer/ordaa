@@ -23,8 +23,6 @@
           mkdir -p $out/bin
           mv build/src/* $out/bin
           mv node_modules $out
-          mv package.json $out
-          mv package-lock.json $out
         '';
       };
       wrap = pkgs.writeScriptBin "dotinder" ''
