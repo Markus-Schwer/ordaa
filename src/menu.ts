@@ -10,6 +10,41 @@ export class MenuItem {
     this.name = name;
     this.price = price;
   }
+
+  public toString(): string {
+    let segments: string[] = [];
+    if (this.id) {
+      segments.push(`[${this.id}]`);
+    }
+    segments.push(this.name);
+    segments.push(`(${this.price} Euro)`);
+    return segments.join(" ");
+  }
+}
+
+export class Orders {
+  private itemMap: { [user: string]: MenuItem[] } = {};
+
+  public orderItem(user: string, item: MenuItem) {
+    if (!this.itemMap[user]) {
+      this.itemMap[user] = [];
+    }
+    this.itemMap[user].push(item);
+  }
+
+  public resetItems(user: string) {
+    delete this.itemMap[user];
+  }
+
+  public getUserMessage(user: string): string | null {
+    const items: MenuItem[] = this.itemMap[user];
+    if (!items) return null;
+    let message = `@${user}: Your current order:`;
+    for (let item of items) {
+      message += `\n[${item.id}] ${item.name}`;
+    }
+    return message;
+  }
 }
 
 export class Menu {
@@ -62,5 +97,9 @@ export class Menu {
 
   private buildHash(src: string): string {
     return crypto.createHash("md5").update(src).digest("hex");
+  }
+
+  public toString(): string {
+    return this.items.join("/n");
   }
 }

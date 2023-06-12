@@ -6,20 +6,25 @@ import { OrderCommand } from "./commands/order-command";
 import { HelpCommand } from "./commands/help-command";
 import { StateMachine } from "./state-machine";
 import { MatrixClientFacade } from "./matrix-client-facade";
+import { Menu, Orders } from "./menu";
 
 export class App {
-  private config: Config = new Config();
+  public readonly config: Config;
 
   private commandList: Command[] = [];
   private stateMachine: StateMachine;
   private matrixClient: MatrixClientFacade;
+  public orders: Orders = new Orders();
+  public menu: Menu | null = null;
 
   public constructor(
+    config: Config,
     stateMachine: StateMachine,
     matrixClient: MatrixClientFacade
   ) {
     this.stateMachine = stateMachine;
     this.matrixClient = matrixClient;
+    this.config = config;
     this.matrixClient.sendMessage(".inder is back!");
 
     this.matrixClient.listenToRoomEvents(this.processMessage);

@@ -15,5 +15,5 @@ export abstract class Command {
     this.app.sendMessage(`command could not handle input '${rawInput}'`);
   }
 
-  abstract process(rawInput: string): void;
+  abstract process(rawInput: string, user: string): Promise<void>;
 }

@@ -5,7 +5,7 @@ export class DeliveredCommand extends Command {
   public readonly transition: Transition = Transition.ARRIVED;
   public readonly matcher = new RegExp("^\\.delivered$");
 
-  public process(): void {
+  public async process(rawInput: string, user: string): Promise<void> {
     this.app.sendMessage("@ALL: Food is here!");
     this.app.sendMessage("Bon appetit!");
 

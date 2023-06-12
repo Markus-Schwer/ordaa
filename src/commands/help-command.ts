@@ -5,7 +5,7 @@ export class HelpCommand extends Command {
   public readonly transition: Transition = Transition.HELP;
   public readonly matcher = new RegExp("^.*help.*$");
 
-  public process(): void {
+  public async process(rawInput: string, user: string): Promise<void> {
     this.app.sendMessage("+++ HELP +++");
 
     // TODO: add help message
