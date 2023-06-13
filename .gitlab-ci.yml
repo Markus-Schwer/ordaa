@@ -1,0 +1,34 @@
+image: node:latest
+
+stages:
+  - setup
+  - checks
+  - build
+
+default:
+  tags:
+    - sfz
+  artifacts:
+    paths:
+      - node_modules
+
+install:
+  stage: setup
+  script:
+    - npm install
+
+check-code-format:
+  stage: checks
+  script:
+    - npm run format:check
+
+build:
+  stage: build
+  script:
+    - npm run build
+    #- node test.js
+
+test:
+  stage: build
+  script:
+    - npm test
