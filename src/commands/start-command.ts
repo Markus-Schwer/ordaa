@@ -12,14 +12,16 @@ export class StartCommand extends Command {
       console.error("no URL to fetch the menu from is provided");
       return;
     }
-    const response = await fetch(menuUrl);
+
+    // TODO Johannes: fix fetch call
+    /*const response = await fetch(menuUrl);
     if (!response.ok) {
       console.error("response from server was not ok when fetching menu");
       console.error(response);
     }
     const text = await response.text();
     this.app.menu = new Menu(text);
-    this.app.sendMessage(this.app.menu.toString());
+    this.app.sendMessage(this.app.menu.toString());*/
     this.app.sendMessage(
       `@ALL: I will now collect orders, use '!order <item-id>' to add to your order, or '!order reset' to reset your order`
     );

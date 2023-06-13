@@ -16,7 +16,7 @@ export class MatrixClientFacade {
     this.matrixClient.startClient();
   }
 
-  public listenToRoomEvents(callback: (message: string) => void) {
+  public listenToRoomEvents(callback: (message: string, user: string) => void) {
     this.matrixClient.on(RoomEvent.Timeline, (event: MatrixEvent, _a, _b) => {
       // only listen to messages in the given room which were not sent by this bot
       if (
@@ -32,7 +32,8 @@ export class MatrixClientFacade {
         event.event.origin_server_ts &&
         Math.floor(Date.now()) - event.event.origin_server_ts <= 1000
       ) {
-        callback(event.event.content.body);
+        console.log(event.event.sender);
+        callback(event.event.content.body, "");
       }
     });
   }

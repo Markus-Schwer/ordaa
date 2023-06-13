@@ -10,7 +10,10 @@ class MockCommand extends Command {
   }
   internalTransition = Transition.START_ORDER;
   internalOnErrorCalled = false;
-  process(): void {}
+  process(rawInput: string, user: string): Promise<void> {
+    return Promise.resolve();
+  }
+
   get transition() {
     return this.internalTransition;
   }
@@ -26,45 +29,45 @@ describe("state machine", () => {
     const machine = new StateMachine();
     expect(machine.getCurrentState()).toEqual(State.IDLE);
     cmd.internalTransition = Transition.START_ORDER;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     cmd.internalTransition = Transition.ADD_ITEM;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     cmd.internalTransition = Transition.ADD_ITEM;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     cmd.internalTransition = Transition.FINALIZE;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.ORDERED);
     cmd.internalTransition = Transition.ARRIVED;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.IDLE);
   });
   test("cancel order", () => {
     const machine = new StateMachine();
     expect(machine.getCurrentState()).toEqual(State.IDLE);
     cmd.internalTransition = Transition.START_ORDER;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     cmd.internalTransition = Transition.ADD_ITEM;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     cmd.internalTransition = Transition.ADD_ITEM;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     cmd.internalTransition = Transition.CANCEL;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.IDLE);
   });
   test("invalid transition", () => {
     const machine = new StateMachine();
     expect(machine.getCurrentState()).toEqual(State.IDLE);
     cmd.internalTransition = Transition.START_ORDER;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     cmd.internalTransition = Transition.ARRIVED;
-    machine.handleState(cmd, "raw");
+    machine.handleState(cmd, "raw", "test-user");
     expect(machine.getCurrentState()).toEqual(State.TAKE_ORDERS);
     expect(cmd.internalOnErrorCalled).toBeTruthy();
   });
