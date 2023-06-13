@@ -46,13 +46,13 @@ export class StateMachine {
   // possible in the current state, otherwise the process of the command will
   // be executed.
   // Returns the next state.
-  handleState(cmd: Command, raw: string): State {
+  handleState(cmd: Command, raw: string, user: string): State {
     const nextState = this.t[this.currentState][cmd.transition];
     if (nextState == null) {
       cmd.onError(raw);
       return this.currentState;
     }
-    cmd.process(raw);
+    cmd.process(raw, user);
     this.currentState = nextState;
     return this.currentState;
   }

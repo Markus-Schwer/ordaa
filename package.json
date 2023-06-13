@@ -4,7 +4,7 @@
   "description": "This project was created to automate our orders from out preferred indian restaurant.",
   "main": "build/app.js",
   "scripts": {
-    "start": "tsc && node build/app.js",
+    "start": "tsc && node build/src/app.js",
     "build": "tsc",
     "test": "jest",
     "format:check": "prettier --check .",

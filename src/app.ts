@@ -27,9 +27,7 @@ export class App {
     this.config = config;
     this.matrixClient.sendMessage(".inder is back!");
 
-    this.matrixClient.listenToRoomEvents(this.processMessage);
-
-    console.log(this.config.getRoomId());
+    this.matrixClient.listenToRoomEvents(this.processMessage.bind(this));
 
     // register your commands here
     this.commandList.push(new StartCommand(this));
@@ -38,7 +36,7 @@ export class App {
     this.commandList.push(new HelpCommand(this));
   }
 
-  private processMessage(message: string): void {
+  private processMessage(message: string, user: string): void {
     const command: Command | undefined = this.commandList.find((c) =>
       c.matcher.test(message)
     );
@@ -46,7 +44,7 @@ export class App {
       this.sendMessage(`what is '${message}'???`);
       return;
     }
-    this.stateMachine.handleState(command, message);
+    this.stateMachine.handleState(command, message, user);
   }
 
   /* send a matrix message */
@@ -56,4 +54,4 @@ export class App {
 }
 
 require("dotenv").config();
-new App(new StateMachine(), new MatrixClientFacade(new Config()));
+new App(new Config(), new StateMachine(), new MatrixClientFacade(new Config()));
