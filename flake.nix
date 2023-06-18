@@ -7,35 +7,36 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, treefmt-nix }:
+  outputs = { self, nixpkgs, treefmt-nix, rust-overlay }:
     let
+      overlays = [ (import rust-overlay) ];
       pkgs = import nixpkgs {
+        inherit overlays;
         system = "x86_64-linux";
       };
-      dotinder = pkgs.buildNpmPackage {
-        pname = "dotinder-js-server";
+      rustVersion = pkgs.rust-bin.stable.latest.default;
+      rustPlatform = pkgs.makeRustPlatform {
+        cargo = rustVersion;
+        rustc = rustVersion;
+      };
+      dotinder = rustPlatform.buildRustPackage {
+        pname = "dotinder";
         version = "0.0.1";
         src = ./.;
-        npmDepsHash = "sha256-9FyRiZRB6IZihUzRQmCX+O3m1qvpN6T8EZ9iV3YSlMM=";
-        installPhase = ''
-          mkdir -p $out/bin
-          mv build/src/* $out/bin
-          mv node_modules $out
-        '';
+        cargoLock.lockFile = ./Cargo.lock;
       };
-      wrap = pkgs.writeScriptBin "dotinder" ''
-        ${pkgs.nodejs_18}/bin/node ${self.packages.x86_64-linux.default}/bin/app.js
-      '';
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
-
         packages = with pkgs;[
-          nodejs_18
-          podman
-          podman-compose
+          rustc
+          cargo
         ];
       };
       formatter.x86_64-linux = treefmt-nix.lib.mkWrapper
@@ -43,13 +44,8 @@
         {
           projectRootFile = "flake.nix";
           programs.nixpkgs-fmt.enable = true;
-          programs.prettier.enable = true;
-          settings.formatter.prettier.excludes = [ "*.html" ];
+          programs.rustfmt.enable = true;
         };
       packages.x86_64-linux.default = dotinder;
-      apps.x86_64-linux.default = {
-        type = "app";
-        program = "${wrap}/bin/dotinder";
-      };
     };
 }
