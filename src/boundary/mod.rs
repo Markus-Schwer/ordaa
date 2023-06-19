@@ -1,15 +1,15 @@
 pub mod matrix;
-pub mod warp;
+pub mod rest;
 use async_trait::async_trait;
 use enum_dispatch::enum_dispatch;
 
 use crate::control::machine::ReadOnly;
-use crate::boundary::warp::WarpBoundary;
+use crate::boundary::rest::RestApi;
 use crate::boundary::matrix::MatrixBot;
 
 #[enum_dispatch]
 pub enum BoundaryEnum {
-    WarpBoundary,
+    RestApi,
     MatrixBot
 }
 

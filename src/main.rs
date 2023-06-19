@@ -2,19 +2,18 @@ mod boundary;
 mod control;
 use crate::control::machine::StateMachine;
 use crate::boundary::{BoundaryEnum, RunnableBoundary};
-use crate::boundary::warp::WarpBoundary;
+use crate::boundary::rest::RestApi;
 use crate::boundary::matrix::MatrixBot;
-use tokio::signal;
 use tokio::task::JoinSet;
 
 #[tokio::main]
 async fn main() {
     println!("Starting .inder server");
 
-    let sm = StateMachine::new();
+    let mut sm = StateMachine::new();
 
     // setup boundaries
-    let boundaries: Vec<BoundaryEnum> = vec![WarpBoundary {}.into(), MatrixBot {}.into()];
+    let boundaries: Vec<BoundaryEnum> = vec![RestApi {}.into(), MatrixBot {}.into()];
 
     let mut join_set = JoinSet::new();
     for boundary in boundaries {
