@@ -12,7 +12,7 @@ impl Action for Cancel {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
             return Err(ReducerError::InvalidTransition { message: "there is nothing to cancel or it's already too late".into() })
         }
-        if let Some(user) = self.user {
+        if let Some(user) = &self.user {
             state.orders.remove(&user);
         } else {
             state.orders.clear();

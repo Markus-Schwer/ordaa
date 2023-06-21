@@ -15,10 +15,10 @@ impl Action for AddItem {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
             return Err(ReducerError::InvalidTransition { message: "cannot place orders right now".into() });
         }
-        if let Some(user_orders) = state.orders.get(&self.user) {
-            user_orders.push(self.menu_item)
+        if let Some(user_orders) = state.orders.get_mut(&self.user) {
+            user_orders.push(self.menu_item.clone())
         } else {
-            state.orders.insert(self.user, vec![self.menu_item]);
+            state.orders.insert(self.user.clone(), vec![self.menu_item.clone()]);
         }
         Ok(state)
     }

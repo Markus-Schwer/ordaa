@@ -1,17 +1,17 @@
 use warp::{self, Filter, Reply, Rejection};
-use crate::control::machine::ReadOnly;
+use crate::control::ActionSender;
 use crate::boundary::rest::handlers;
 use std::convert::Infallible;
 
-fn with_state_machine(sm: ReadOnly) -> impl Filter<Extract = (ReadOnly,), Error = Infallible> + Clone {
-    warp::any().map(move || sm.clone())
+fn with_sender(sender: ActionSender) -> impl Filter<Extract = (ActionSender,), Error = Infallible> + Clone {
+    warp::any().map(move || sender.clone())
 }
 
-pub fn hello_routes(sm: ReadOnly) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    hello(sm.clone())
+pub fn hello_routes(sender: ActionSender) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    hello(sender.clone())
 }
 
 // GET /hello
-fn hello(sm: ReadOnly) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    warp::path("hello").and(warp::get()).and(with_state_machine(sm)).and_then(handlers::hello)
+fn hello(sender: ActionSender) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    warp::path("hello").and(warp::get()).and(with_sender(sender)).and_then(handlers::hello)
 }
