@@ -1,16 +1,16 @@
 mod boundary;
 mod control;
-use crate::control::machine::StateMachine;
 use crate::boundary::{BoundaryEnum, RunnableBoundary};
 use crate::boundary::rest::RestApi;
 use crate::boundary::matrix::MatrixBot;
+use crate::control::Store;
 use tokio::task::JoinSet;
 
 #[tokio::main]
 async fn main() {
     println!("Starting .inder server");
 
-    let mut sm = StateMachine::new();
+    let mut store = Store::new();
 
     // setup boundaries
     let boundaries: Vec<BoundaryEnum> = vec![RestApi {}.into(), MatrixBot {}.into()];

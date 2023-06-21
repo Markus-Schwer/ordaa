@@ -1,6 +1,6 @@
 use std::{vec, matches};
 
-use crate::control::{menu::MenuItem, user::User, Action, MachineState, ReducerError};
+use crate::control::{menu::MenuItem, user::User, Action, MachineState, ReducerError, State};
 
 pub struct AddItem {
     user: User,
@@ -10,8 +10,8 @@ pub struct AddItem {
 impl Action for AddItem {
     fn reduce(
         &self,
-        state: &mut crate::control::State,
-    ) -> Result<(), crate::control::ReducerError> {
+        mut state: State,
+    ) -> Result<State, crate::control::ReducerError> {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
             return Err(ReducerError::InvalidTransition { message: "cannot place orders right now".into() });
         }
@@ -20,6 +20,6 @@ impl Action for AddItem {
         } else {
             state.orders.insert(self.user, vec![self.menu_item]);
         }
-        Ok(())
+        Ok(state)
     }
 }
