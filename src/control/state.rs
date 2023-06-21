@@ -8,30 +8,12 @@ pub enum State {
 }
 
 impl State {
-    pub fn do_transition(&self, t: Transition) -> Option<Self> {
-        if t == Transition::Help {
-            return Some((*self).clone());
-        }
-        match self {
-            State::Idle => match t {
-                Transition::StartOrder => Some(State::TakeOrders),
-                _ => None,
-            },
-            State::TakeOrders => match t {
-                Transition::AddItem { user: _, item: _ } => Some(State::TakeOrders),
-                Transition::Finalize => Some(State::Ordered),
-                _ => None,
-            },
-            State::Ordered => match t {
-                Transition::Arrived => Some(State::Idle),
-                _ => None,
-            },
-        }
+    pub fn do_transition(&self, t: Action) -> Option<Self> {
     }
 }
 
 #[derive(PartialEq)]
-pub enum Transition {
+pub enum Action {
     StartOrder,
     AddItem { user: User, item: MenuItem },
     Finalize,
