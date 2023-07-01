@@ -1,5 +1,3 @@
-pub struct Settings {
-}
+pub struct Settings {}
 
-pub trait SettingsStore {
-}
+pub trait SettingsStore {}

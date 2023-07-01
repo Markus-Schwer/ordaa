@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use crate::control::ActionSender;
@@ -8,8 +7,8 @@ use super::RunnableBoundary;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-pub mod routes;
 mod handlers;
+pub mod routes;
 
 pub struct RestApi {}
 
@@ -23,4 +22,3 @@ impl RunnableBoundary for RestApi {
         warp::serve(routes).run(([127, 0, 0, 1], 8080)).await;
     }
 }
-

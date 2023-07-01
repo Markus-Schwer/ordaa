@@ -2,11 +2,11 @@ mod boundary;
 mod control;
 use std::sync::Arc;
 
-use crate::boundary::{BoundaryEnum, RunnableBoundary};
-use crate::boundary::rest::RestApi;
 use crate::boundary::matrix::MatrixBot;
-use crate::control::Store;
+use crate::boundary::rest::RestApi;
+use crate::boundary::{BoundaryEnum, RunnableBoundary};
 use crate::control::State;
+use crate::control::Store;
 use tokio::sync::RwLock;
 use tokio::task::JoinSet;
 

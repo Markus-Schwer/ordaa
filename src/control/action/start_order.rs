@@ -14,7 +14,7 @@ impl Action for StartOrder {
         } else {
             return Err(ReducerError::InvalidTransition {
                 message: "cannot start ordering right now".into(),
-            })
+            });
         }
         Ok(state)
     }

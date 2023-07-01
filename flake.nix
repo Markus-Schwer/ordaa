@@ -31,6 +31,7 @@
         src = ./.;
         cargoLock.lockFile = ./Cargo.lock;
       };
+      treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
@@ -39,13 +40,8 @@
           cargo
         ];
       };
-      formatter.x86_64-linux = treefmt-nix.lib.mkWrapper
-        nixpkgs.legacyPackages.x86_64-linux
-        {
-          projectRootFile = "flake.nix";
-          programs.nixpkgs-fmt.enable = true;
-          programs.rustfmt.enable = true;
-        };
+      formatter.x86_64-linux = treefmtEval.config.build.wrapper;
+      checks.x86_64-linux.formatter = treefmtEval.config.build.check self;
       packages.x86_64-linux.default = dotinder;
     };
 }

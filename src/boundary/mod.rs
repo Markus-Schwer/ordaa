@@ -8,14 +8,14 @@ use async_trait::async_trait;
 use enum_dispatch::enum_dispatch;
 use tokio::sync::RwLock;
 
-use crate::control::ActionSender;
-use crate::boundary::rest::RestApi;
 use crate::boundary::matrix::MatrixBot;
+use crate::boundary::rest::RestApi;
+use crate::control::ActionSender;
 
 #[enum_dispatch]
 pub enum BoundaryEnum {
     RestApi,
-    MatrixBot
+    MatrixBot,
 }
 
 #[async_trait]
