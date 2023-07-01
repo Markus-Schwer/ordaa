@@ -1,16 +1,20 @@
 use std::{matches, vec};
 
-use crate::control::{menu::MenuItem, user::User, Action, MachineState, ReducerError, State};
+use crate::control::{
+    menu::MenuItem,
+    state::{MachineState, State},
+    user::User,
+};
 
 pub struct AddItem {
     user: User,
     menu_item: MenuItem,
 }
 
-impl Action for AddItem {
-    fn reduce(&self, mut state: State) -> Result<State, crate::control::ReducerError> {
+impl super::Action for AddItem {
+    fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
-            return Err(ReducerError::InvalidTransition {
+            return Err(super::ReducerError::InvalidTransition {
                 message: "cannot place orders right now".into(),
             });
         }

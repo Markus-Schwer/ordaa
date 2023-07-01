@@ -1,14 +1,15 @@
-mod boundary;
-mod control;
 use std::sync::Arc;
+
+use tokio::sync::RwLock;
+use tokio::task::JoinSet;
 
 use crate::boundary::matrix::MatrixBot;
 use crate::boundary::rest::RestApi;
 use crate::boundary::{BoundaryEnum, RunnableBoundary};
-use crate::control::State;
-use crate::control::Store;
-use tokio::sync::RwLock;
-use tokio::task::JoinSet;
+use crate::control::{state::State, store::Store};
+
+mod boundary;
+mod control;
 
 #[tokio::main]
 async fn main() {

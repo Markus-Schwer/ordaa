@@ -10,7 +10,7 @@ use tokio::sync::RwLock;
 
 use crate::boundary::matrix::MatrixBot;
 use crate::boundary::rest::RestApi;
-use crate::control::ActionSender;
+use crate::control::store::ActionSender;
 
 #[enum_dispatch]
 pub enum BoundaryEnum {

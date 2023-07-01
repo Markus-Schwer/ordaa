@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use crate::control::ActionSender;
-use crate::State;
-
-use super::RunnableBoundary;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
+
+use crate::control::{store::ActionSender, state::State};
+
+use super::RunnableBoundary;
 
 mod handlers;
 pub mod routes;

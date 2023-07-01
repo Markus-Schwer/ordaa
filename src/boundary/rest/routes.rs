@@ -1,7 +1,7 @@
-use crate::boundary::rest::handlers;
-use crate::control::ActionSender;
 use std::convert::Infallible;
 use warp::{self, Filter, Rejection, Reply};
+
+use crate::{boundary::rest::handlers, control::store::ActionSender};
 
 fn with_sender(
     sender: ActionSender,

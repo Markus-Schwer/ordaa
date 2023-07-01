@@ -1,21 +1,18 @@
 use std::matches;
 
-use crate::control::{Action, MachineState};
+use crate::control::state::{MachineState, State};
 
 pub struct Finalize {}
 
-impl Action for Finalize {
-    fn reduce(
-        &self,
-        mut state: crate::control::State,
-    ) -> Result<crate::control::State, crate::control::ReducerError> {
+impl super::Action for Finalize {
+    fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
-            return Err(crate::control::ReducerError::InvalidTransition {
+            return Err(super::ReducerError::InvalidTransition {
                 message: "there is nothing to finalize right now".into(),
             });
         }
         if state.orders.is_empty() {
-            return Err(crate::control::ReducerError::InvalidState {
+            return Err(super::ReducerError::InvalidState {
                 message: "there are no orders, won't finalize an empty order".into(),
             });
         }

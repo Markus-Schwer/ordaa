@@ -1,19 +1,16 @@
 use std::matches;
 
-use crate::control::{user::User, Action, MachineState, ReducerError};
+use crate::control::state::{MachineState, State};
 
 pub struct Cancel {
     // if user is provided cancel orders of that user, otherwise cancel entire order
-    user: Option<User>,
+    user: Option<crate::control::user::User>,
 }
 
-impl Action for Cancel {
-    fn reduce(
-        &self,
-        mut state: crate::control::State,
-    ) -> Result<crate::control::State, crate::control::ReducerError> {
+impl super::Action for Cancel {
+    fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
-            return Err(ReducerError::InvalidTransition {
+            return Err(super::ReducerError::InvalidTransition {
                 message: "there is nothing to cancel or it's already too late".into(),
             });
         }

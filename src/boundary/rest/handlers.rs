@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use warp;
 
-use crate::control::ActionSender;
+use crate::control::store::ActionSender;
 
 pub async fn hello(_sender: ActionSender) -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::with_status(
