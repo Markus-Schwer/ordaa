@@ -5,7 +5,10 @@ use tokio::sync::{
     RwLock,
 };
 
-use super::{action::{Action, Reducer}, state::State};
+use super::{
+    action::{Action, Reducer},
+    state::State,
+};
 
 pub type EffectFn = fn(state: &State);
 pub type ActionSender = UnboundedSender<Action>;

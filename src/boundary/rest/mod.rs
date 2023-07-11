@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::control::store::ActionSender;
 use super::{Runnable, SharableState};
+use crate::control::store::ActionSender;
 
 mod handlers;
 pub mod routes;

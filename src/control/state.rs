@@ -24,7 +24,8 @@ impl State {
 
 impl ToString for State {
     fn to_string(&self) -> String {
-        let mut res = self.orders
+        let mut res = self
+            .orders
             .iter()
             .map(|order| format!("user: {}; orders: {:?}", order.0.to_string(), order.1))
             .collect::<Vec<String>>()
