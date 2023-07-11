@@ -1,14 +1,15 @@
-mod boundary;
-mod control;
 use std::sync::Arc;
+
+use tokio::sync::RwLock;
+use tokio::task::JoinSet;
 
 use crate::boundary::matrix::MatrixBot;
 use crate::boundary::rest::RestApi;
-use crate::boundary::{BoundaryEnum, RunnableBoundary};
-use crate::control::State;
-use crate::control::Store;
-use tokio::sync::RwLock;
-use tokio::task::JoinSet;
+use crate::boundary::{Boundary, Runnable};
+use crate::control::{state::State, store::Store};
+
+mod boundary;
+mod control;
 
 #[tokio::main]
 async fn main() {
@@ -18,7 +19,7 @@ async fn main() {
     let mut store = Store::new(state.clone());
 
     // setup boundaries
-    let boundaries: Vec<BoundaryEnum> = vec![RestApi {}.into(), MatrixBot {}.into()];
+    let boundaries: Vec<Boundary> = vec![RestApi {}.into(), MatrixBot {}.into()];
 
     let mut join_set = JoinSet::new();
     for boundary in boundaries {

@@ -1,11 +1,7 @@
-use std::sync::Arc;
-
-use crate::control::ActionSender;
-use crate::State;
-
-use super::RunnableBoundary;
 use async_trait::async_trait;
-use tokio::sync::RwLock;
+
+use super::{Runnable, SharableState};
+use crate::control::store::ActionSender;
 
 mod handlers;
 pub mod routes;
@@ -13,12 +9,10 @@ pub mod routes;
 pub struct RestApi {}
 
 #[async_trait]
-impl RunnableBoundary for RestApi {
-    async fn run(&self, sender: ActionSender, _state: Arc<RwLock<State>>) {
+impl Runnable for RestApi {
+    async fn run(&self, sender: ActionSender, state: SharableState) {
         println!("starting REST API on 127.0.0.1:8080");
-        // Match any request and return hello world!
-        let routes = routes::hello_routes(sender);
-
+        let routes = routes::rest_routes(sender, state);
         warp::serve(routes).run(([127, 0, 0, 1], 8080)).await;
     }
 }

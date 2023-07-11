@@ -1,12 +1,9 @@
-use crate::control::Action;
+use crate::control::state::State;
 
 pub struct Help {}
 
-impl Action for Help {
-    fn reduce(
-        &self,
-        mut state: crate::control::State,
-    ) -> Result<crate::control::State, crate::control::ReducerError> {
+impl super::Reducer for Help {
+    fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         Ok(state)
     }
 }

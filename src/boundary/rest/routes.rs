@@ -1,24 +1,35 @@
-use crate::boundary::rest::handlers;
-use crate::control::ActionSender;
-use std::convert::Infallible;
 use warp::{self, Filter, Rejection, Reply};
 
-fn with_sender(
+use crate::{
+    boundary::{rest::handlers, SharableState},
+    control::store::ActionSender,
+};
+
+pub fn rest_routes(
     sender: ActionSender,
-) -> impl Filter<Extract = (ActionSender,), Error = Infallible> + Clone {
-    warp::any().map(move || sender.clone())
+    state: SharableState,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    warp::any()
+        .and(help(sender.clone(), state.clone()))
+        .or(start_order(sender.clone()))
 }
 
-pub fn hello_routes(
+fn start_order(
     sender: ActionSender,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    hello(sender.clone())
+    warp::path("start-order")
+        .and(warp::get())
+        .and(warp::any().map(move || sender.clone()))
+        .and_then(handlers::start_order)
 }
 
-// GET /hello
-fn hello(sender: ActionSender) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    warp::path("hello")
+fn help(
+    sender: ActionSender,
+    state: SharableState,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
+    warp::path("help")
         .and(warp::get())
-        .and(with_sender(sender))
-        .and_then(handlers::hello)
+        .and(warp::any().map(move || sender.clone()))
+        .and(warp::any().map(move || state.clone()))
+        .and_then(handlers::help)
 }

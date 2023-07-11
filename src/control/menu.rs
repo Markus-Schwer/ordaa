@@ -1,4 +1,4 @@
 pub struct Menu {}
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct MenuItem {}

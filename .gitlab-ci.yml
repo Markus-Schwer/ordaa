@@ -1,0 +1,14 @@
+image: nixpkgs/nix-flakes
+
+stages:
+  - check
+
+check:
+  stage: check
+  script:
+    - nix flake check
+  cache:
+    paths:
+     - /nix/store
+  artifacts:
+    untracked: true
