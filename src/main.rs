@@ -39,19 +39,3 @@ async fn main() {
         res.unwrap();
     }
 }
-
-#[cfg(test)]
-mod test {
-    use std::time::Duration;
-    use tokio::time::sleep;
-
-    use super::*;
-
-    #[tokio::test]
-    async fn should_not_burn_down() {
-        tokio::spawn(async {
-            main();
-        });
-        sleep(Duration::from_secs(5)).await;
-    }
-}

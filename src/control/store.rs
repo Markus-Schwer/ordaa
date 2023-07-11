@@ -45,15 +45,13 @@ impl Store {
     pub async fn listen(&mut self) {
         loop {
             if let Some(action) = self.rx.recv().await {
-                match action.reduce(self.state.read().await.clone()) {
+                let mut writable_state = self.state.write().await;
+                match action.reduce(writable_state.clone()) {
                     Ok(new_state) => {
-                        {
-                            let mut writable_state = self.state.write().await;
-                            *writable_state = new_state;
-                        }
+                        *writable_state = new_state;
                         if let Some(effects) = self.effects.get(&action) {
                             for effect in effects {
-                                effect(&self.state.read().await.clone());
+                                effect(&writable_state.clone());
                             }
                         }
                     }
@@ -61,6 +59,43 @@ impl Store {
                 }
             } else {
                 panic!("received empty action signal");
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use core::panic;
+    use std::{matches, time::Duration};
+    use tokio::time::{sleep, timeout};
+
+    use crate::control::action::start_order::StartOrder;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn should_do_state_transition() {
+        let state = Arc::new(RwLock::new(State::new()));
+        let mut store = Store::new(state.clone());
+        let sender = store.get_sender();
+        tokio::spawn(async move {
+            store.listen().await;
+        });
+        if let Err(err) = sender.send(Action::from(StartOrder {})) {
+            panic!("could not send message: {}", err);
+        }
+        loop {
+            if matches!(
+                timeout(Duration::from_secs(2), state.read())
+                    .await
+                    .unwrap()
+                    .machine_state,
+                crate::control::state::MachineState::TakeOrders
+            ) {
+                return;
+            } else {
+                sleep(Duration::from_millis(100)).await;
             }
         }
     }
