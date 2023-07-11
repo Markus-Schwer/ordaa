@@ -18,7 +18,7 @@ use start_order::StartOrder;
 
 #[derive(PartialEq, Eq, Hash)]
 #[enum_dispatch]
-pub enum ActionEnum {
+pub enum Action {
     StartOrder,
     AddItem,
     Finalize,
@@ -27,11 +27,8 @@ pub enum ActionEnum {
     Help,
 }
 
-#[enum_dispatch(ActionEnum)]
-pub trait Action {
-    // it feels bad to copy the state every call, but passing it mutably is
-    // just as bad.
-    // TODO: optimize this if possible
+#[enum_dispatch(Action)]
+pub trait Reducer {
     fn reduce(&self, state: State) -> Result<State, ReducerError>;
 }
 

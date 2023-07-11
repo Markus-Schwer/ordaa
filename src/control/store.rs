@@ -5,22 +5,22 @@ use tokio::sync::{
     RwLock,
 };
 
-use super::{action, state::State};
-use crate::control::action::Action;
+use super::{action::{Action, Reducer}, state::State};
 
 pub type EffectFn = fn(state: &State);
-pub type ActionSender = UnboundedSender<action::ActionEnum>;
-pub type ActionReceiver = UnboundedReceiver<action::ActionEnum>;
+pub type ActionSender = UnboundedSender<Action>;
+pub type ActionReceiver = UnboundedReceiver<Action>;
+pub type SharableState = Arc<RwLock<State>>;
 
 pub struct Store {
     rx: ActionReceiver,
     tx: ActionSender,
-    effects: HashMap<super::action::ActionEnum, Vec<EffectFn>>,
-    state: Arc<RwLock<State>>,
+    effects: HashMap<Action, Vec<EffectFn>>,
+    state: SharableState,
 }
 
 impl Store {
-    pub fn new(state: Arc<RwLock<State>>) -> Self {
+    pub fn new(state: SharableState) -> Self {
         let (tx, rx) = mpsc::unbounded_channel();
         Self {
             rx,
@@ -32,10 +32,7 @@ impl Store {
     pub fn get_sender(&self) -> ActionSender {
         self.tx.clone()
     }
-    pub async fn get_state_snapshot(&self) -> State {
-        self.state.read().await.clone()
-    }
-    pub fn register_effect(&mut self, effect: EffectFn, for_action: super::action::ActionEnum) {
+    pub fn register_effect(&mut self, effect: EffectFn, for_action: Action) {
         if let Some(effects) = self.effects.get_mut(&for_action) {
             effects.push(effect);
         } else {
@@ -45,7 +42,7 @@ impl Store {
     pub async fn listen(&mut self) {
         loop {
             if let Some(action) = self.rx.recv().await {
-                match action.reduce(self.get_state_snapshot().await) {
+                match action.reduce(self.state.read().await.clone()) {
                     Ok(new_state) => {
                         {
                             let mut writable_state = self.state.write().await;

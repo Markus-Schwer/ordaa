@@ -4,7 +4,7 @@ use crate::control::state::{MachineState, State};
 
 pub struct StartOrder {}
 
-impl super::Action for StartOrder {
+impl super::Reducer for StartOrder {
     fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if matches!(state.machine_state, MachineState::Idle) {
             state.machine_state = MachineState::TakeOrders;

@@ -4,7 +4,7 @@ use crate::control::state::{MachineState, State};
 
 pub struct Arrived {}
 
-impl super::Action for Arrived {
+impl super::Reducer for Arrived {
     fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if matches!(state.machine_state, MachineState::Ordered) {
             state.machine_state = MachineState::Idle;

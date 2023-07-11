@@ -5,7 +5,7 @@ use tokio::task::JoinSet;
 
 use crate::boundary::matrix::MatrixBot;
 use crate::boundary::rest::RestApi;
-use crate::boundary::{BoundaryEnum, RunnableBoundary};
+use crate::boundary::{Boundary, Runnable};
 use crate::control::{state::State, store::Store};
 
 mod boundary;
@@ -19,7 +19,7 @@ async fn main() {
     let mut store = Store::new(state.clone());
 
     // setup boundaries
-    let boundaries: Vec<BoundaryEnum> = vec![RestApi {}.into(), MatrixBot {}.into()];
+    let boundaries: Vec<Boundary> = vec![RestApi {}.into(), MatrixBot {}.into()];
 
     let mut join_set = JoinSet::new();
     for boundary in boundaries {

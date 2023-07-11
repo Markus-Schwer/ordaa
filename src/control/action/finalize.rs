@@ -4,7 +4,7 @@ use crate::control::state::{MachineState, State};
 
 pub struct Finalize {}
 
-impl super::Action for Finalize {
+impl super::Reducer for Finalize {
     fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
             return Err(super::ReducerError::InvalidTransition {

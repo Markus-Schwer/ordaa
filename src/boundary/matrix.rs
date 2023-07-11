@@ -1,17 +1,14 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
-use tokio::sync::RwLock;
 
-use crate::control::{store::ActionSender, state::State};
+use crate::control::store::{ActionSender, SharableState};
 
-use super::RunnableBoundary;
+use super::Runnable;
 
 pub struct MatrixBot {}
 
 #[async_trait]
-impl RunnableBoundary for MatrixBot {
-    async fn run(&self, _sender: ActionSender, _state: Arc<RwLock<State>>) {
+impl Runnable for MatrixBot {
+    async fn run(&self, _sender: ActionSender, _state: SharableState) {
         println!("starting matrix bot");
     }
 }

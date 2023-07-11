@@ -7,7 +7,7 @@ pub struct Cancel {
     user: Option<crate::control::user::User>,
 }
 
-impl super::Action for Cancel {
+impl super::Reducer for Cancel {
     fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
             return Err(super::ReducerError::InvalidTransition {

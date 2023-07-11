@@ -11,7 +11,7 @@ pub struct AddItem {
     menu_item: MenuItem,
 }
 
-impl super::Action for AddItem {
+impl super::Reducer for AddItem {
     fn reduce(&self, mut state: State) -> Result<State, super::ReducerError> {
         if !matches!(state.machine_state, MachineState::TakeOrders) {
             return Err(super::ReducerError::InvalidTransition {
