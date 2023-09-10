@@ -7,31 +7,16 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, treefmt-nix, rust-overlay }:
+  outputs = { self, nixpkgs, treefmt-nix }:
     let
-      overlays = [ (import rust-overlay) ];
+      system = "x86_64-linux";
       pkgs = import nixpkgs {
-        inherit overlays;
-        system = "x86_64-linux";
-      };
-      rustVersion = pkgs.rust-bin.stable.latest.default;
-      rustPlatform = pkgs.makeRustPlatform {
-        cargo = rustVersion;
-        rustc = rustVersion;
-      };
-      dotinder = rustPlatform.buildRustPackage {
-        pname = "dotinder";
-        version = "0.0.1";
-        src = ./.;
-        cargoLock.lockFile = ./Cargo.lock;
+        inherit system;
       };
       treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
+      omega-star = import ./omega-star { inherit pkgs; };
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
@@ -40,8 +25,11 @@
           cargo
         ];
       };
-      formatter.x86_64-linux = treefmtEval.config.build.wrapper;
-      checks.x86_64-linux.formatter = treefmtEval.config.build.check self;
-      packages.x86_64-linux.default = dotinder;
+      formatter.${system} = treefmtEval.config.build.wrapper;
+      checks.${system}.formatter = treefmtEval.config.build.check self;
+      packages.${system} = {
+        omega-star-bin = omega-star.bin;
+        omega-star = omega-star.container;
+      };
     };
 }
