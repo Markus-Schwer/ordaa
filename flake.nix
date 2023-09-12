@@ -17,6 +17,7 @@
       };
       treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
       omega-star = import ./omega-star { inherit pkgs; };
+      galactus = import ./galactus { inherit pkgs; };
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
@@ -30,6 +31,8 @@
       packages.${system} = {
         omega-star-bin = omega-star.bin;
         omega-star = omega-star.container;
+        galactus-bin = galactus.bin;
+        galactus = galactus.container;
       };
     };
 }
