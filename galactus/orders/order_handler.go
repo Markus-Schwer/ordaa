@@ -1,4 +1,4 @@
-package main
+package orders
 
 import "fmt"
 
@@ -29,20 +29,23 @@ var transitionTable = map[int]map[int]int{
 	idle: {},
 }
 
-type OrderHandler struct {
+// Order map from usernames to item ids
+type Order map[string][]string
+
+type orderHandler struct {
 	currentState int
 	// map of users to their orders
-	orders map[string][]string
+	orders Order
 }
 
-func NewOrderHandler() *OrderHandler {
-	return &OrderHandler{
+func newOrderHandler() *orderHandler {
+	return &orderHandler{
 		currentState: takeOrders,
 		orders:       make(map[string][]string),
 	}
 }
 
-func (sm *OrderHandler) addItem(user string, item string) error {
+func (sm *orderHandler) addItem(user string, item string) error {
 	if newState, ok := transitionTable[sm.currentState][addItem]; ok {
 		sm.currentState = newState
 	} else {
@@ -56,7 +59,7 @@ func (sm *OrderHandler) addItem(user string, item string) error {
 	return nil
 }
 
-func (sm *OrderHandler) removeItem(user string, item string) error {
+func (sm *orderHandler) removeItem(user string, item string) error {
 	if newState, ok := transitionTable[sm.currentState][removeItem]; ok {
 		sm.currentState = newState
 	} else {
@@ -77,7 +80,7 @@ func (sm *OrderHandler) removeItem(user string, item string) error {
 	}
 }
 
-func (sm *OrderHandler) finalize() (map[string][]string, error) {
+func (sm *orderHandler) finalize() (Order, error) {
 	if newState, ok := transitionTable[sm.currentState][finalize]; ok {
 		sm.currentState = newState
 	} else {
@@ -86,7 +89,7 @@ func (sm *OrderHandler) finalize() (map[string][]string, error) {
 	return sm.orders, nil
 }
 
-func (sm *OrderHandler) cancel() error {
+func (sm *orderHandler) cancel() error {
 	if newState, ok := transitionTable[sm.currentState][cancel]; ok {
 		sm.currentState = newState
 		return nil
@@ -95,7 +98,7 @@ func (sm *OrderHandler) cancel() error {
 	}
 }
 
-func (sm *OrderHandler) arrived() error {
+func (sm *orderHandler) arrived() error {
 	if newState, ok := transitionTable[sm.currentState][arrived]; ok {
 		sm.currentState = newState
 		return nil
@@ -104,11 +107,11 @@ func (sm *OrderHandler) arrived() error {
 	}
 }
 
-func (sm *OrderHandler) getOrders() map[string][]string {
+func (sm *orderHandler) getOrders() Order {
 	return sm.orders
 }
 
-func (sm *OrderHandler) getState() string {
+func (sm *orderHandler) getState() string {
 	switch sm.currentState {
 	case takeOrders:
 		return "taking orders"

@@ -1,9 +1,9 @@
-package main
+package orders
 
 import "testing"
 
 func TestHappyPath(t *testing.T) {
-	oh := NewOrderHandler()
+	oh := newOrderHandler()
 	if err := oh.addItem("user1", "M2"); err != nil {
 		t.Errorf("could not add item: %s", err.Error())
 	}
@@ -40,7 +40,7 @@ func TestHappyPath(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
-	oh := NewOrderHandler()
+	oh := newOrderHandler()
 	if err := oh.addItem("user1", "M1"); err != nil {
 		t.Errorf("could not add item: %s", err.Error())
 	}
@@ -62,7 +62,7 @@ func TestDeleteItem(t *testing.T) {
 }
 
 func TestFailOnOrderInDelivering(t *testing.T) {
-	oh := NewOrderHandler()
+	oh := newOrderHandler()
 	if err := oh.addItem("user1", "M1"); err != nil {
 		t.Errorf("could not add item: %s", err.Error())
 	}
