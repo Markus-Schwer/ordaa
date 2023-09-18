@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -29,6 +30,7 @@ type MenuProvider interface {
 	GetName() string
 	UpdateCache() error
 	GetMenu() *Menu
+	CheckItems([]string) []string
 }
 
 type MenuServer struct {
@@ -43,10 +45,11 @@ func NewMenuServer() MenuServer {
 	}
 }
 
-func (server *MenuServer) start() {
+func (server *MenuServer) start(ctx context.Context) {
 	router := mux.NewRouter()
 	router.HandleFunc("/", server.getProviderNames).Methods(http.MethodOptions)
 	router.HandleFunc("/{provider}", server.getMenu).Methods(http.MethodGet)
+	router.HandleFunc("/{provider}/check", server.checkItems).Methods(http.MethodPost)
 	address := os.Getenv("OMEGA_STAR_ADDRESS")
 	if address == "" {
 		address = "127.0.0.1"
@@ -62,9 +65,7 @@ func (server *MenuServer) start() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	ticker := time.NewTicker(12 * time.Hour)
-	go server.updateCache(ticker)
-	defer ticker.Stop()
+	go server.updateCache(ctx)
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
 		log.Printf("starting server on %s:%s\n", address, port)
@@ -72,27 +73,25 @@ func (server *MenuServer) start() {
 			log.Println(err)
 		}
 	}()
-	// channel to notify when shutdown should happen
-	c := make(chan os.Signal, 1)
-	// graceful shutdown on SIGINT and SIGTERM
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	// block until shutdown is desired
-	<-c
+	<-ctx.Done()
 	// create context to wait for deadline before shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	srv.Shutdown(ctx)
 	log.Println("shutting down")
-	os.Exit(0)
+	srv.Shutdown(ctx)
 }
 
-func (server *MenuServer) updateCache(ticker *time.Ticker) {
+func (server *MenuServer) updateCache(ctx context.Context) {
+	ticker := time.NewTicker(12 * time.Hour)
+	defer ticker.Stop()
 	for _, p := range server.providers {
 		log.Printf("updating cache for %s", p.GetName())
 		p.UpdateCache()
 	}
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-ticker.C:
 			log.Println("updating cache")
 			for _, p := range server.providers {
@@ -129,7 +128,42 @@ func (server *MenuServer) getMenu(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "", http.StatusNotFound)
 }
 
+func (server *MenuServer) checkItems(w http.ResponseWriter, r *http.Request) {
+	name := strings.ToLower(mux.Vars(r)["provider"])
+	log.Printf("CHECK %s", name)
+	var data []string
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("could not read body: %s", err.Error()), http.StatusInternalServerError)
+	}
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("could not read body: %s", err.Error()), http.StatusInternalServerError)
+	}
+	for _, provider := range server.providers {
+		if provider.GetName() != name {
+			continue
+		}
+		invalid := provider.CheckItems(data)
+		b, err := json.Marshal(invalid)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("could not write response: %s", err.Error()), http.StatusInternalServerError)
+		}
+		w.Write(b)
+		return
+	}
+	http.Error(w, "", http.StatusNotFound)
+}
+
 func main() {
 	server := NewMenuServer()
-	server.start()
+	log.Println("omega star is starting")
+	ctx, cancel := context.WithCancel(context.Background())
+	go server.start(ctx)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
+	log.Println("shutting down")
+	cancel()
+	os.Exit(0)
 }

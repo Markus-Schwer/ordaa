@@ -108,3 +108,17 @@ func (s *Sangam) GetMenu() *Menu {
 func (s *Sangam) GetName() string {
 	return "sangam"
 }
+
+func (s *Sangam) CheckItems(inItems []string) []string {
+	for _, menuItem := range s.menu.Items {
+		for j, inItem := range inItems {
+			if menuItem.Id != inItem {
+				continue
+			}
+			// remove element from the list
+			inItems[j] = inItems[len(inItems)-1]
+			inItems = inItems[:len(inItems)-1]
+		}
+	}
+	return inItems
+}

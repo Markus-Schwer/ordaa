@@ -31,3 +31,20 @@ func TestParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestChecks(t *testing.T) {
+	s := InitSangam()
+	s.menu = &Menu{
+		Items: []MenuItem{
+			{Id: "M1", Name: "Menu 1", Price: 60},
+			{Id: "M2", Name: "Menu 2", Price: 420},
+		},
+	}
+	ret := s.CheckItems([]string{"M1", "M3"})
+	if len(ret) != 1 {
+		t.Fatalf("expected to find 1 invalid item but got %d", len(ret))
+	}
+	if ret[0] != "M3" {
+		t.Fatal("expected first invalid item to be 'M3'")
+	}
+}
