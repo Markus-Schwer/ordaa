@@ -38,6 +38,7 @@ type Galactus struct {
 func (gal *Galactus) start() {
 	log.Println("galactus is starting")
 	interfaceContext, cancel := context.WithCancel(context.Background())
+	interfaceContext = context.WithValue(interfaceContext, "OMEGA_STAR_URL", "http://localhost:8081")
 	go gal.writeActionChanToOrders(interfaceContext)
 	go gal.rest.start(interfaceContext)
 	go gal.queue.start(interfaceContext)
@@ -59,7 +60,7 @@ func (gal *Galactus) writeActionChanToOrders(ctx context.Context) {
 		case <-done:
 			return
 		case action := <-gal.actionChan:
-			gal.mo.HandleOrderAction(action)
+			gal.mo.HandleOrderAction(ctx, action)
 		}
 	}
 }

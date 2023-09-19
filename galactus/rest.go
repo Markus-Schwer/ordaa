@@ -16,7 +16,8 @@ import (
 )
 
 type RestInterface struct {
-	mo *orders.MultiOrders
+	mo            *orders.MultiOrders
+	serverContext context.Context
 }
 
 func NewRestInterface(mo *orders.MultiOrders) RestInterface {
@@ -26,6 +27,7 @@ func NewRestInterface(mo *orders.MultiOrders) RestInterface {
 }
 
 func (server *RestInterface) start(ctx context.Context) {
+	server.serverContext = ctx
 	router := mux.NewRouter()
 	router.HandleFunc("/new", server.newOrder).Methods(http.MethodPost)
 	router.HandleFunc("/{orderNo}/{action}", server.updateOrder).Methods(http.MethodPost)
@@ -114,7 +116,7 @@ func (server *RestInterface) updateOrder(w http.ResponseWriter, r *http.Request)
 		http.Error(w, fmt.Sprintf("could not unmarshal json body: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
-	order, err := server.mo.HandleOrderAction(orders.OrderAction{
+	order, err := server.mo.HandleOrderAction(server.serverContext, orders.OrderAction{
 		Action:  action,
 		User:    data.User,
 		Item:    data.Item,

@@ -1,7 +1,12 @@
 package orders
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"sync"
 )
 
@@ -47,7 +52,13 @@ func (moo *MultiOrders) GetOrder(orderNo int) (Order, error) {
 }
 
 // the first return value is an optional orders parameter
-func (moo *MultiOrders) HandleOrderAction(action OrderAction) (Order, error) {
+func (moo *MultiOrders) HandleOrderAction(ctx context.Context, action OrderAction) (Order, error) {
+	if action.Item != "" {
+		err := checkItem(fmt.Sprintf("%s/sangam/check", ctx.Value("OMEGA_STAR_URL").(string)), action.Item)
+		if err != nil {
+			return nil, err
+		}
+	}
 	moo.mu.Lock()
 	defer moo.mu.Unlock()
 	oh, ok := moo.activeOrders[action.OrderNo]
@@ -70,4 +81,32 @@ func (moo *MultiOrders) HandleOrderAction(action OrderAction) (Order, error) {
 	default:
 		return nil, fmt.Errorf("unknown action: %s", action.Action)
 	}
+}
+
+func checkItem(url string, item string) error {
+	b, err := json.Marshal([]string{item})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	b, err = io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	var data []string
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		return nil
+	}
+	return fmt.Errorf("invalid order item: %s", string(b))
 }
