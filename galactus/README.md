@@ -6,6 +6,7 @@
 
 - `order/actions`: OrderAction JSON strings
 - `order/finalized`: Map of users to their orders
+- `order/error`: Errors of order actions
 
 ## Endpoints
 
