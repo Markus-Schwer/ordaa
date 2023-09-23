@@ -33,13 +33,15 @@ var transitionTable = map[int]map[int]int{
 type Order map[string][]string
 
 type orderHandler struct {
+	provider     string
 	currentState int
 	// map of users to their orders
 	orders Order
 }
 
-func newOrderHandler() *orderHandler {
+func newOrderHandler(provider string) *orderHandler {
 	return &orderHandler{
+		provider:     provider,
 		currentState: takeOrders,
 		orders:       make(map[string][]string),
 	}

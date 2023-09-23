@@ -29,7 +29,7 @@ func NewRestInterface(mo *orders.MultiOrders) RestInterface {
 func (server *RestInterface) start(ctx context.Context) {
 	server.serverContext = ctx
 	router := mux.NewRouter()
-	router.HandleFunc("/new", server.newOrder).Methods(http.MethodPost)
+	router.HandleFunc("/{provider}/new", server.newOrder).Methods(http.MethodPost)
 	router.HandleFunc("/{orderNo}/{action}", server.updateOrder).Methods(http.MethodPost)
 	router.HandleFunc("/{orderNo}/status", server.orderStatus).Methods(http.MethodGet)
 	address := os.Getenv("GALACTUS_ADDRESS")
@@ -62,7 +62,7 @@ func (server *RestInterface) start(ctx context.Context) {
 }
 
 func (server *RestInterface) newOrder(w http.ResponseWriter, r *http.Request) {
-	orderNo := server.mo.CreateNewOrder()
+	orderNo := server.mo.CreateNewOrder(mux.Vars(r)["provider"])
 	if _, err := fmt.Fprintf(w, "{\"orderNo\": %d}", orderNo); err != nil {
 		http.Error(w, fmt.Sprintf("could not write order id to response: %s", err.Error()), http.StatusInternalServerError)
 		return
@@ -76,7 +76,7 @@ func (server *RestInterface) orderStatus(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	order, err := server.mo.GetOrder(orderNo)
+	order, provider, err := server.mo.GetOrder(orderNo)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +85,10 @@ func (server *RestInterface) orderStatus(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	b, err := json.Marshal(order)
+	b, err := json.Marshal(map[string]interface{}{
+		"orders":   order,
+		"provider": provider,
+	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not serialize orders: %s", err.Error()), http.StatusInternalServerError)
 		return
