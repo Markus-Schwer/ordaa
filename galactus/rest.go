@@ -32,6 +32,7 @@ func (server *RestInterface) start(ctx context.Context) {
 	router.HandleFunc("/{provider}/new", server.newOrder).Methods(http.MethodPost)
 	router.HandleFunc("/{orderNo}/{action}", server.updateOrder).Methods(http.MethodPost)
 	router.HandleFunc("/{orderNo}/status", server.orderStatus).Methods(http.MethodGet)
+	router.HandleFunc("/status", server.ordersStatus).Methods(http.MethodGet)
 	address := os.Getenv("GALACTUS_ADDRESS")
 	if address == "" {
 		address = "127.0.0.1"
@@ -91,6 +92,16 @@ func (server *RestInterface) orderStatus(w http.ResponseWriter, r *http.Request)
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not serialize orders: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+	w.Write(b)
+	w.Header().Add("Content-Type", "application/json")
+}
+
+func (server *RestInterface) ordersStatus(w http.ResponseWriter, r *http.Request) {
+	b, err := json.Marshal(server.mo.GetOrders())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("could not serialize orders meta: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 	w.Write(b)
