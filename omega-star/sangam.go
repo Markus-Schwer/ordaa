@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/rs/zerolog/log"
@@ -16,7 +17,8 @@ import (
 type Sangam struct {
 	url        string
 	nameRegex  *regexp.Regexp
-	menu       *Menu
+	menu       *map[string]MenuItem
+	menuMutex  sync.RWMutex
 	cachedHtml string
 	ctx        context.Context
 }
@@ -26,6 +28,7 @@ func InitSangam(ctx context.Context) *Sangam {
 		url:       "https://www.sangam-aalen.de/speisekarte",
 		nameRegex: regexp.MustCompile("^((\\w*\\d+)\\s*[-–]{1}\\s*)?(([\\w\\.-äöüÄÖÜß]{2,} ?)+).*$"),
 		ctx:       ctx,
+		menuMutex: sync.RWMutex{},
 	}
 }
 
@@ -54,9 +57,7 @@ func (s *Sangam) updateHtmlCache() error {
 }
 
 func (s *Sangam) updateMenuFromCache() error {
-	newMenu := &Menu{
-		Items: []MenuItem{},
-	}
+	newMenu := make(map[string]MenuItem)
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(s.cachedHtml))
 	if err != nil {
 		return err
@@ -76,9 +77,11 @@ func (s *Sangam) updateMenuFromCache() error {
 		if err != nil {
 			return
 		}
-		newMenu.Items = append(newMenu.Items, MenuItem{Id: id, Name: name, Price: float32(price)})
+		newMenu[id] = MenuItem{Id: id, Name: name, Price: float32(price)}
 	})
-	s.menu = newMenu
+	s.menuMutex.Lock()
+	s.menu = &newMenu
+	s.menuMutex.Unlock()
 	return nil
 }
 
@@ -104,26 +107,32 @@ func (s *Sangam) UpdateCache() error {
 	return nil
 }
 
-func (s *Sangam) GetMenu() *Menu {
-	return s.menu
+func (s *Sangam) GetMenu() (menu *Menu) {
+	s.menuMutex.RLock()
+	defer s.menuMutex.RUnlock()
+	menu = &Menu{Items: make([]MenuItem, 0, len(*s.menu))}
+	for _, item := range *s.menu {
+		menu.Items = append(menu.Items, item)
+	}
+	return
 }
 
 func (s *Sangam) GetName() string {
 	return "sangam"
 }
 
-func (s *Sangam) CheckItems(inItems []string) []string {
-	for _, menuItem := range s.menu.Items {
-		for j, inItem := range inItems {
-			if menuItem.Id != inItem {
-				continue
-			}
-			log.Ctx(s.ctx).Debug().Msgf("'%s' is in sangam menu", inItem)
+func (s *Sangam) CheckItems(checkItems []string) []string {
+	s.menuMutex.RLock()
+	defer s.menuMutex.RUnlock()
+	for i, check := range checkItems {
+		if _, ok := (*s.menu)[check]; ok {
+			log.Ctx(s.ctx).Debug().Msgf("'%s' is in sangam menu", check)
 			// remove element from the list
-			inItems[j] = inItems[len(inItems)-1]
-			inItems = inItems[:len(inItems)-1]
+			checkItems[i] = checkItems[len(checkItems)-1]
+			checkItems = checkItems[:len(checkItems)-1]
+			continue
 		}
+		log.Ctx(s.ctx).Debug().Msgf("'%s' is NOT in sangam menu", check)
 	}
-	log.Ctx(s.ctx).Debug().Msgf("items '%v' are not in sangam menu", inItems)
-	return inItems
+	return checkItems
 }
