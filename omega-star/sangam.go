@@ -1,15 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/rs/zerolog/log"
 )
 
 type Sangam struct {
@@ -17,18 +18,20 @@ type Sangam struct {
 	nameRegex  *regexp.Regexp
 	menu       *Menu
 	cachedHtml string
+	ctx        context.Context
 }
 
-func InitSangam() *Sangam {
+func InitSangam(ctx context.Context) *Sangam {
 	return &Sangam{
 		url:       "https://www.sangam-aalen.de/speisekarte",
 		nameRegex: regexp.MustCompile("^((\\w*\\d+)\\s*[-–]{1}\\s*)?(([\\w\\.-äöüÄÖÜß]{2,} ?)+).*$"),
+		ctx:       ctx,
 	}
 }
 
 func (s *Sangam) updateHtmlCache() error {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", s.url, nil)
+	req, err := http.NewRequestWithContext(s.ctx, http.MethodGet, s.url, nil)
 	if err != nil {
 		return err
 	}
@@ -47,7 +50,6 @@ func (s *Sangam) updateHtmlCache() error {
 		return err
 	}
 	s.cachedHtml = string(b)
-	log.Println("updated html cache for sangam")
 	return nil
 }
 
@@ -77,24 +79,25 @@ func (s *Sangam) updateMenuFromCache() error {
 		newMenu.Items = append(newMenu.Items, MenuItem{Id: id, Name: name, Price: float32(price)})
 	})
 	s.menu = newMenu
-	log.Println("updated menu from cached html")
 	return nil
 }
 
 func (s *Sangam) UpdateCache() error {
-	log.Println("update html in sangam")
+	log.Ctx(s.ctx).Debug().Msg("update HTML cache in sangam provider")
 	if err := s.updateHtmlCache(); err != nil {
 		if s.cachedHtml != "" {
-			log.Printf("could not load sangam menu html: %s. Will fall back to cached version", err.Error())
+			log.Ctx(s.ctx).Warn().Err(err).Msg("could not load sangam menu HTML. Will fall back to cached version")
 		} else {
+			log.Ctx(s.ctx).Error().Err(err).Msg("could not load sangam menu HTML. No cached version to fall back to")
 			return fmt.Errorf("could not load sangam menu html: %s", err.Error())
 		}
 	}
-	log.Println("update menu")
+	log.Ctx(s.ctx).Debug().Msg("update menu in sangam provider")
 	if err := s.updateMenuFromCache(); err != nil {
 		if s.menu != nil {
-			log.Printf("could not parse sangam menu: %s. Will fall back to cached version", err.Error())
+			log.Ctx(s.ctx).Warn().Err(err).Msg("could not parse sangam menu. Will fall back to cached version")
 		} else {
+			log.Ctx(s.ctx).Error().Err(err).Msg("could not parse sangam menu. No cached version to fall back to")
 			return fmt.Errorf("could not parse sangam menu: %s", err.Error())
 		}
 	}
@@ -115,10 +118,12 @@ func (s *Sangam) CheckItems(inItems []string) []string {
 			if menuItem.Id != inItem {
 				continue
 			}
+			log.Ctx(s.ctx).Debug().Msgf("'%s' is in sangam menu", inItem)
 			// remove element from the list
 			inItems[j] = inItems[len(inItems)-1]
 			inItems = inItems[:len(inItems)-1]
 		}
 	}
+	log.Ctx(s.ctx).Debug().Msgf("items '%v' are not in sangam menu", inItems)
 	return inItems
 }
