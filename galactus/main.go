@@ -2,65 +2,71 @@ package main
 
 import (
 	"context"
-	"log"
+	"flag"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/galactus/orders"
 )
 
+const (
+	AddressKey      = "Address"
+	OmegaStarUrlKey = "OmegaStarURL"
+)
+
 func main() {
-	galactus := NewGalactus()
-	galactus.start()
-}
+	var address, omegaStarUrl string
+	var verbose bool
+	flag.BoolVar(&verbose, "v", false, "verbose output: sets the log level to debug")
+	flag.StringVar(&address, "address", "0.0.0.0:80", "the address including port of the service")
+    flag.StringVar(&omegaStarUrl, "omega-star", "", "the URL of the omega star service")
+	flag.Parse()
 
-func NewGalactus() Galactus {
-	mo := orders.NewMultiOrders()
-	rest := NewRestInterface(&mo)
-	actionChan := make(chan orders.OrderAction)
-	queue := NewQueueClient(actionChan)
-	return Galactus{
-		mo:         &mo,
-		rest:       &rest,
-		actionChan: actionChan,
-		queue:      &queue,
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = context.WithValue(ctx, AddressKey, address)
+	ctx = context.WithValue(ctx, OmegaStarUrlKey, omegaStarUrl)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	ctx = log.With().Str("service", "galactus").Logger().WithContext(ctx)
+	if verbose {
+		log.Ctx(ctx).Level(zerolog.DebugLevel)
+	} else {
+		log.Ctx(ctx).Level(zerolog.InfoLevel)
 	}
-}
 
-type Galactus struct {
-	mo         *orders.MultiOrders
-	rest       *RestInterface
-	queue      *QueueClient
-	actionChan chan orders.OrderAction
-}
+	actionChan := make(chan orders.OrderAction, 10)
+	mo, responseChan := orders.NewMultiOrders(ctx)
+	restResponseChan := make(chan orders.OrderActionResponse, 10)
+	// queueResponseChan := make(chan orders.OrderActionResponse, 10)
 
-func (gal *Galactus) start() {
-	log.Println("galactus is starting")
-	interfaceContext, cancel := context.WithCancel(context.Background())
-	interfaceContext = context.WithValue(interfaceContext, "OMEGA_STAR_URL", "http://localhost:8081")
-	go gal.writeActionChanToOrders(interfaceContext)
-	go gal.rest.start(interfaceContext)
-	go gal.queue.start(interfaceContext)
-	// channel to notify when shutdown should happen
+	go fanToAll(ctx, responseChan, restResponseChan)
+
+	go mo.Start(actionChan)
+	rest := NewRestInterface(ctx, actionChan, restResponseChan)
+	go rest.start()
+	// queue := NewQueueClient(ctx, actionChan, queueResponseChan)
+	// go queue.start()
+
 	c := make(chan os.Signal, 1)
-	// graceful shutdown on SIGINT and SIGTERM
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	// block until shutdown is desired
 	<-c
-	log.Println("shutting down")
+	log.Ctx(ctx).Info().Msg("received shutdown signal")
 	cancel()
+	log.Ctx(ctx).Info().Msg("finished graceful shutdown")
 	os.Exit(0)
 }
 
-func (gal *Galactus) writeActionChanToOrders(ctx context.Context) {
-	done := ctx.Done()
+func fanToAll(ctx context.Context, src chan orders.OrderActionResponse, out ...chan orders.OrderActionResponse) {
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
-		case action := <-gal.actionChan:
-			gal.mo.HandleOrderAction(ctx, action)
+		case res := <-src:
+			for _, outChan := range out {
+				outChan <- res
+			}
 		}
 	}
 }

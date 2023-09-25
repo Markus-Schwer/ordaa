@@ -9,100 +9,134 @@ import (
 	"net/http"
 	"sync"
 	"time"
-)
 
-type OrderAction struct {
-	Action  string `json:"action"`
-	User    string `json:"user"`
-	Item    string `json:"item"`
-	OrderNo int    `json:"orderNo"`
-}
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+)
 
 // thread safe object to manage orders
 type MultiOrders struct {
+	ctx          context.Context
 	activeOrders map[int]*orderHandler
 	nextId       int
-	mu           sync.Mutex
+	mu           sync.RWMutex
+	out          chan<- OrderActionResponse
 }
 
-func NewMultiOrders() MultiOrders {
-	return MultiOrders{
+func NewMultiOrders(ctx context.Context) (*MultiOrders, chan OrderActionResponse) {
+	out := make(chan OrderActionResponse, 10)
+	mo := &MultiOrders{
+		ctx:          ctx,
 		activeOrders: make(map[int]*orderHandler),
 		nextId:       1,
-		mu:           sync.Mutex{},
+		mu:           sync.RWMutex{},
+		out:          out,
 	}
+	return mo, out
 }
 
-func (moo *MultiOrders) CreateNewOrder(provider string) int {
-	moo.mu.Lock()
-	defer moo.mu.Unlock()
-	id := moo.nextId
-	moo.nextId += 1
-	moo.activeOrders[id] = newOrderHandler(provider)
-	return id
-}
-
-func (moo *MultiOrders) GetOrder(orderNo int) (Order, string, error) {
-	moo.mu.Lock()
-	defer moo.mu.Unlock()
-	oh, ok := moo.activeOrders[orderNo]
-	if !ok {
-		return nil, "", fmt.Errorf("there is no active order with no %d", orderNo)
-	}
-	return oh.getOrders(), oh.provider, nil
-}
-
-func (moo *MultiOrders) GetOrders() []map[string]interface{} {
-	moo.mu.Lock()
-	defer moo.mu.Unlock()
-	orderMeta := make([]map[string]interface{}, 0)
-	for orderNo, oh := range moo.activeOrders {
-		orderMeta = append(orderMeta, map[string]interface{}{
-			"orderNo":  orderNo,
-			"provider": oh.provider,
-		})
-	}
-	return orderMeta
-}
-
-// the first return value is an optional orders parameter
-func (moo *MultiOrders) HandleOrderAction(ctx context.Context, action OrderAction) (Order, error) {
-	moo.mu.Lock()
-	defer moo.mu.Unlock()
-	oh, ok := moo.activeOrders[action.OrderNo]
-	if !ok {
-		return nil, fmt.Errorf("no order with no %d found", action.OrderNo)
-	}
-	if action.Item != "" {
-		err := checkItem(ctx, fmt.Sprintf("%s/%s/check", ctx.Value("OMEGA_STAR_URL").(string), oh.provider), action.Item)
-		if err != nil {
-			return nil, err
+func (moo *MultiOrders) Start(in <-chan OrderAction) {
+	log.Ctx(moo.ctx).Info().Msg("Orders handler starts listening")
+	for {
+		select {
+		case <-moo.ctx.Done():
+			log.Ctx(moo.ctx).Info().Msg("Orders handler is shutting down")
+			return
+		case action := <-in:
+			go moo.handleOrderAction(action)
 		}
 	}
+}
+
+func (moo *MultiOrders) handleOrderAction(action OrderAction) {
+	log.Ctx(moo.ctx).Debug().Dict("action", zerolog.Dict().
+		Str("verb", action.Action).
+		Str("user", action.User)).
+		Msg("handling action")
+	if action.Action == "new" {
+		// TODO: validate provider
+		moo.mu.Lock()
+		log.Ctx(moo.ctx).Debug().Msg("acquired lock")
+		action.OrderNo = moo.nextId
+		moo.nextId += 1
+		moo.activeOrders[action.OrderNo] = newOrderHandler(action.Provider)
+		moo.mu.Unlock()
+		log.Ctx(moo.ctx).Debug().Msg("released lock")
+		moo.out <- action.respondOkWithOrderNo(action.OrderNo)
+		return
+	}
+	if action.Action == "active" {
+		moo.mu.RLock()
+		log.Ctx(moo.ctx).Debug().Msg("acquired lock")
+		activeOrders := make([]ActiveOrder, 0)
+		for orderNo, oh := range moo.activeOrders {
+			activeOrders = append(activeOrders, ActiveOrder{
+				OrderNo:  orderNo,
+				Provider: oh.provider,
+			})
+		}
+		moo.mu.RUnlock()
+		log.Ctx(moo.ctx).Debug().Msg("released lock")
+		moo.out <- action.respondWithActiveOrders(activeOrders)
+		return
+	}
+	oh, ok := moo.activeOrders[action.OrderNo]
+	if !ok {
+		moo.out <- action.respondMissingOrderNo()
+		return
+	}
+	action.Provider = oh.provider
 	switch action.Action {
+	case "status":
+		moo.mu.RLock()
+		moo.out <- action.respondOkWithOrder(&oh.orders)
+		moo.mu.RUnlock()
 	case "add":
-		return nil, oh.addItem(action.User, action.Item)
+		moo.mu.Lock()
+		moo.out <- action.respondWithPossibleError(oh.addItem(action.User, action.Item))
+		moo.mu.Unlock()
 	case "remove":
-		return nil, oh.removeItem(action.User, action.Item)
+		moo.mu.Lock()
+		moo.out <- action.respondWithPossibleError(oh.removeItem(action.User, action.Item))
+		moo.mu.Unlock()
 	case "finalize":
-		return oh.finalize()
+		moo.mu.Lock()
+		order, err := oh.finalize()
+		moo.mu.Unlock()
+		if err != nil {
+			moo.out <- action.respondGenericError(err)
+		} else {
+			moo.out <- action.respondOkWithOrder(&order)
+		}
 	case "arrived":
-		return nil, oh.arrived()
+		moo.mu.Lock()
+		delete(moo.activeOrders, action.OrderNo)
+		moo.mu.Unlock()
+		moo.out <- action.respondWithPossibleError(oh.arrived())
 	case "cancel":
-		return nil, oh.cancel()
+		moo.mu.Lock()
+		log.Ctx(moo.ctx).Debug().Msg("acquired lock")
+		delete(moo.activeOrders, action.OrderNo)
+		moo.mu.Unlock()
+		log.Ctx(moo.ctx).Debug().Msg("released lock")
+		moo.out <- action.respondWithPossibleError(oh.cancel())
 	case "":
-		return nil, fmt.Errorf("invalid empty action")
+		moo.out <- action.respondGenericError(fmt.Errorf("invalid empty action"))
 	default:
-		return nil, fmt.Errorf("unknown action: %s", action.Action)
+		moo.out <- action.respondGenericError(fmt.Errorf("unknown action: %s", action.Action))
 	}
 }
 
-func checkItem(ctx context.Context, url string, item string) error {
-	b, err := json.Marshal([]string{item})
+func (moo *MultiOrders) checkItems(action *OrderAction) error {
+	if action.Item == "" {
+		return nil
+	}
+	url := fmt.Sprintf("%s/%s/check", moo.ctx.Value("OmegaStarURL").(string), action.Provider)
+	b, err := json.Marshal([]string{action.Item})
 	if err != nil {
 		return err
 	}
-	withTo, cancel := context.WithTimeout(ctx, time.Second*5)
+	withTo, cancel := context.WithTimeout(moo.ctx, time.Second*5)
 	defer cancel()
 	req, err := http.NewRequestWithContext(withTo, http.MethodPost, url, bytes.NewReader(b))
 	if err != nil {
@@ -116,13 +150,13 @@ func checkItem(ctx context.Context, url string, item string) error {
 	if err != nil {
 		return err
 	}
-	var data []string
-	err = json.Unmarshal(b, &data)
+	var invalidItems []string
+	err = json.Unmarshal(b, &invalidItems)
 	if err != nil {
 		return err
 	}
-	if len(data) == 0 {
+	if len(invalidItems) == 0 {
 		return nil
 	}
-	return fmt.Errorf("invalid order item: %s", string(b))
+	return fmt.Errorf("invalid order item(s): %v", invalidItems)
 }

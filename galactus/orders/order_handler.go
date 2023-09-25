@@ -123,6 +123,5 @@ func (sm *orderHandler) getState() string {
 		return "idle. order was cancelled or deliverd"
 	default:
 		return "error: unknown state, there be dragons"
-
 	}
 }
