@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/rs/zerolog/log"
@@ -32,19 +34,22 @@ type OrderMetadata struct {
 	Provider string `json:"provider"`
 }
 
+type Orders map[string][]string
+
 type ServiceFacade interface {
 	CheckOrderItem(provider string, item string) error
 	NewOrder(provider string) (int, error)
 	AddOrderItem(orderNo int, user string, item string) error
 	RemoveOrderItem(orderNo int, user string, item string) error
-	FinalizeOrder(orderNo int) error
+	FinalizeOrder(orderNo int) (Orders, error)
 	OrderArrived(orderNo int) error
 	CancelOrder(orderNo int) error
 	GetOrders() ([]OrderMetadata, error)
 }
 
-func NewActionRunner(services ServiceFacade) *ActionRunner {
+func NewActionRunner(ctx context.Context, services ServiceFacade) *ActionRunner {
 	return &ActionRunner{
+		ctx:        ctx,
 		orders:     make(map[string]int),
 		orderMutex: sync.Mutex{},
 		services:   services,
@@ -52,26 +57,28 @@ func NewActionRunner(services ServiceFacade) *ActionRunner {
 }
 
 type ActionRunner struct {
+	ctx        context.Context
 	orders     map[string]int
 	orderMutex sync.Mutex
 	services   ServiceFacade
 }
 
-func (runner *ActionRunner) runAction(user string, action *ParsedAction) error {
-	log.Debug().Msgf("running action %v for user %s", action, user)
+func (runner *ActionRunner) runAction(user string, action *ParsedAction) (message string, err error) {
+	log.Ctx(runner.ctx).Debug().Msgf("running action %v for user %s", action, user)
 	runner.orderMutex.Lock()
 	defer runner.orderMutex.Unlock()
 	orderNo, hasOrder := runner.orders[action.provider]
 	if !hasOrder {
-		log.Warn().Msgf("no order for provider %s in cache, will try to find one in galactus", action.provider)
-		ordersMeta, err := runner.services.GetOrders()
+		log.Ctx(runner.ctx).Warn().Msgf("no order for provider %s in cache, will try to find one in galactus", action.provider)
+		var ordersMeta []OrderMetadata
+		ordersMeta, err = runner.services.GetOrders()
 		if err != nil {
-			return err
+			return
 		}
-		log.Debug().Msgf("loaded active order from galactus: %v", ordersMeta)
+		log.Ctx(runner.ctx).Debug().Msgf("loaded active order from galactus: %v", ordersMeta)
 		for _, orderMeta := range ordersMeta {
 			if orderMeta.Provider == action.provider {
-				log.Debug().Msgf("found matching active order: %d", orderMeta.OrderNo)
+				log.Ctx(runner.ctx).Debug().Msgf("found matching active order: %d", orderMeta.OrderNo)
 				runner.orders[orderMeta.Provider] = orderMeta.OrderNo
 				orderNo = orderMeta.OrderNo
 				hasOrder = true
@@ -83,27 +90,43 @@ func (runner *ActionRunner) runAction(user string, action *ParsedAction) error {
 	switch action.verb {
 	case New:
 		if hasOrder {
-			return fmt.Errorf("there is already an order for provider '%s'", action.provider)
+			err = fmt.Errorf("there is already an order for provider '%s'", action.provider)
+			return
 		}
-		orderNo, err := runner.services.NewOrder(action.provider)
+		orderNo, err = runner.services.NewOrder(action.provider)
 		if err != nil {
-			return err
+			return
 		}
 		runner.orders[action.provider] = orderNo
 	case Add:
-		return runner.services.AddOrderItem(orderNo, user, action.item)
+		err = runner.services.AddOrderItem(orderNo, user, action.item)
+		return
 	case Remove:
-		return runner.services.RemoveOrderItem(orderNo, user, action.item)
+		err = runner.services.RemoveOrderItem(orderNo, user, action.item)
+		return
 	case Finalize:
-		return runner.services.FinalizeOrder(orderNo)
+		var orders Orders
+		orders, err = runner.services.FinalizeOrder(orderNo)
+		message = ordersToTable(orders)
+		return
 	case Cancel:
 		delete(runner.orders, action.provider)
-		return runner.services.CancelOrder(orderNo)
+		err = runner.services.CancelOrder(orderNo)
+		return
 	case Arrived:
 		delete(runner.orders, action.provider)
-		return runner.services.OrderArrived(orderNo)
+		err = runner.services.OrderArrived(orderNo)
+		return
 	default:
-		return fmt.Errorf("action verb '%s' not supported", action.verb)
+		err = fmt.Errorf("action verb '%s' not supported", action.verb)
+		return
 	}
-	return nil
+	return
+}
+
+func ordersToTable(orders Orders) (table string) {
+	for user, o := range orders {
+		table += fmt.Sprintf("%s\t\t%s\n", user, strings.Join(o, ", "))
+	}
+	return
 }

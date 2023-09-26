@@ -89,13 +89,17 @@ func (facade *Microfacade) RemoveOrderItem(orderNo int, user string, item string
 	return err
 }
 
-func (facade *Microfacade) FinalizeOrder(orderNo int) error {
-	_, err := facade.doHttp(
+func (facade *Microfacade) FinalizeOrder(orderNo int) (orders Orders, err error) {
+	b, err := facade.doHttp(
 		fmt.Sprintf("%s/%d/finalize", facade.ctx.Value(GalactusURLKey), orderNo),
 		http.MethodPost,
 		nil,
 	)
-	return err
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(b, &orders)
+	return
 }
 
 func (facade *Microfacade) OrderArrived(orderNo int) error {
@@ -125,7 +129,7 @@ func (facade *Microfacade) GetOrders() (orderMeta []OrderMetadata, err error) {
 	if err != nil {
 		return
 	}
-	log.Debug().Bytes("bytes", b).Msg("order response from galactus arrived")
+	log.Ctx(facade.ctx).Debug().Bytes("bytes", b).Msg("order response from galactus arrived")
 	err = json.Unmarshal(b, &orderMeta)
 	if err != nil {
 		return

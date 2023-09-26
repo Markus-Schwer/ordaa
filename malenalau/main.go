@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -23,6 +24,8 @@ const (
 func main() {
 	var homeServerUrl, user, passwordFile, omegaStarUrl, galactusUrl string
 	var rooms RoomsFlag
+	var verbose bool
+	flag.BoolVar(&verbose, "v", false, "verbose output: sets the log level to debug")
 	flag.StringVar(&homeServerUrl, "home-server-url", "matrix.org", "matrix home server url, e.g. matrix.org")
 	flag.StringVar(&user, "user", "", "username of the matrix account")
 	flag.StringVar(&passwordFile, "password-file", "", "location of the file with the passowrd for the matrix account")
@@ -30,8 +33,6 @@ func main() {
 	flag.StringVar(&galactusUrl, "galactus", "http://localhost:8080", "URL where the galactus service can be reached")
 	flag.Var(&rooms, "room", "repeatable flag with matrix room ids the bot should join")
 	flag.Parse()
-
-	log.Debug().Msgf("user: '%s'", user)
 
 	b, err := os.ReadFile(passwordFile)
 	if err != nil {
@@ -45,9 +46,18 @@ func main() {
 	ctx = context.WithValue(ctx, OmegaStarURLKey, omegaStarUrl)
 	ctx = context.WithValue(ctx, GalactusURLKey, galactusUrl)
 
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	ctx = log.With().Str("service", "malenalau").Logger().WithContext(ctx)
+	if verbose {
+		log.Ctx(ctx).Level(zerolog.DebugLevel)
+	} else {
+		log.Ctx(ctx).Level(zerolog.InfoLevel)
+	}
+	log.Ctx(ctx).Debug().Msgf("user: '%s'", user)
+
 	facade := NewGalactusFacade(ctx, time.Second*10)
 	parser := NewMessageParser(ctx, ".")
-	runner := NewActionRunner(facade)
+	runner := NewActionRunner(ctx, facade)
 	bot := NewMatrixBot(ctx, parser, runner)
 
 	bot.LoginAndJoin(rooms)
@@ -57,6 +67,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 	cancel()
+	os.Exit(0)
 }
 
 type RoomsFlag []string

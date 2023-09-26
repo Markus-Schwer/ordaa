@@ -12,6 +12,7 @@ import (
 )
 
 type MessageParser struct {
+	ctx            context.Context
 	trigger        string
 	orderProviders []string
 }
@@ -19,25 +20,26 @@ type MessageParser struct {
 func NewMessageParser(ctx context.Context, trigger string) *MessageParser {
 	req, err := http.NewRequest(http.MethodOptions, ctx.Value(OmegaStarURLKey).(string), nil)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Ctx(ctx).Fatal().Err(err)
 	}
-    client := &http.Client{}
-    res, err := client.Do(req)
+	client := &http.Client{}
+	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Ctx(ctx).Fatal().Err(err)
 	}
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Ctx(ctx).Fatal().Err(err)
 	}
 	var providers []string
 	err = json.Unmarshal(b, &providers)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Ctx(ctx).Fatal().Err(err)
 	}
 	return &MessageParser{
 		trigger:        trigger,
 		orderProviders: providers,
+		ctx:            ctx,
 	}
 }
 

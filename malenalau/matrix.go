@@ -24,7 +24,7 @@ type MatrixBot struct {
 func NewMatrixBot(ctx context.Context, parser *MessageParser, runner *ActionRunner) *MatrixBot {
 	client, err := mautrix.NewClient(ctx.Value(HomeServerURLKey).(string), "", "")
 	if err != nil {
-		log.Fatal().Err(err).Msg("could not create matrix client")
+		log.Ctx(ctx).Fatal().Err(err).Msg("could not create matrix client")
 	}
 	return &MatrixBot{
 		ctx:     ctx,
@@ -36,7 +36,7 @@ func NewMatrixBot(ctx context.Context, parser *MessageParser, runner *ActionRunn
 }
 
 func (bot *MatrixBot) LoginAndJoin(roomIds []string) {
-	log.Debug().Msg("Logging in")
+	log.Ctx(bot.ctx).Debug().Msg("Logging in")
 	_, err := bot.client.Login(&mautrix.ReqLogin{
 		Type:               mautrix.AuthTypePassword,
 		Identifier:         mautrix.UserIdentifier{Type: mautrix.IdentifierTypeUser, User: bot.ctx.Value(UserKey).(string)},
@@ -45,23 +45,23 @@ func (bot *MatrixBot) LoginAndJoin(roomIds []string) {
 		StoreHomeserverURL: true,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("could not do login")
+		log.Ctx(bot.ctx).Fatal().Err(err).Msg("could not do login")
 	}
 	err = bot.client.SetDisplayName("Chicken Masalla legende Wollmilchsau [BOT]")
 	if err != nil {
-		log.Err(err)
+		log.Ctx(bot.ctx).Err(err)
 	}
 	for _, roomId := range roomIds {
 		_, err = bot.client.JoinRoomByID(id.RoomID(roomId))
 		if err != nil {
-			log.Fatal().Err(err).Msg("could not join room")
+			log.Ctx(bot.ctx).Fatal().Err(err).Msg("could not join room")
 		}
-		log.Debug().Msgf("joined room %s", roomId)
+		log.Ctx(bot.ctx).Debug().Msgf("joined room %s", roomId)
 	}
 }
 
 func (bot *MatrixBot) Listen() {
-	log.Debug().Msg("listening to messages")
+	log.Ctx(bot.ctx).Debug().Msg("listening to messages")
 	syncer := bot.client.Syncer.(*mautrix.DefaultSyncer)
 	syncer.OnEventType(event.EventMessage, func(src mautrix.EventSource, evt *event.Event) {
 		bot.handleMessageEvent(evt)
@@ -71,7 +71,7 @@ func (bot *MatrixBot) Listen() {
 	})
 	err := bot.client.SyncWithContext(bot.ctx)
 	if err != nil {
-		log.Fatal().Err(err).Msg("client had a problem when syncing")
+		log.Ctx(bot.ctx).Fatal().Err(err).Msg("client had a problem when syncing")
 	}
 }
 
@@ -84,18 +84,23 @@ func (bot *MatrixBot) handleMessageEvent(evt *event.Event) {
 	}
 	msgAction, err := bot.parser.convertToAction(evt.Content.AsMessage().Body)
 	if err != nil {
-		log.Err(err)
+		log.Ctx(bot.ctx).Err(err)
 		bot.reply(evt.RoomID, evt.ID, err.Error())
 		return
 	}
-	err = bot.runner.runAction(evt.Sender.String(), msgAction)
+	var message string
+	message, err = bot.runner.runAction(evt.Sender.String(), msgAction)
 	if err != nil {
-		log.Err(err)
+		log.Ctx(bot.ctx).Err(err)
 		bot.reply(evt.RoomID, evt.ID, err.Error())
 		return
 	}
-	bot.react(evt.RoomID, evt.ID, "✅")
-	log.Debug().Msgf("handled actions for message '%s'", evt.Content.AsMessage().Body)
+	if message != "" {
+		bot.reply(evt.RoomID, evt.ID, message)
+	} else {
+		bot.react(evt.RoomID, evt.ID, "✅")
+		log.Ctx(bot.ctx).Debug().Msgf("handled actions for message '%s'", evt.Content.AsMessage().Body)
+	}
 }
 
 func (bot *MatrixBot) handleReactionEvent(evt *event.Event) {
@@ -105,13 +110,13 @@ func (bot *MatrixBot) handleReactionEvent(evt *event.Event) {
 	// get message to which the reaction relates
 	msgEvt, err := bot.client.GetEvent(evt.RoomID, evt.Content.AsReaction().RelatesTo.EventID)
 	if err != nil {
-		log.Error().Err(err).Msg("could not get the message the reaction relates to")
+		log.Ctx(bot.ctx).Error().Err(err).Msg("could not get the message the reaction relates to")
 		return
 	}
 	// parsing has to be triggered manually when `GetEvent` is used
 	err = msgEvt.Content.ParseRaw(event.EventMessage)
 	if err != nil {
-		log.Err(err)
+		log.Ctx(bot.ctx).Err(err)
 		return
 	}
 	// get the initial action to use it as base
@@ -119,27 +124,29 @@ func (bot *MatrixBot) handleReactionEvent(evt *event.Event) {
 	switch evt.Content.AsReaction().RelatesTo.Key {
 	// run the same action again for the user who reacted
 	case "📈":
-		err = bot.runner.runAction(evt.Sender.String(), action)
+		var message string
+		message, err = bot.runner.runAction(evt.Sender.String(), action)
 		if err != nil {
-			log.Err(err)
+			log.Ctx(bot.ctx).Err(err)
 			return
 		}
-		bot.reply(evt.RoomID, msgEvt.ID, fmt.Sprintf("%s: ✅", evt.Sender.String()))
+		bot.reply(evt.RoomID, msgEvt.ID, fmt.Sprintf("%s: ✅ %s", evt.Sender.String(), message))
 		return
 	// remove the item, only possible on own actions
 	case "📉":
 		if msgEvt.Sender != evt.Sender {
-			log.Warn().Msgf("user '%s' tried to troll user '%s'", evt.Sender.String(), msgEvt.Sender.String())
+			log.Ctx(bot.ctx).Warn().Msgf("user '%s' tried to troll user '%s'", evt.Sender.String(), msgEvt.Sender.String())
 			bot.message(evt.RoomID, fmt.Sprintf("hilarious idea @%s:, but no", evt.Sender.String()))
 			return
 		}
 		action.verb = Remove
-		err = bot.runner.runAction(evt.Sender.String(), action)
+		var message string
+		message, err = bot.runner.runAction(evt.Sender.String(), action)
 		if err != nil {
-			log.Err(err)
+			log.Ctx(bot.ctx).Err(err)
 			return
 		}
-		bot.reply(evt.RoomID, msgEvt.ID, fmt.Sprintf("%s: ✅", evt.Sender.String()))
+		bot.reply(evt.RoomID, msgEvt.ID, fmt.Sprintf("%s: ✅ %s", evt.Sender.String(), message))
 		return
 	}
 }
@@ -147,14 +154,14 @@ func (bot *MatrixBot) handleReactionEvent(evt *event.Event) {
 func (bot *MatrixBot) message(room id.RoomID, content string) {
 	_, err := bot.client.SendNotice(room, content)
 	if err != nil {
-		log.Error().Err(err).Msgf("could not send message '%s'", content)
+		log.Ctx(bot.ctx).Error().Err(err).Msgf("could not send message '%s'", content)
 	}
 }
 
 func (bot *MatrixBot) react(room id.RoomID, evt id.EventID, content string) {
 	_, err := bot.client.SendReaction(room, evt, content)
 	if err != nil {
-		log.Error().Err(err).Msg("could not react to event")
+		log.Ctx(bot.ctx).Error().Err(err).Msg("could not react to event")
 	}
 }
 
@@ -170,6 +177,6 @@ func (bot *MatrixBot) reply(room id.RoomID, evt id.EventID, content string) {
 		"body":    content,
 	})
 	if err != nil {
-		log.Error().Err(err).Msgf("could not respond '%s' to event", content)
+		log.Ctx(bot.ctx).Error().Err(err).Msgf("could not respond '%s' to event", content)
 	}
 }
