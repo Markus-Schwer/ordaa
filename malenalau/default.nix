@@ -1,19 +1,19 @@
 { pkgs }:
 with pkgs; rec {
   bin = buildGoModule {
-    pname = "galactus";
+    pname = "malenalau";
     version = "1.0.0";
     # run with fake sha first and then copy actual sha from error message
     # vendorSha256 = lib.fakeSha256;
-    vendorSha256 = "sha256-l3A2/iFFbH8nqVBmmwXXtRA73/O5TdrzOkxtVpuPgbA=";
+    vendorSha256 = "sha256-HKbSuuMRSbcyZ8zn5OXbPFpwT+MMo2MF9wcHYJIv4hE=";
     src = ./.;
   };
   container = dockerTools.buildLayeredImage {
-    name = "galactus";
+    name = "malenalau";
     tag = "latest";
     # contents = pkgs.cacert;
     config = {
-      Cmd = [ "${bin}/bin/galactus" ];
+      Cmd = [ "${bin}/bin/malenalau" ];
       Env = [
         "GALACTUS_ADDRESS=0.0.0.0"
         "GALACTUS_PORT=80"

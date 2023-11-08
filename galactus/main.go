@@ -22,7 +22,7 @@ func main() {
 	var verbose bool
 	flag.BoolVar(&verbose, "v", false, "verbose output: sets the log level to debug")
 	flag.StringVar(&address, "address", "0.0.0.0:80", "the address including port of the service")
-    flag.StringVar(&omegaStarUrl, "omega-star", "", "the URL of the omega star service")
+	flag.StringVar(&omegaStarUrl, "omega-star", "", "the URL of the omega star service")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())

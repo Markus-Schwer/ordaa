@@ -4,8 +4,8 @@ with pkgs; rec {
     pname = "omega-star";
     version = "1.0.0";
     # run with fake sha first and then copy actual sha from error message
-    /* vendorSha256 = lib.fakeSha256; */
-    vendorSha256 = "sha256-cnrL8Y6AFkKPykNfIlidwvSjic/psNBimbqqhD7gKlg=";
+    # vendorSha256 = lib.fakeSha256;
+    vendorSha256 = "sha256-8EiWJls3PLaMGs7xXYpVZHIDrYhMl6s+qumi9Q74S0U=";
     src = ./.;
   };
   container = dockerTools.buildLayeredImage {

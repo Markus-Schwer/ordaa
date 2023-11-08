@@ -29,8 +29,8 @@ func main() {
 	flag.StringVar(&homeServerUrl, "home-server-url", "matrix.org", "matrix home server url, e.g. matrix.org")
 	flag.StringVar(&user, "user", "", "username of the matrix account")
 	flag.StringVar(&passwordFile, "password-file", "", "location of the file with the passowrd for the matrix account")
-	flag.StringVar(&omegaStarUrl, "omega-star", "http://localhost:8081", "URL where the omega star service can be reached")
-	flag.StringVar(&galactusUrl, "galactus", "http://localhost:8080", "URL where the galactus service can be reached")
+	flag.StringVar(&omegaStarUrl, "omega-star", "http://localhost:8080", "URL where the omega star service can be reached")
+	flag.StringVar(&galactusUrl, "galactus", "http://localhost:8081", "URL where the galactus service can be reached")
 	flag.Var(&rooms, "room", "repeatable flag with matrix room ids the bot should join")
 	flag.Parse()
 
