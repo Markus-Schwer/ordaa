@@ -24,6 +24,23 @@ type Microfacade struct {
 	timeout time.Duration
 }
 
+func (facade *Microfacade) GetMenu(provider string) (Menu, error) {
+	b, err := facade.doHttp(
+		fmt.Sprintf("%s/%s", facade.ctx.Value(OmegaStarURLKey).(string), provider),
+		http.MethodGet,
+		nil,
+	)
+	if err != nil {
+		return Menu{}, fmt.Errorf("omga star failed to vaidate: %s", err.Error())
+	}
+	var menu Menu
+	err = json.Unmarshal(b, &menu)
+	if err != nil {
+		return Menu{}, err
+	}
+	return menu, nil
+}
+
 func (facade *Microfacade) CheckOrderItem(provider string, item string) error {
 	b, err := facade.doHttp(
 		fmt.Sprintf("%s/%s/check", facade.ctx.Value(OmegaStarURLKey).(string), provider),

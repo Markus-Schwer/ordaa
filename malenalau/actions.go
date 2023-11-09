@@ -36,7 +36,18 @@ type OrderMetadata struct {
 
 type Orders map[string][]string
 
+type MenuItem struct {
+	Id    string
+	Name  string
+	Price float64
+}
+
+type Menu struct {
+	Items []MenuItem
+}
+
 type ServiceFacade interface {
+	GetMenu(provider string) (Menu, error)
 	CheckOrderItem(provider string, item string) error
 	NewOrder(provider string) (int, error)
 	AddOrderItem(orderNo int, user string, item string) error
@@ -107,7 +118,9 @@ func (runner *ActionRunner) runAction(user string, action *ParsedAction) (messag
 	case Finalize:
 		var orders Orders
 		orders, err = runner.services.FinalizeOrder(orderNo)
-		message = ordersToTable(orders)
+		var menu Menu
+		menu, err = runner.services.GetMenu(action.provider)
+		message = ordersToTable(orders, menu)
 		return
 	case Cancel:
 		delete(runner.orders, action.provider)
@@ -124,9 +137,21 @@ func (runner *ActionRunner) runAction(user string, action *ParsedAction) (messag
 	return
 }
 
-func ordersToTable(orders Orders) (table string) {
+func ordersToTable(orders Orders, menu Menu) (table string) {
 	for user, o := range orders {
-		table += fmt.Sprintf("%s\t\t%s\n", user, strings.Join(o, ", "))
+		verboseItems := make([]string, len(o))
+		var total float64
+		for i, id := range o {
+		PerItem:
+			for _, item := range menu.Items {
+				if id == item.Id {
+					verboseItems[i] = fmt.Sprintf("%s: (%s) %f", item.Id, item.Name, item.Price)
+					total += float64(item.Price)
+					break PerItem
+				}
+			}
+		}
+		table += fmt.Sprintf("%s\t\t%s = %f€\n", user, strings.Join(verboseItems, " + "), total)
 	}
 	return
 }
