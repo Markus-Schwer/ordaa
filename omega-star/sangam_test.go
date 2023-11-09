@@ -35,10 +35,9 @@ func TestParsing(t *testing.T) {
 
 func TestChecks(t *testing.T) {
 	s := InitSangam(context.Background())
-	// s.menu = &Menu{Items: make([]MenuItem, 0, len(*s.menu))}
-    newMenu := make(map[string]MenuItem)
-    newMenu["M1"] = MenuItem{Id: "M1", Name: "Menu 1", Price: 60}
-    newMenu["M2"] = MenuItem{Id: "M2", Name: "Menu 2", Price: 420}
+	newMenu := make(map[string]MenuItem)
+	newMenu["M1"] = MenuItem{Id: "M1", Name: "Menu 1", Price: 60}
+	newMenu["M2"] = MenuItem{Id: "M2", Name: "Menu 2", Price: 420}
 	s.menu = &newMenu
 	ret := s.CheckItems([]string{"M1", "M3"})
 	if len(ret) != 1 {
