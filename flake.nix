@@ -23,20 +23,18 @@
         packages = with pkgs;[
           go
         ];
-        shellHook = ''
-          alias galactus="${galactus.bin}/bin/galactus -address 127.0.0.1:8081 -omega-star http://localhost:8080 -v"
-          alias omega-star="${omega-star.bin}/bin/omega-star -address 127.0.0.1:8080 -v"
-          alias malenalau="${malenalau.bin}/bin/malenalau -v -room '!hvJGXMkjcyzxtSNNsx:matrix.org' -user order-bot-aa -password-file ./secret.txt"
-        '';
       };
       formatter.${system} = treefmtEval.config.build.wrapper;
       checks.${system}.formatter = treefmtEval.config.build.check self;
       packages.${system} = {
         omega-star-bin = omega-star.bin;
+        omega-star-dev = pkgs.writeScriptBin "omega-star-dev" ''${omega-star.bin}/bin/omega-star -address 127.0.0.1:8080 -v'';
         # omega-star = omega-star.container;
         galactus-bin = galactus.bin;
+        galactus-dev = pkgs.writeScriptBin "galactus-dev" ''${galactus.bin}/bin/galactus -address 127.0.0.1:8081 -omega-star http://localhost:8080 -v'';
         # galactus = galactus.container;
         malenalau-bin = malenalau.bin;
+        malenalau-dev = pkgs.writeScriptBin "malenalau-dev" ''${malenalau.bin}/bin/malenalau -v -room '!hvJGXMkjcyzxtSNNsx:matrix.org' -user order-bot-aa -password-file ./secret.txt'';
         # malenalau = malenalau.container;
       };
     };
