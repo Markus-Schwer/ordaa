@@ -26,7 +26,7 @@ type Sangam struct {
 func InitSangam(ctx context.Context) *Sangam {
 	return &Sangam{
 		url:       "https://www.sangam-aalen.de/speisekarte",
-		nameRegex: regexp.MustCompile("^((\\w*\\d+)\\s*[-–]{1}\\s*)?(([\\w\\.-äöüÄÖÜß]{2,} ?)+).*$"),
+		nameRegex: regexp.MustCompile("^((\\w*\\d+)\\s*[-–]{1}\\s*)?(([\\w\\.äöüÄÖÜß-]{2,} ?)+).*$"),
 		ctx:       ctx,
 		menuMutex: sync.RWMutex{},
 	}

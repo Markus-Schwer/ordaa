@@ -30,6 +30,9 @@ func TestParsing(t *testing.T) {
 		if item.Price == 0 {
 			t.Errorf("item %s has an empty price", item.Name)
 		}
+		if item.Id == "124" && item.Name != "Karahi-Fisch-Lababer" {
+			t.Errorf("item 124 should have name 'Karahi-Fisch-Lababer' but is %s", item.Name)
+		}
 	}
 }
 
