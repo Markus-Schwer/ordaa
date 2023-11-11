@@ -16,7 +16,7 @@ import (
 type MenuItem struct {
 	Id    string
 	Name  string
-	Price float32
+	Price int
 }
 
 type Menu struct {

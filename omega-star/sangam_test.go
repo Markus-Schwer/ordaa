@@ -33,6 +33,12 @@ func TestParsing(t *testing.T) {
 		if item.Id == "124" && item.Name != "Karahi-Fisch-Lababer" {
 			t.Errorf("item 124 should have name 'Karahi-Fisch-Lababer' but is %s", item.Name)
 		}
+		if item.Id == "M12" && item.Price != 890 {
+			t.Errorf("item M12 should have price '890' but is %d", item.Price)
+		}
+		if item.Id == "25" && item.Price != 990 {
+			t.Errorf("item 25 should have price '990' but is %d", item.Price)
+		}
 	}
 }
 

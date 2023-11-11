@@ -73,11 +73,11 @@ func (s *Sangam) updateMenuFromCache() error {
 			id = "<missing>"
 		}
 		name := strings.Trim(matches[3], " ")
-		price, err := strconv.ParseFloat(strings.Replace(strings.TrimSuffix(selection.Find(".menuItemPrice").Text(), "€"), ",", ".", 1), 32)
+		price, err := strconv.ParseInt(strings.Replace(strings.TrimSuffix(selection.Find(".menuItemPrice").Text(), "€"), ",", "", 1), 10, 32)
 		if err != nil {
 			return
 		}
-		newMenu[id] = MenuItem{Id: id, Name: name, Price: float32(price)}
+		newMenu[id] = MenuItem{Id: id, Name: name, Price: int(price)}
 	})
 	s.menuMutex.Lock()
 	s.menu = &newMenu

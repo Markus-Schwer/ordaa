@@ -39,7 +39,7 @@ type Orders map[string][]string
 type MenuItem struct {
 	Id    string
 	Name  string
-	Price float64
+	Price int
 }
 
 type Menu struct {
@@ -140,18 +140,18 @@ func (runner *ActionRunner) runAction(user string, action *ParsedAction) (messag
 func ordersToTable(orders Orders, menu Menu) (table string) {
 	for user, o := range orders {
 		verboseItems := make([]string, len(o))
-		var total float64
+		var total int
 		for i, id := range o {
 		PerItem:
 			for _, item := range menu.Items {
 				if id == item.Id {
-					verboseItems[i] = fmt.Sprintf("%s: (%s) %f", item.Id, item.Name, item.Price)
-					total += float64(item.Price)
+					verboseItems[i] = fmt.Sprintf("%s: (%s) %.2f€", item.Id, item.Name, float64(item.Price)/100)
+					total += item.Price
 					break PerItem
 				}
 			}
 		}
-		table += fmt.Sprintf("%s\t\t%s = %f€\n", user, strings.Join(verboseItems, " + "), total)
+		table += fmt.Sprintf("%s\t\t%s = %.2f€\n", user, strings.Join(verboseItems, " + "), float64(total)/100)
 	}
 	return
 }
