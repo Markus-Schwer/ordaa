@@ -3,6 +3,7 @@ module gitlab.com/sfz.aalen/hackwerk/dotinder/malenalau
 go 1.20
 
 require (
+	github.com/rodaine/table v1.1.0
 	github.com/rs/zerolog v1.30.0
 	maunium.net/go/mautrix v0.16.1
 )

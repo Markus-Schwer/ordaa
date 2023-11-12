@@ -5,7 +5,7 @@ with pkgs; rec {
     version = "1.0.0";
     # run with fake sha first and then copy actual sha from error message
     # vendorSha256 = lib.fakeSha256;
-    vendorSha256 = "sha256-HKbSuuMRSbcyZ8zn5OXbPFpwT+MMo2MF9wcHYJIv4hE=";
+    vendorSha256 = "sha256-k+5wnl6DK5VW/CbqVOG/hknyTt0Q7dygovm+v6rXIN8=";
     src = ./.;
   };
   container = dockerTools.buildLayeredImage {

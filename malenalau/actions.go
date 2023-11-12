@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
+	"github.com/rodaine/table"
 	"github.com/rs/zerolog/log"
 )
 
@@ -137,21 +138,34 @@ func (runner *ActionRunner) runAction(user string, action *ParsedAction) (messag
 	return
 }
 
-func ordersToTable(orders Orders, menu Menu) (table string) {
+func ordersToTable(orders Orders, menu Menu) string {
+	t := table.New("User", "Id", "Name", "Price")
 	for user, o := range orders {
-		verboseItems := make([]string, len(o))
 		var total int
-		for i, id := range o {
+		for itemIdx, id := range o {
 		PerItem:
 			for _, item := range menu.Items {
 				if id == item.Id {
-					verboseItems[i] = fmt.Sprintf("%s: (%s) %.2f€", item.Id, item.Name, float64(item.Price)/100)
+					userCol := ""
+					if itemIdx == 0 {
+						userCol = user
+					}
+					t.AddRow(
+						userCol,
+						fmt.Sprintf("%3s", item.Id),
+						item.Name,
+						fmt.Sprintf("%2d.%02d€", item.Price/100, item.Price%100),
+					)
 					total += item.Price
 					break PerItem
 				}
 			}
 		}
-		table += fmt.Sprintf("%s\t\t%s = %.2f€\n", user, strings.Join(verboseItems, " + "), float64(total)/100)
+		t.AddRow("", "", "total", fmt.Sprintf("%2d.%02d€", total/100, total%100))
 	}
-	return
+	var buf bytes.Buffer
+	t.WithWriter(&buf)
+	t.Print()
+	fmt.Println(buf.String())
+	return buf.String()
 }
