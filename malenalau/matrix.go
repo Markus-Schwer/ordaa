@@ -12,12 +12,19 @@ import (
 	"maunium.net/go/mautrix/id"
 )
 
+type orderMessage struct {
+	userId   string
+	itemId   string
+	provider string
+}
+
 type MatrixBot struct {
-	ctx     context.Context
-	client  *mautrix.Client
-	startup int64
-	parser  *MessageParser
-	runner  *ActionRunner
+	ctx          context.Context
+	client       *mautrix.Client
+	startup      int64
+	parser       *MessageParser
+	runner       *ActionRunner
+	trackedEvent map[string]orderMessage
 }
 
 // assumes home server to be 'matrix.org'
@@ -27,11 +34,12 @@ func NewMatrixBot(ctx context.Context, parser *MessageParser, runner *ActionRunn
 		log.Ctx(ctx).Fatal().Err(err).Msg("could not create matrix client")
 	}
 	return &MatrixBot{
-		ctx:     ctx,
-		client:  client,
-		startup: time.Now().UnixMilli(),
-		parser:  parser,
-		runner:  runner,
+		ctx:          ctx,
+		client:       client,
+		startup:      time.Now().UnixMilli(),
+		parser:       parser,
+		runner:       runner,
+		trackedEvent: make(map[string]orderMessage),
 	}
 }
 
@@ -69,9 +77,23 @@ func (bot *MatrixBot) Listen() {
 	syncer.OnEventType(event.EventReaction, func(src mautrix.EventSource, evt *event.Event) {
 		bot.handleReactionEvent(evt)
 	})
+	syncer.OnEventType(event.EventRedaction, func(src mautrix.EventSource, evt *event.Event) {
+		bot.handleRedactionEvent(evt)
+	})
 	err := bot.client.SyncWithContext(bot.ctx)
 	if err != nil {
 		log.Ctx(bot.ctx).Fatal().Err(err).Msg("client had a problem when syncing")
+	}
+}
+
+func (bot *MatrixBot) handleRedactionEvent(evt *event.Event) {
+	trackedEv := bot.trackedEvent[evt.Redacts.String()]
+	if &trackedEv == nil {
+		return
+	}
+	_, err := bot.runner.runAction(trackedEv.userId, &ParsedAction{trackedEv.provider, Remove, trackedEv.itemId})
+	if err != nil {
+		log.Ctx(bot.ctx).Err(err)
 	}
 }
 
@@ -90,6 +112,9 @@ func (bot *MatrixBot) handleMessageEvent(evt *event.Event) {
 	}
 	var message []string
 	message, err = bot.runner.runAction(evt.Sender.String(), msgAction)
+	if msgAction.verb == Add {
+		bot.trackedEvent[evt.ID.String()] = orderMessage{evt.Sender.String(), msgAction.item, msgAction.provider}
+	}
 	if err != nil {
 		log.Ctx(bot.ctx).Err(err)
 		bot.reply(evt.RoomID, evt.ID, err.Error(), false)
