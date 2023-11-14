@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"text/template"
 
 	"github.com/rodaine/table"
 	"github.com/rs/zerolog/log"
@@ -75,7 +76,7 @@ type ActionRunner struct {
 	services   ServiceFacade
 }
 
-func (runner *ActionRunner) runAction(user string, action *ParsedAction) (message string, err error) {
+func (runner *ActionRunner) runAction(user string, action *ParsedAction) (messages []string, err error) {
 	log.Ctx(runner.ctx).Debug().Msgf("running action %v for user %s", action, user)
 	runner.orderMutex.Lock()
 	defer runner.orderMutex.Unlock()
@@ -121,7 +122,10 @@ func (runner *ActionRunner) runAction(user string, action *ParsedAction) (messag
 		orders, err = runner.services.FinalizeOrder(orderNo)
 		var menu Menu
 		menu, err = runner.services.GetMenu(action.provider)
-		message = ordersToTable(orders, menu)
+		messages = []string{
+			ordersToTable(orders, menu),
+			ordersToOrderMessage(orders, menu, "Hackwerk 1, 73430 Aalen"),
+		}
 		return
 	case Cancel:
 		delete(runner.orders, action.provider)
@@ -166,6 +170,37 @@ func ordersToTable(orders Orders, menu Menu) string {
 	var buf bytes.Buffer
 	t.WithWriter(&buf)
 	t.Print()
-	fmt.Println(buf.String())
 	return buf.String()
+}
+
+func ordersToOrderMessage(orders Orders, menu Menu, adress string) string {
+	orderCount := make(map[string]int)
+	for _, o := range orders {
+		for _, id := range o {
+			orderCount[id] += 1
+		}
+	}
+	t := table.New("", "")
+	for _, item := range menu.Items {
+		if orderCount[item.Id] == 0 {
+			continue
+		}
+		t.AddRow(fmt.Sprint(orderCount[item.Id])+"x", fmt.Sprintf("%s (%s)", item.Name, item.Id))
+	}
+	var tableBuf bytes.Buffer
+	t.WithWriter(&tableBuf)
+	t.Print()
+	tpl, err := template.New("order").Parse("Hallo, ich möchte gerne eine Bestellung aufgeben. Lieferadresse ist {{.adress}}.\n{{.orderString}}\nVielen Dank")
+	if err != nil {
+		panic(err)
+	}
+	var templateBuf bytes.Buffer
+	err = tpl.Execute(&templateBuf, map[string]interface{}{
+		"adress":      adress,
+		"orderString": tableBuf.String(),
+	})
+	if err != nil {
+		panic(err)
+	}
+	return templateBuf.String()
 }

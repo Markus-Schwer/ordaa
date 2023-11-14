@@ -88,18 +88,24 @@ func (bot *MatrixBot) handleMessageEvent(evt *event.Event) {
 		bot.reply(evt.RoomID, evt.ID, err.Error(), false)
 		return
 	}
-	var message string
+	var message []string
 	message, err = bot.runner.runAction(evt.Sender.String(), msgAction)
 	if err != nil {
 		log.Ctx(bot.ctx).Err(err)
 		bot.reply(evt.RoomID, evt.ID, err.Error(), false)
 		return
 	}
-	if message != "" {
-		bot.reply(evt.RoomID, evt.ID, message, true)
-	} else {
+	switch len(message) {
+	case 0:
 		bot.react(evt.RoomID, evt.ID, "✅")
 		log.Ctx(bot.ctx).Debug().Msgf("handled actions for message '%s'", evt.Content.AsMessage().Body)
+	case 1:
+		bot.reply(evt.RoomID, evt.ID, message[0], true)
+	case 2:
+		id := bot.reply(evt.RoomID, evt.ID, message[0], true)
+		bot.replyInThread(evt.RoomID, id, message[1])
+	default:
+		panic("more than 2 messages")
 	}
 }
 
@@ -124,7 +130,7 @@ func (bot *MatrixBot) handleReactionEvent(evt *event.Event) {
 	switch evt.Content.AsReaction().RelatesTo.Key {
 	// run the same action again for the user who reacted
 	case "📈":
-		var message string
+		var message []string
 		message, err = bot.runner.runAction(evt.Sender.String(), action)
 		if err != nil {
 			log.Ctx(bot.ctx).Err(err)
@@ -140,7 +146,7 @@ func (bot *MatrixBot) handleReactionEvent(evt *event.Event) {
 			return
 		}
 		action.verb = Remove
-		var message string
+		var message []string
 		message, err = bot.runner.runAction(evt.Sender.String(), action)
 		if err != nil {
 			log.Ctx(bot.ctx).Err(err)
@@ -165,7 +171,24 @@ func (bot *MatrixBot) react(room id.RoomID, evt id.EventID, content string) {
 	}
 }
 
-func (bot *MatrixBot) reply(room id.RoomID, evt id.EventID, content string, asHtml bool) {
+func (bot *MatrixBot) replyInThread(room id.RoomID, evt id.EventID, content string) id.EventID {
+	ev, err := bot.client.SendMessageEvent(room, event.EventMessage, map[string]interface{}{
+		// "m.mentions": map[string]interface{}{},
+		"m.relates_to": map[string]interface{}{
+			"rel_type": "m.thread",
+			"event_id": evt,
+		},
+		// notice is a message from a bot, it avoids feedback loops
+		"msgtype": "m.notice",
+		"body":    content,
+	})
+	if err != nil {
+		log.Ctx(bot.ctx).Error().Err(err).Msgf("could not respond '%s' to event", content)
+	}
+	return ev.EventID
+}
+
+func (bot *MatrixBot) reply(room id.RoomID, evt id.EventID, content string, asHtml bool) id.EventID {
 	contentJSON := map[string]interface{}{
 		"m.relates_to": map[string]interface{}{
 			"m.in_reply_to": map[string]interface{}{
@@ -180,8 +203,9 @@ func (bot *MatrixBot) reply(room id.RoomID, evt id.EventID, content string, asHt
 		contentJSON["format"] = "org.matrix.custom.html"
 		contentJSON["formatted_body"] = "<code>" + strings.TrimSuffix(content, "\n") + "</code>"
 	}
-	_, err := bot.client.SendMessageEvent(room, event.EventMessage, contentJSON)
+	ev, err := bot.client.SendMessageEvent(room, event.EventMessage, contentJSON)
 	if err != nil {
 		log.Ctx(bot.ctx).Error().Err(err).Msgf("could not respond '%s' to event", content)
 	}
+	return ev.EventID
 }
