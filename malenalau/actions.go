@@ -111,6 +111,29 @@ func (runner *ActionRunner) runAction(user string, action *ParsedAction) (messag
 			return
 		}
 		runner.orders[action.provider] = orderNo
+		var t *template.Template
+		t, err = template.New("info").Parse(`@room
+Hello hungry Hackers, we are ordering from {{ .provider }}. You can take part in
+the order by typing:
+
+.{{ .provider }} add <item-id>
+.{{ .provider }} remove <item-id>
+
+If you got your item id wrong, you could also just react with '📉' to the order
+message or delete it. You can also order the same as someone else by reacting
+with '📈'. I will react with '✅' when I got your request.`)
+		if err != nil {
+			return
+		}
+		var buf bytes.Buffer
+		err = t.Execute(&buf, map[string]interface{}{
+			"provider": action.provider,
+		})
+		if err != nil {
+			return
+		}
+		messages = []string{buf.String()}
+		return
 	case Add:
 		err = runner.services.AddOrderItem(orderNo, user, action.item)
 		return

@@ -72,12 +72,21 @@ func (bot *MatrixBot) Listen() {
 	log.Ctx(bot.ctx).Debug().Msg("listening to messages")
 	syncer := bot.client.Syncer.(*mautrix.DefaultSyncer)
 	syncer.OnEventType(event.EventMessage, func(src mautrix.EventSource, evt *event.Event) {
+		if evt.Timestamp < bot.startup || evt.Sender == bot.client.UserID {
+			return
+		}
 		bot.handleMessageEvent(evt)
 	})
 	syncer.OnEventType(event.EventReaction, func(src mautrix.EventSource, evt *event.Event) {
+		if evt.Timestamp < bot.startup || evt.Sender == bot.client.UserID {
+			return
+		}
 		bot.handleReactionEvent(evt)
 	})
 	syncer.OnEventType(event.EventRedaction, func(src mautrix.EventSource, evt *event.Event) {
+		if evt.Timestamp < bot.startup || evt.Sender == bot.client.UserID {
+			return
+		}
 		bot.handleRedactionEvent(evt)
 	})
 	err := bot.client.SyncWithContext(bot.ctx)
@@ -95,12 +104,10 @@ func (bot *MatrixBot) handleRedactionEvent(evt *event.Event) {
 	if err != nil {
 		log.Ctx(bot.ctx).Err(err)
 	}
+	bot.reply(evt.RoomID, evt.ID, fmt.Sprintf("%s: ✅ deleted %s", trackedEv.userId, trackedEv.itemId), false)
 }
 
 func (bot *MatrixBot) handleMessageEvent(evt *event.Event) {
-	if evt.Timestamp < bot.startup || evt.Sender == bot.client.UserID {
-		return
-	}
 	if !strings.HasPrefix(evt.Content.AsMessage().Body, bot.parser.trigger) {
 		return
 	}
@@ -125,7 +132,11 @@ func (bot *MatrixBot) handleMessageEvent(evt *event.Event) {
 		bot.react(evt.RoomID, evt.ID, "✅")
 		log.Ctx(bot.ctx).Debug().Msgf("handled actions for message '%s'", evt.Content.AsMessage().Body)
 	case 1:
-		bot.reply(evt.RoomID, evt.ID, message[0], true)
+		asHtml := false
+		if msgAction.verb == Finalize {
+			asHtml = true
+		}
+		bot.reply(evt.RoomID, evt.ID, message[0], asHtml)
 	case 2:
 		id := bot.reply(evt.RoomID, evt.ID, message[0], true)
 		bot.replyInThread(evt.RoomID, id, message[1])
@@ -135,9 +146,6 @@ func (bot *MatrixBot) handleMessageEvent(evt *event.Event) {
 }
 
 func (bot *MatrixBot) handleReactionEvent(evt *event.Event) {
-	if evt.Timestamp < bot.startup || evt.Sender == bot.client.UserID {
-		return
-	}
 	// get message to which the reaction relates
 	msgEvt, err := bot.client.GetEvent(evt.RoomID, evt.Content.AsReaction().RelatesTo.EventID)
 	if err != nil {
