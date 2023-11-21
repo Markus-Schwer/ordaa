@@ -7,6 +7,7 @@ build:
   image: nixpkgs/nix-flakes
   script:
     - nix build .#omega-star
+    - mkdir -p "/var/tmp/"
     - nix develop --command skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - nix develop --command skopeo inspect docker-archive://$(readlink -f ./result)
     - nix develop --command skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG
