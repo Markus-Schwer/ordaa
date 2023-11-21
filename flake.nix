@@ -22,6 +22,7 @@
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs;[
           go
+          skopeo
         ];
       };
       formatter.${system} = treefmtEval.config.build.wrapper;
