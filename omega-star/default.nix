@@ -8,7 +8,7 @@ with pkgs; rec {
     vendorSha256 = "sha256-8EiWJls3PLaMGs7xXYpVZHIDrYhMl6s+qumi9Q74S0U=";
     src = ./.;
   };
-  container = dockerTools.streamLayeredImage {
+  container = dockerTools.buildLayeredImage {
     name = "omega-star";
     tag = "latest";
     contents = pkgs.cacert;

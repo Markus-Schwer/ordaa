@@ -8,7 +8,7 @@ with pkgs; rec {
     vendorSha256 = "sha256-l3A2/iFFbH8nqVBmmwXXtRA73/O5TdrzOkxtVpuPgbA=";
     src = ./.;
   };
-  container = dockerTools.streamLayeredImage {
+  container = dockerTools.buildLayeredImage {
     name = "galactus";
     tag = "latest";
     # contents = pkgs.cacert;
