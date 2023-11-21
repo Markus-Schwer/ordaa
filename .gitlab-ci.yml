@@ -1,10 +1,12 @@
-variables:
-  SFZ_REGISTRY_IMAGE: $SFZ_REGISTRY/$CI_PROJECT_PATH
-
 build:
   image: nixpkgs/nix-flakes
   script:
-    - nix build .#omega-star
+    - tag=$(date +%s)
     - mkdir -p "/var/tmp/"
     - nix develop --command skopeo login --username "$SFZ_REGISTRY_USER" --password "$SFZ_REGISTRY_PASSWORD" "$SFZ_REGISTRY"
-    - nix develop --command skopeo --insecure-policy copy docker-archive://$(readlink -f ./result) docker://$SFZ_REGISTRY_IMAGE:latest
+    - nix build .#omega-star
+    - nix develop --command skopeo --insecure-policy copy docker-archive://$(readlink -f ./result) docker://$SFZ_REGISTRY/dotinder/omega-star:${tag}
+    - nix build .#galactus
+    - nix develop --command skopeo --insecure-policy copy docker-archive://$(readlink -f ./result) docker://$SFZ_REGISTRY/dotinder/galactus:${tag}
+    - nix build .#malenalau
+    - nix develop --command skopeo --insecure-policy copy docker-archive://$(readlink -f ./result) docker://$SFZ_REGISTRY/dotinder/malenalau:${tag}
