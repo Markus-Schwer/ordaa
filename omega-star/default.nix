@@ -8,15 +8,14 @@ with pkgs; rec {
     vendorSha256 = "sha256-8EiWJls3PLaMGs7xXYpVZHIDrYhMl6s+qumi9Q74S0U=";
     src = ./.;
   };
-  container = dockerTools.buildLayeredImage {
+  container = dockerTools.streamLayeredImage {
     name = "omega-star";
     tag = "latest";
     contents = pkgs.cacert;
     config = {
       Cmd = [ "${bin}/bin/omega-star" ];
       Env = [
-        "OMEGA_STAR_ADDRESS=0.0.0.0"
-        "OMEGA_STAR_PORT=80"
+        "ADDRESS=0.0.0.0:80"
       ];
     };
   };

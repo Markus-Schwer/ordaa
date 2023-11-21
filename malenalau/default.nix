@@ -11,13 +11,9 @@ with pkgs; rec {
   container = dockerTools.buildLayeredImage {
     name = "malenalau";
     tag = "latest";
-    # contents = pkgs.cacert;
+    contents = pkgs.cacert;
     config = {
       Cmd = [ "${bin}/bin/malenalau" ];
-      Env = [
-        "GALACTUS_ADDRESS=0.0.0.0"
-        "GALACTUS_PORT=80"
-      ];
     };
   };
 

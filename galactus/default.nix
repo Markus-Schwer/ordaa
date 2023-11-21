@@ -8,15 +8,14 @@ with pkgs; rec {
     vendorSha256 = "sha256-l3A2/iFFbH8nqVBmmwXXtRA73/O5TdrzOkxtVpuPgbA=";
     src = ./.;
   };
-  container = dockerTools.buildLayeredImage {
+  container = dockerTools.streamLayeredImage {
     name = "galactus";
     tag = "latest";
     # contents = pkgs.cacert;
     config = {
       Cmd = [ "${bin}/bin/galactus" ];
       Env = [
-        "GALACTUS_ADDRESS=0.0.0.0"
-        "GALACTUS_PORT=80"
+        "ADDRESS=0.0.0.0:80"
       ];
     };
   };

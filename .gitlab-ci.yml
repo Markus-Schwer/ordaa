@@ -1,14 +1,21 @@
-image: nixpkgs/nix-flakes
-
 stages:
   - check
+  - build-container
 
 check:
-  stage: check
+  image: nixpkgs/nix-flakes
   script:
     - nix flake check
-  cache:
-    paths:
-     - /nix/store
-  artifacts:
-    untracked: true
+
+build:
+  image: nixpkgs/nix-flakes
+  before_script:
+    - nix-env --install --attr nixpkgs.skopeo
+  script:
+    - nix build .#omega-star
+    # - mkdir -p "/etc/containers/"
+    # - echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /etc/containers/policy.json
+    - skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    # - ls -lh ./result
+    - 'skopeo inspect docker-archive://$(readlink -f ./result)'
+    - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
