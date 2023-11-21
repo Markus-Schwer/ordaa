@@ -53,7 +53,7 @@ func (server *RestInterface) start() {
 	}
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("listen and serve crashed")
+			log.Ctx(server.ctx).Fatal().Err(err).Msg("listen and serve crashed")
 		}
 	}()
 	for {

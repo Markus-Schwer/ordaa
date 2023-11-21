@@ -18,17 +18,20 @@ const (
 )
 
 func main() {
-	var address, omegaStarUrl string
-	var verbose bool
+	// var address, omegaStarUrl string
+	var verbose, jsonFormat bool
 	flag.BoolVar(&verbose, "v", false, "verbose output: sets the log level to debug")
-	flag.StringVar(&address, "address", "0.0.0.0:80", "the address including port of the service")
-	flag.StringVar(&omegaStarUrl, "omega-star", "", "the URL of the omega star service")
+	flag.BoolVar(&jsonFormat, "j", false, "logging in json format")
 	flag.Parse()
+	address := os.Getenv("ADDRESS")
+	omegaStarUrl := os.Getenv("OMEGA_STAR_URL")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = context.WithValue(ctx, AddressKey, address)
 	ctx = context.WithValue(ctx, OmegaStarUrlKey, omegaStarUrl)
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	if !jsonFormat {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
 	ctx = log.With().Str("service", "galactus").Logger().WithContext(ctx)
 	if verbose {
 		log.Ctx(ctx).Level(zerolog.DebugLevel)
