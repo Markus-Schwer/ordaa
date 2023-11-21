@@ -7,10 +7,6 @@ build:
   image: nixpkgs/nix-flakes
   script:
     - nix build .#omega-star
-    # - mkdir -p "/etc/containers/"
-    # - echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /etc/containers/policy.json
-    - nix develop
-    - skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    # - ls -lh ./result
-    - 'skopeo inspect docker-archive://$(readlink -f ./result)'
-    - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
+    - nix develop --command skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - nix develop --command skopeo inspect docker-archive://$(readlink -f ./result)
+    - nix develop --command skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG
