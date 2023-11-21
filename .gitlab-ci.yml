@@ -1,7 +1,3 @@
-stages:
-  - check
-  - build-container
-
 check:
   image: nixpkgs/nix-flakes
   script:
