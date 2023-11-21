@@ -6,7 +6,7 @@ check:
 build:
   image: nixpkgs/nix-flakes
   before_script:
-    - nix-env --install skopeo
+    - nix-env --install --args skopeo
   script:
     - nix build .#omega-star
     # - mkdir -p "/etc/containers/"
