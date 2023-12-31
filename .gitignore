@@ -1,2 +1,7 @@
 result
 secret.txt
+db.sqlite
+
+# Added by cargo
+
+/target

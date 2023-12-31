@@ -1,0 +1,674 @@
+{
+    "items": [
+        {
+            "id": "M1",
+            "name": "Dal Maharani",
+            "price": 790
+        },
+        {
+            "id": "124",
+            "name": "Karahi-Fisch-Lababer",
+            "price": 1690
+        },
+        {
+            "id": "140",
+            "name": "Shahi Baingan",
+            "price": 1350
+        },
+        {
+            "id": "174",
+            "name": "Nan",
+            "price": 320
+        },
+        {
+            "id": "81",
+            "name": "Nawabi Burger",
+            "price": 1490
+        },
+        {
+            "id": "M7",
+            "name": "Paneer Makhni",
+            "price": 850
+        },
+        {
+            "id": "M16",
+            "name": "Fisch Badami",
+            "price": 990
+        },
+        {
+            "id": "25",
+            "name": "Chili Jheenga",
+            "price": 990
+        },
+        {
+            "id": "62",
+            "name": "Butter Chicken",
+            "price": 1490
+        },
+        {
+            "id": "127",
+            "name": "Jheenga-Masala",
+            "price": 1790
+        },
+        {
+            "id": "26",
+            "name": "Vegetable Samosa",
+            "price": 590
+        },
+        {
+            "id": "191",
+            "name": "Pulao Rice",
+            "price": 720
+        },
+        {
+            "id": "58",
+            "name": "Chicken Sabzi",
+            "price": 1490
+        },
+        {
+            "id": "105",
+            "name": "Lamm Korma",
+            "price": 1590
+        },
+        {
+            "id": "122",
+            "name": "Fisch Curry",
+            "price": 1590
+        },
+        {
+            "id": "147",
+            "name": "Mango Tango",
+            "price": 13500
+        },
+        {
+            "id": "154",
+            "name": "Chicken Tikka Biryani",
+            "price": 1450
+        },
+        {
+            "id": "94",
+            "name": "Rogan Josh",
+            "price": 1590
+        },
+        {
+            "id": "141",
+            "name": "Chole Bhature",
+            "price": 1390
+        },
+        {
+            "id": "192",
+            "name": "Gebratener Reis mit Ei",
+            "price": 750
+        },
+        {
+            "id": "197",
+            "name": "Mango-Creme mit Vanilleeis",
+            "price": 490
+        },
+        {
+            "id": "137",
+            "name": "Navratan Korma",
+            "price": 1290
+        },
+        {
+            "id": "148",
+            "name": "Malai Kofta",
+            "price": 1350
+        },
+        {
+            "id": "155",
+            "name": "Lamm Biryani",
+            "price": 1590
+        },
+        {
+            "id": "M6",
+            "name": "Chicken Sabji",
+            "price": 890
+        },
+        {
+            "id": "M20",
+            "name": "Tandoori Mix Platte",
+            "price": 1190
+        },
+        {
+            "id": "3",
+            "name": "Chicken",
+            "price": 550
+        },
+        {
+            "id": "23",
+            "name": "Chicken",
+            "price": 590
+        },
+        {
+            "id": "96",
+            "name": "Bhunna Ghosht",
+            "price": 1590
+        },
+        {
+            "id": "176",
+            "name": "Prantha",
+            "price": 350
+        },
+        {
+            "id": "99",
+            "name": "Mutton Vindaloo",
+            "price": 1590
+        },
+        {
+            "id": "153",
+            "name": "Vegetables Biryani",
+            "price": 1350
+        },
+        {
+            "id": "M3",
+            "name": "Vegetable Jalfrezi",
+            "price": 790
+        },
+        {
+            "id": "M22",
+            "name": "Nan-Frisch",
+            "price": 250
+        },
+        {
+            "id": "M30",
+            "name": "Chicken Dosa mit Sambhar",
+            "price": 950
+        },
+        {
+            "id": "63",
+            "name": "Tandoori Chicken Masala",
+            "price": 1490
+        },
+        {
+            "id": "103",
+            "name": "Lamm Boti Masala",
+            "price": 1590
+        },
+        {
+            "id": "40",
+            "name": "Vegetable Tandoori",
+            "price": 1490
+        },
+        {
+            "id": "100",
+            "name": "Karahi Ghosht",
+            "price": 1690
+        },
+        {
+            "id": "133",
+            "name": "Baigan Ka Bharta",
+            "price": 1290
+        },
+        {
+            "id": "143",
+            "name": "Bhindi Do Pyaza",
+            "price": 1390
+        },
+        {
+            "id": "180",
+            "name": "Lachsan Kulcha oder Onion Kulcha",
+            "price": 420
+        },
+        {
+            "id": "178",
+            "name": "Vegetable Prantha",
+            "price": 490
+        },
+        {
+            "id": "15",
+            "name": "Tandoori Lollipop",
+            "price": 690
+        },
+        {
+            "id": "95",
+            "name": "Mutton Kashmiri",
+            "price": 1690
+        },
+        {
+            "id": "131",
+            "name": "Duckie Duck",
+            "price": 1650
+        },
+        {
+            "id": "83",
+            "name": "Pommes",
+            "price": 390
+        },
+        {
+            "id": "84",
+            "name": "Süßkartoffel-Pommes",
+            "price": 450
+        },
+        {
+            "id": "M9",
+            "name": "Punjabi Chicken Curry",
+            "price": 890
+        },
+        {
+            "id": "M12",
+            "name": "Chicken Tikka Masala",
+            "price": 890
+        },
+        {
+            "id": "14",
+            "name": "Ratallo Chaat",
+            "price": 690
+        },
+        {
+            "id": "44",
+            "name": "Botti Kabab",
+            "price": 1890
+        },
+        {
+            "id": "67",
+            "name": "Chili Chicken",
+            "price": 1490
+        },
+        {
+            "id": "24",
+            "name": "Chili Chicken Dry",
+            "price": 690
+        },
+        {
+            "id": "61",
+            "name": "Chicken Vindaloo",
+            "price": 1490
+        },
+        {
+            "id": "66",
+            "name": "Mango Chicken",
+            "price": 1490
+        },
+        {
+            "id": "156",
+            "name": "Jheenga Biryani",
+            "price": 1790
+        },
+        {
+            "id": "85",
+            "name": "Punjabi Fries",
+            "price": 450
+        },
+        {
+            "id": "M19",
+            "name": "Chicken Tikka",
+            "price": 1090
+        },
+        {
+            "id": "10",
+            "name": "Chicken Chat",
+            "price": 690
+        },
+        {
+            "id": "144",
+            "name": "Green Mixed Vegetables",
+            "price": 1290
+        },
+        {
+            "id": "82",
+            "name": "Shakahari Burger",
+            "price": 1350
+        },
+        {
+            "id": "M5",
+            "name": "Chole Bhatura",
+            "price": 790
+        },
+        {
+            "id": "18",
+            "name": "Palak Papri Chat",
+            "price": 690
+        },
+        {
+            "id": "43",
+            "name": "Achari Chicken Tikka",
+            "price": 1590
+        },
+        {
+            "id": "149",
+            "name": "Chilli Paneer",
+            "price": 1390
+        },
+        {
+            "id": "80",
+            "name": "Mumbai Burger",
+            "price": 1390
+        },
+        {
+            "id": "22",
+            "name": "Paneer Kathi Kebab",
+            "price": 690
+        },
+        {
+            "id": "45",
+            "name": "Theenga Tandoori",
+            "price": 2150
+        },
+        {
+            "id": "136",
+            "name": "Dal Tarka",
+            "price": 1290
+        },
+        {
+            "id": "98",
+            "name": "Mutton Khumb Wala",
+            "price": 1590
+        },
+        {
+            "id": "M4",
+            "name": "Palak Paneer",
+            "price": 790
+        },
+        {
+            "id": "2",
+            "name": "Dal",
+            "price": 490
+        },
+        {
+            "id": "16",
+            "name": "Veg. Manchurian",
+            "price": 690
+        },
+        {
+            "id": "47",
+            "name": "Mutton Sheekh Kebab",
+            "price": 1890
+        },
+        {
+            "id": "97",
+            "name": "Saag Ghosh",
+            "price": 1590
+        },
+        {
+            "id": "17",
+            "name": "Vada Pav",
+            "price": 690
+        },
+        {
+            "id": "59",
+            "name": "Karahi Murgh",
+            "price": 1490
+        },
+        {
+            "id": "175",
+            "name": "Roti",
+            "price": 290
+        },
+        {
+            "id": "198",
+            "name": "Firni",
+            "price": 490
+        },
+        {
+            "id": "M17",
+            "name": "Fisch Chili",
+            "price": 990
+        },
+        {
+            "id": "57",
+            "name": "Chicken Korma",
+            "price": 1490
+        },
+        {
+            "id": "1",
+            "name": "Mulagatany",
+            "price": 550
+        },
+        {
+            "id": "\u003cmissing\u003e",
+            "name": "Bhatura",
+            "price": 350
+        },
+        {
+            "id": "123",
+            "name": "Fisch-Masala",
+            "price": 1590
+        },
+        {
+            "id": "129",
+            "name": "Jheenga-Jalfrezi",
+            "price": 1790
+        },
+        {
+            "id": "11",
+            "name": "Samosa Chat",
+            "price": 690
+        },
+        {
+            "id": "27",
+            "name": "Gemischter Tandoori-Vorspeisenteller",
+            "price": 750
+        },
+        {
+            "id": "101",
+            "name": "Mutton Nilgiri",
+            "price": 1590
+        },
+        {
+            "id": "125",
+            "name": "Fisch Mango",
+            "price": 1590
+        },
+        {
+            "id": "190",
+            "name": "Kheere Ka Raita",
+            "price": 450
+        },
+        {
+            "id": "M18",
+            "name": "Fish Goa",
+            "price": 1090
+        },
+        {
+            "id": "142",
+            "name": "Karahi Paneer",
+            "price": 1450
+        },
+        {
+            "id": "179",
+            "name": "Paneer Kulcha",
+            "price": 490
+        },
+        {
+            "id": "188",
+            "name": "Plain Dahi",
+            "price": 350
+        },
+        {
+            "id": "30",
+            "name": "Salat Saison",
+            "price": 590
+        },
+        {
+            "id": "31",
+            "name": "Salat Indisch",
+            "price": 890
+        },
+        {
+            "id": "46",
+            "name": "Fisch Tikka Avocado",
+            "price": 1890
+        },
+        {
+            "id": "64",
+            "name": "Murgh Nilgiri",
+            "price": 1490
+        },
+        {
+            "id": "104",
+            "name": "Mango Lamm",
+            "price": 1590
+        },
+        {
+            "id": "M2",
+            "name": "Navratan Korma",
+            "price": 790
+        },
+        {
+            "id": "M28",
+            "name": "Masala Dosa mit Sambhar",
+            "price": 890
+        },
+        {
+            "id": "126",
+            "name": "Jheenga-Curry",
+            "price": 1790
+        },
+        {
+            "id": "139",
+            "name": "Palak Peneer",
+            "price": 1390
+        },
+        {
+            "id": "60",
+            "name": "Chichen Talfrezi",
+            "price": 1490
+        },
+        {
+            "id": "128",
+            "name": "Jheenga Khumb Wala",
+            "price": 1790
+        },
+        {
+            "id": "189",
+            "name": "Alu Raita",
+            "price": 420
+        },
+        {
+            "id": "M11",
+            "name": "Chicken Alu Saag",
+            "price": 890
+        },
+        {
+            "id": "4",
+            "name": "Tomaten",
+            "price": 490
+        },
+        {
+            "id": "19",
+            "name": "Soya Malai Tikka",
+            "price": 750
+        },
+        {
+            "id": "20",
+            "name": "Vegetable Pakora",
+            "price": 550
+        },
+        {
+            "id": "42",
+            "name": "Chicken Tikka",
+            "price": 1590
+        },
+        {
+            "id": "M15",
+            "name": "Lamm Okra",
+            "price": 990
+        },
+        {
+            "id": "M23",
+            "name": "Raita",
+            "price": 250
+        },
+        {
+            "id": "145",
+            "name": "Paneer Makhani",
+            "price": 1350
+        },
+        {
+            "id": "199",
+            "name": "Kulfi-Stick",
+            "price": 350
+        },
+        {
+            "id": "M8",
+            "name": "Mango Chicken",
+            "price": 890
+        },
+        {
+            "id": "M10",
+            "name": "Chana Chicken",
+            "price": 890
+        },
+        {
+            "id": "M29",
+            "name": "Kerala Spezial Dosa mit Sambhar",
+            "price": 900
+        },
+        {
+            "id": "65",
+            "name": "Chicken Saag",
+            "price": 1490
+        },
+        {
+            "id": "138",
+            "name": "Paneer Lababdar",
+            "price": 1450
+        },
+        {
+            "id": "M14",
+            "name": "Mutton Do Pyaza",
+            "price": 990
+        },
+        {
+            "id": "12",
+            "name": "Murg Kathi Roll",
+            "price": 690
+        },
+        {
+            "id": "135",
+            "name": "Methi Malai Mushroom",
+            "price": 1390
+        },
+        {
+            "id": "177",
+            "name": "Mint Prantha",
+            "price": 390
+        },
+        {
+            "id": "M13",
+            "name": "Chicken Bhuna",
+            "price": 890
+        },
+        {
+            "id": "48",
+            "name": "Sangam",
+            "price": 1690
+        },
+        {
+            "id": "134",
+            "name": "Dal Makhni",
+            "price": 1390
+        },
+        {
+            "id": "200",
+            "name": "Gulab Jamun",
+            "price": 490
+        },
+        {
+            "id": "13",
+            "name": "Pani Puri",
+            "price": 590
+        },
+        {
+            "id": "21",
+            "name": "Onion Ring Pakoras",
+            "price": 520
+        },
+        {
+            "id": "41",
+            "name": "Tandoori Chicken",
+            "price": 1550
+        },
+        {
+            "id": "146",
+            "name": "Mixed Vegetable Jalfrezi",
+            "price": 1350
+        },
+        {
+            "id": "181",
+            "name": "Keema Nan oder Pashawari Nan",
+            "price": 490
+        }
+    ]
+}
