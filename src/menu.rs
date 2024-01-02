@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct MenuItem {
     id: String,
     name: String,
-    price: usize,
+    price: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -18,16 +18,31 @@ pub mod filters {
 
     use crate::filters::{json_body, with_db};
 
-    use super::Menu;
+    use super::{Menu, MenuItem};
 
     pub fn all(
         pool: &SqlitePool,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        update_menu(pool)
-        // todos_list(db.clone())
-        //     .or(todos_create(db.clone()))
-        //     .or(todos_update(db.clone()))
-        //     .or(todos_delete(db))
+        update_menu(pool).or(get_menu(pool))
+    }
+
+    fn get_menu(
+        pool: &SqlitePool,
+    ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+        warp::path!("menu" / String)
+            .and(warp::get())
+            .and(with_db(pool.clone()))
+            .and_then(|name: String, pool: SqlitePool| async move {
+                let mut conn = pool.acquire().await.unwrap();
+                let items = sqlx::query_as::<_, MenuItem>(
+                    "SELECT id, name, price FROM MENU_ITEM WHERE menu = ?1",
+                )
+                .bind(name.clone())
+                .fetch_all(&mut *conn)
+                .await
+                .unwrap();
+                Ok::<warp::reply::Json, warp::Rejection>(warp::reply::json(&items))
+            })
     }
 
     fn update_menu(
@@ -48,28 +63,8 @@ pub mod filters {
                         .execute(&mut *conn)
                         .await
                         .unwrap();
-                    // statement.bind_iter::<_, (_, Value)>([
-                    //     (":menu", name.clone().into()),
-                    //     (":id", it.id.to_owned().into()),
-                    //     (":name", it.name.to_owned().into()),
-                    //     (":price", ( it.price.to_owned() as i64 ).into()),
-                    // ]).unwrap();
                 }
                 Ok::<StatusCode, warp::Rejection>(StatusCode::OK)
-                // match state.menus.write() {
-                //     Ok(mut locked_menus) => {
-                //
-                //             Ok::<StatusCode, warp::Rejection>(StatusCode::OK)
-                //         // if locked_menus.contains_key(&name) {
-                //         //     locked_menus.insert(name, menu);
-                //         //     Ok::<StatusCode, warp::Rejection>(StatusCode::OK)
-                //         // } else {
-                //         //     locked_menus.insert(name, menu);
-                //         //     Ok(StatusCode::CREATED)
-                //         // }
-                //     }
-                //     Err(_) => Ok(StatusCode::SERVICE_UNAVAILABLE),
-                // }
             })
     }
 }
