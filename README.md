@@ -2,6 +2,20 @@
 
 > Chicken Masala legende Wollmilchsau
 
+## dev
+
+You need to create an empty index dir before starting.
+
+Then load the sangam menu:
+```bash
+curl -X PUT --data "@sangam.json" -H 'Content-Type: application/json' -v http://localhost:8080/menu/sangam
+```
+
+Then try the fuzzy search:
+```bash
+curl http://localhost:8080/menu/sangam\?search_string\=vindaloo
+```
+
 ## TODO
 
 - implement status command in matrix

@@ -1,7 +1,9 @@
-result
 secret.txt
+
+# data
 db.sqlite
+index
 
-# Added by cargo
-
+# compiled
 /target
+result
