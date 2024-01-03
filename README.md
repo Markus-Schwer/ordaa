@@ -2,6 +2,15 @@
 
 > Chicken Masala legende Wollmilchsau
 
+## order state flow
+
+open -> users can add, modify and delete orders (optional Bestellschluss)
+finalized -> order cannot be changed anymore and text is generated, status can
+        be queried, total price is available
+ordered -> order placed at restaurant (optional ETA)
+delivered -> paypal me link of user who paid is posted
+
+
 ## dev
 
 You need to create an empty index dir before starting.

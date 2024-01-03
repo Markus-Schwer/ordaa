@@ -16,19 +16,18 @@ pub struct Menu {
 pub mod filters {
     use serde::{Deserialize, Serialize};
     use sqlx::SqlitePool;
-    use tantivy::collector::TopDocs;
     use warp::{http::StatusCode, Filter};
 
     use crate::{
         filters::{json_body, with_db, with_searcher_ctx},
-        SearchContext,
+        search::SearchContextReader,
     };
 
     use super::{Menu, MenuItem};
 
     pub fn all(
         pool: &SqlitePool,
-        ctx: SearchContext,
+        ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         update_menu(pool, ctx.clone()).or(get_menu(pool, ctx.clone()))
     }
@@ -40,7 +39,7 @@ pub mod filters {
 
     fn get_menu(
         pool: &SqlitePool,
-        ctx: SearchContext,
+        ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         let opt_query = warp::query::<FuzzyParam>()
             .map(Some)
@@ -54,24 +53,23 @@ pub mod filters {
                 |name: String,
                  query: Option<FuzzyParam>,
                  pool: SqlitePool,
-                 ctx: SearchContext| async move {
-                        let mut conn = pool.acquire().await.unwrap();
+                 ctx: SearchContextReader| async move {
+                    let mut conn = pool.acquire().await.unwrap();
                     let items = if let Some(param) = query {
-                        let query = ctx.parser.parse_query_lenient(param.search_string.as_str());
-                        let searcher = ctx.reader.searcher();
-                    let results = searcher.search(&query.0, &TopDocs::with_limit(10)).unwrap();
-                    let mut matches: Vec<MenuItem> = Vec::new();
-                    for (_, doc_addr) in results {
-                        let retrieved_doc = searcher.doc(doc_addr).unwrap();
-                        let id = retrieved_doc.get_first(ctx.id_field).unwrap().as_text().unwrap();
-                        matches.push(sqlx::query_as::<_, MenuItem>(
-                            "SELECT id, name, price FROM MENU_ITEM WHERE id = ?1",
-                        )
-                        .bind(id)
-                        .fetch_one(&mut *conn)
-                        .await.unwrap());
-                    }
-                    matches
+                        let ids = ctx.fuzz_menu_item_ids(param.search_string.as_str());
+                        let mut matches: Vec<MenuItem> = Vec::new();
+                        for id in ids {
+                            matches.push(
+                                sqlx::query_as::<_, MenuItem>(
+                                    "SELECT id, name, price FROM MENU_ITEM WHERE id = ?1",
+                                )
+                                .bind(id)
+                                .fetch_one(&mut *conn)
+                                .await
+                                .unwrap(),
+                            );
+                        }
+                        matches
                     } else {
                         sqlx::query_as::<_, MenuItem>(
                             "SELECT id, name, price FROM MENU_ITEM WHERE menu = ?1",
@@ -88,7 +86,7 @@ pub mod filters {
 
     fn update_menu(
         pool: &SqlitePool,
-        ctx: SearchContext,
+        ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path!("menu" / String)
             .and(warp::put())
@@ -96,7 +94,7 @@ pub mod filters {
             .and(with_db(pool.clone()))
             .and(with_searcher_ctx(ctx))
             .and_then(
-                |name: String, menu: Menu, pool: SqlitePool, ctx: SearchContext| async move {
+                |name: String, menu: Menu, pool: SqlitePool, ctx: SearchContextReader| async move {
                     ctx.index_write_sender.send(menu.clone()).unwrap();
                     let mut conn = pool.acquire().await.unwrap();
                     for it in menu.items {
