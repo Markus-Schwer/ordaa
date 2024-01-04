@@ -18,12 +18,10 @@ pub struct AdminTemplate;
 
 pub mod filters {
     use askama::Template;
-    use sqlx::SqlitePool;
     use warp::{Filter, reply::html};
     use super::{IndexTemplate, AdminTemplate, OrdersTemplate, OrderTemplate};
 
     pub fn all(
-        _pool: &SqlitePool,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         index().or(static_files()).or(orders()).or(order()).or(admin())
     }

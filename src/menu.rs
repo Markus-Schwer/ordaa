@@ -15,21 +15,20 @@ pub struct Menu {
 
 pub mod filters {
     use serde::{Deserialize, Serialize};
-    use sqlx::SqlitePool;
     use warp::{http::StatusCode, Filter};
 
     use crate::{
         filters::{json_body, with_db, with_searcher_ctx},
-        search::SearchContextReader,
+        search::SearchContextReader, db::Db,
     };
 
-    use super::{Menu, MenuItem};
+    use super::Menu;
 
     pub fn all(
-        pool: &SqlitePool,
+        db: Db,
         ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        update_menu(pool, ctx.clone()).or(get_menu(pool, ctx.clone()))
+        update_menu(db.clone(), ctx.clone()).or(get_menu(db.clone(), ctx.clone()))
     }
 
     #[derive(Deserialize, Serialize, Debug)]
@@ -38,7 +37,7 @@ pub mod filters {
     }
 
     fn get_menu(
-        pool: &SqlitePool,
+        db: Db,
         ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         let opt_query = warp::query::<FuzzyParam>()
@@ -47,37 +46,18 @@ pub mod filters {
         warp::path!("menu" / String)
             .and(warp::get())
             .and(opt_query)
-            .and(with_db(pool.clone()))
+            .and(with_db(db.clone()))
             .and(with_searcher_ctx(ctx))
             .and_then(
                 |name: String,
                  query: Option<FuzzyParam>,
-                 pool: SqlitePool,
+                 db: Db,
                  ctx: SearchContextReader| async move {
-                    let mut conn = pool.acquire().await.unwrap();
                     let items = if let Some(param) = query {
                         let ids = ctx.fuzz_menu_item_ids(param.search_string.as_str());
-                        let mut matches: Vec<MenuItem> = Vec::new();
-                        for id in ids {
-                            matches.push(
-                                sqlx::query_as::<_, MenuItem>(
-                                    "SELECT id, name, price FROM MENU_ITEM WHERE id = ?1",
-                                )
-                                .bind(id)
-                                .fetch_one(&mut *conn)
-                                .await
-                                .unwrap(),
-                            );
-                        }
-                        matches
+                        db.get_items_by_id(Some(ids), name).await
                     } else {
-                        sqlx::query_as::<_, MenuItem>(
-                            "SELECT id, name, price FROM MENU_ITEM WHERE menu = ?1",
-                        )
-                        .bind(name.clone())
-                        .fetch_all(&mut *conn)
-                        .await
-                        .unwrap()
+                        db.get_items_by_id(None, name).await
                     };
                     Ok::<warp::reply::Json, warp::Rejection>(warp::reply::json(&items))
                 },
@@ -85,28 +65,18 @@ pub mod filters {
     }
 
     fn update_menu(
-        pool: &SqlitePool,
+        db: Db,
         ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path!("menu" / String)
             .and(warp::put())
             .and(json_body())
-            .and(with_db(pool.clone()))
+            .and(with_db(db.clone()))
             .and(with_searcher_ctx(ctx))
             .and_then(
-                |name: String, menu: Menu, pool: SqlitePool, ctx: SearchContextReader| async move {
+                |_: String, menu: Menu, db: Db, ctx: SearchContextReader| async move {
                     ctx.index_write_sender.send(menu.clone()).unwrap();
-                    let mut conn = pool.acquire().await.unwrap();
-                    for it in menu.items {
-                        sqlx::query("INSERT INTO MENU_ITEM VALUES (?1, ?2, ?3, ?4)")
-                            .bind(name.clone())
-                            .bind(it.id)
-                            .bind(it.name)
-                            .bind(it.price as i64)
-                            .execute(&mut *conn)
-                            .await
-                            .unwrap();
-                    }
+                    db.insert_menu(menu).await;
                     Ok::<StatusCode, warp::Rejection>(StatusCode::OK)
                 },
             )
