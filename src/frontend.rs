@@ -16,14 +16,22 @@ pub struct OrderTemplate;
 #[template(path = "admin.html")]
 pub struct AdminTemplate;
 
+#[derive(Template)]
+#[template(path = "menus.html")]
+pub struct MenusTemplate;
+
+#[derive(Template)]
+#[template(path = "menu.html")]
+pub struct MenuTemplate;
+
 pub mod filters {
     use askama::Template;
     use warp::{Filter, reply::html};
-    use super::{IndexTemplate, AdminTemplate, OrdersTemplate, OrderTemplate};
+    use super::{IndexTemplate, AdminTemplate, OrdersTemplate, OrderTemplate, MenusTemplate, MenuTemplate};
 
     pub fn all(
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        index().or(static_files()).or(orders()).or(order()).or(admin())
+        index().or(static_files()).or(orders()).or(order()).or(menus()).or(menu()).or(admin())
     }
 
     fn static_files() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
@@ -59,6 +67,22 @@ pub mod filters {
             .and(warp::get())
             .and_then(|| async move {
                 Ok::<warp::reply::Html<String>, warp::Rejection>(html(AdminTemplate {}.render().unwrap()))
+            })
+    }
+
+    fn menus() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+        warp::path!("menus")
+            .and(warp::get())
+            .and_then(|| async move {
+                Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenusTemplate {}.render().unwrap()))
+            })
+    }
+
+    fn menu() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+        warp::path!("menu")
+            .and(warp::get())
+            .and_then(|| async move {
+                Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenuTemplate {}.render().unwrap()))
             })
     }
 }

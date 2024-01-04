@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Menus{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block content %}
+  <div class="container my-5">
+    <h2>Menüs</h2>
+
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr onclick="location.href='menu'" style="cursor:pointer;">
+            <th scope="row">1</th>
+            <td>Sangam</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    document.querySelector('.nav-item a[href="/menus"]').classList.add("active");
+  </script>
+{% endblock %}
