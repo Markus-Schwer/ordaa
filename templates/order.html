@@ -24,35 +24,55 @@
         <thead>
           <tr>
             <th scope="col">#</th>
-            <th>User</th>
+            <th>Benutzer</th>
             <th>Artikelnummer</th>
             <th>Name</th>
-            <th>Price</th>
+            <th>Preis</th>
+            <th>Gesamtpreis</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <th scope="row">1</th>
-            <td>@codingmarco:famhahn.xyz</td>
-            <td>43</td>
-            <td>Achari Chicken Tikka</td>
-            <td>15.90€</td>
+          <tr class="table-group-divider">
+            <td></td>
+            <th scope="row" colspan="4">@codingmarco:famhahn.xyz</th>
+            <td>15,90€</td>
           </tr>
           <tr>
-            <th scope="row">2</th>
-            <td>@lubro_:matrix.org</td>
-            <td>42</td>
-            <td>Chicken Tikka</td>
-            <td>15.90€</td>
+            <tbody>
+              <tr>
+                <th scope="row" colspan="2">1</th>
+                <td>43</td>
+                <td>Achari Chicken Tikka</td>
+                <td colspan="2">15.90€</td>
+              </tr>
+            </tbody>
+          </tr>
+          <tr class="table-group-divider">
+            <td></td>
+            <th scope="row" colspan="4">@lubro_:matrix.org</th>
+            <td>22,80€</td>
+          </tr>
+          <tr>
+            <tbody>
+              <tr>
+                <th scope="row" colspan="2">2</th>
+                <td>42</td>
+                <td>Chicken Tikka</td>
+                <td colspan="2">15.90€</td>
+              </tr>
+              <tr>
+                <th scope="row" colspan="2">3</th>
+                <td>12</td>
+                <td>Murg Kathi Roll</td>
+                <td colspan="2">6.90€</td>
+              </tr>
+            </tbody>
           </tr>
         </tbody>
-        <tfoot>
+        <tfoot class="table-group-divider">
           <tr>
-            <th scope="row">Anzahl: 2</th>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>31.80€</td>
+            <th scope="row" colspan="5">Anzahl: 3</th>
+            <td>38.70€</td>
           </tr>
         </tfoot>
       </table>
