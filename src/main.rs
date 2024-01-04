@@ -1,6 +1,14 @@
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use warp::Filter;
 
 mod menu;
+mod frontend;
+
+pub fn routes(
+    pool: &SqlitePool,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    menu::filters::all(pool).or(frontend::filters::all(pool))
+}
 
 #[tokio::main]
 async fn main() {
@@ -17,7 +25,7 @@ async fn main() {
     .await
     .unwrap();
 
-    warp::serve(menu::filters::all(&pool))
+    warp::serve(routes(&pool))
         .run(([127, 0, 0, 1], 8080))
         .await;
 }

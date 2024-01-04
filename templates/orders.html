@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Bestellungen{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block content %}
+  <div class="container my-5">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Restaurant</th>
+            <th scope="col">Anzahl Bestellungen</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr onclick="location.href='order'" style="cursor:pointer;">
+            <th scope="row">1</th>
+            <td>Sangam</td>
+            <td>17</td>
+            <td>Offen  Bestellschluss: 19:00 Uhr</td>
+          </tr>
+          <tr onclick="location.href='order'" style="cursor:pointer;">
+            <th scope="row">2</th>
+            <td>Sangam</td>
+            <td>2</td>
+            <td>Finalisiert  ETA: 20:00 Uhr</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    document.querySelector('.nav-item a[href="/orders"]').classList.add("active");
+  </script>
+{% endblock %}
+
