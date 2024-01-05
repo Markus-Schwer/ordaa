@@ -18,10 +18,12 @@
           </tr>
         </thead>
         <tbody>
+        {% for menu in menus %}
           <tr onclick="location.href='menu'" style="cursor:pointer;">
-            <th scope="row">1</th>
-            <td>Sangam</td>
+            <th scope="row">{{loop.index}}</th>
+            <td>{{menu.name}}</td>
           </tr>
+        {% endfor %}
         </tbody>
       </table>
     </div>

@@ -1,5 +1,7 @@
 use askama::Template;
 
+use crate::menu::Menu;
+
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct IndexTemplate;
@@ -18,16 +20,30 @@ pub struct AdminTemplate;
 
 #[derive(Template)]
 #[template(path = "menus.html")]
-pub struct MenusTemplate;
+pub struct MenusTemplate {
+    pub menus: Vec<Menu>
+}
+
+pub struct Item {
+    pub id: String,
+    pub name: String,
+    pub price: String,
+}
 
 #[derive(Template)]
 #[template(path = "menu.html")]
-pub struct MenuTemplate;
+pub struct MenuTemplate {
+    pub name: String,
+    pub items: Vec<Item>
+}
 
 pub mod filters {
     use askama::Template;
     use warp::{Filter, reply::html};
-    use super::{IndexTemplate, AdminTemplate, OrdersTemplate, OrderTemplate, MenusTemplate, MenuTemplate};
+
+    use crate::menu::Menu;
+
+    use super::{IndexTemplate, AdminTemplate, OrdersTemplate, OrderTemplate, MenusTemplate, MenuTemplate, Item};
 
     pub fn all(
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
@@ -74,7 +90,9 @@ pub mod filters {
         warp::path!("menus")
             .and(warp::get())
             .and_then(|| async move {
-                Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenusTemplate {}.render().unwrap()))
+                Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenusTemplate {
+                    menus: vec![Menu { name: "Sangam".into(), items: vec![]}]
+                }.render().unwrap()))
             })
     }
 
@@ -82,7 +100,12 @@ pub mod filters {
         warp::path!("menu")
             .and(warp::get())
             .and_then(|| async move {
-                Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenuTemplate {}.render().unwrap()))
+                Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenuTemplate {
+                    name: "Sangam".into(),
+                    items: vec![
+                        Item { id: "42".into(), name: "Chicken Tikka".into(), price: format!("{},{}€", 15, 19) }
+                    ]
+                }.render().unwrap()))
             })
     }
 }
