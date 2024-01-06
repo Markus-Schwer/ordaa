@@ -20,13 +20,7 @@ impl Db {
     }
 
     pub async fn init_schema(&self) {
-        let mut conn = self.get_conn().await;
-        sqlx::query(
-            "CREATE TABLE IF NOT EXISTS MENU_ITEM (menu TEXT, id TEXT, name TEXT, price INTEGER);",
-        )
-        .execute(&mut *conn)
-        .await
-        .unwrap();
+        sqlx::migrate!().run(&self.pool).await.unwrap();
     }
 
     pub async fn get_items_by_id(&self, maybe_ids: Option<Vec<String>>, menu: String) -> Vec<MenuItem> {

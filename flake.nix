@@ -24,6 +24,7 @@
           openssl
           pkg-config
           sqlite
+          sqlx-cli
         ];
       };
       formatter.${system} = treefmtEval.config.build.wrapper;
