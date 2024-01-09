@@ -23,32 +23,46 @@ impl Db {
         sqlx::migrate!().run(&self.pool).await.unwrap();
     }
 
-    pub async fn get_items_by_id(&self, maybe_ids: Option<Vec<String>>, menu: String) -> Vec<MenuItem> {
+    pub async fn all_items(&self, menu: String) -> Vec<MenuItem> {
         let mut conn = self.get_conn().await;
-        let mut matches: Vec<MenuItem> = Vec::new();
-        if let Some(ids) = maybe_ids {
-            for id in ids {
-                matches.push(
-                    sqlx::query_as::<_, MenuItem>(
-                        "SELECT id, name, price FROM MENU_ITEM WHERE id = ?1 AND menu = ?2",
-                    )
-                    .bind(id)
-                    .bind(menu.clone())
-                    .fetch_one(&mut *conn)
-                    .await
-                    .unwrap(),
-                );
-            }
-        } else {
-            matches = sqlx::query_as::<_, MenuItem>(
-                "SELECT id, name, price FROM MENU_ITEM WHERE menu = ?1",
+        sqlx::query_as!(
+            MenuItem,
+            "SELECT * FROM MENU_ITEM WHERE menu = ?1",
+            menu
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .unwrap()
+    }
+
+    pub async fn get_items_by_id(&self, ids: Vec<String>, menu: String) -> Vec<MenuItem> {
+        let mut conn = self.get_conn().await;
+        let mut items = Vec::<MenuItem>::new();
+        for id in ids {
+            items.push(
+                sqlx::query_as!(MenuItem,
+                                "SELECT * FROM menu_item WHERE id = ?1 AND menu = ?2",
+                                id,
+                                menu
+                               )
+                .fetch_one(&mut *conn)
+                .await
+                .unwrap()
+            );
+        }
+        items
+    }
+
+    pub async fn get_item_by_id(&self, id: String, menu: String) -> MenuItem {
+        let mut conn = self.get_conn().await;
+        sqlx::query_as!(MenuItem,
+                "SELECT * FROM menu_item WHERE id = ?1 AND menu = ?2",
+                id,
+                menu
             )
-            .bind(menu)
-            .fetch_all(&mut *conn)
+            .fetch_one(&mut *conn)
             .await
             .unwrap()
-        }
-        matches
     }
 
     pub async fn insert_menu(&self, menu: Menu) {

@@ -1,15 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, sqlx::Type, Clone)]
 pub struct MenuItem {
     pub id: String,
     pub name: String,
     pub price: i64,
+    pub menu: String
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
 pub struct Menu {
     pub name: String,
+    #[sqlx(skip)]
     pub items: Vec<MenuItem>,
 }
 
@@ -55,9 +57,9 @@ pub mod filters {
                  ctx: SearchContextReader| async move {
                     let items = if let Some(param) = query {
                         let ids = ctx.fuzz_menu_item_ids(param.search_string.as_str());
-                        db.get_items_by_id(Some(ids), name).await
+                        db.get_items_by_id(ids, name).await
                     } else {
-                        db.get_items_by_id(None, name).await
+                        db.all_items(name).await
                     };
                     Ok::<warp::reply::Json, warp::Rejection>(warp::reply::json(&items))
                 },

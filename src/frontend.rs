@@ -41,13 +41,15 @@ pub mod filters {
     use askama::Template;
     use warp::{Filter, reply::html};
 
-    use crate::menu::Menu;
+    use crate::{menu::Menu, db::Db, search::SearchContextReader, filters::{with_db, with_searcher_ctx}};
 
     use super::{IndexTemplate, AdminTemplate, OrdersTemplate, OrderTemplate, MenusTemplate, MenuTemplate, Item};
 
     pub fn all(
+        db: Db,
+        ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        index().or(static_files()).or(orders()).or(order()).or(menus()).or(menu()).or(admin())
+        index().or(static_files()).or(orders()).or(order()).or(menus(db.clone(), ctx.clone())).or(menu(db.clone(), ctx.clone())).or(admin())
     }
 
     fn static_files() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
@@ -86,20 +88,30 @@ pub mod filters {
             })
     }
 
-    fn menus() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    fn menus(
+        db: Db,
+        ctx: SearchContextReader,
+    ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path!("menus")
             .and(warp::get())
-            .and_then(|| async move {
+            .and(with_db(db.clone()))
+            .and(with_searcher_ctx(ctx))
+            .and_then(|db: Db, ctx: SearchContextReader| async move {
                 Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenusTemplate {
                     menus: vec![Menu { name: "Sangam".into(), items: vec![]}]
                 }.render().unwrap()))
             })
     }
 
-    fn menu() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    fn menu(
+        db: Db,
+        ctx: SearchContextReader,
+    ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path!("menu")
             .and(warp::get())
-            .and_then(|| async move {
+            .and(with_db(db.clone()))
+            .and(with_searcher_ctx(ctx))
+            .and_then(|db: Db, ctx: SearchContextReader| async move {
                 Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenuTemplate {
                     name: "Sangam".into(),
                     items: vec![

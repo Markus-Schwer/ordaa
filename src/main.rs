@@ -11,7 +11,7 @@ pub fn routes(
     db: Db,
     ctx: SearchContextReader,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    menu::filters::all(db, ctx).or(frontend::filters::all())
+    menu::filters::all(db.clone(), ctx.clone()).or(frontend::filters::all(db.clone(), ctx.clone()))
 }
 
 #[tokio::main]
