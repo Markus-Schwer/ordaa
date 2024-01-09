@@ -1,6 +1,6 @@
 use sqlx::{sqlite::SqliteConnectOptions, pool::PoolConnection, Sqlite, SqlitePool, Pool};
 
-use crate::menu::{MenuItem, Menu};
+use crate::{menu::{MenuItem, Menu}, orders::state::CreateOrderDTO};
 
 #[derive(Clone)]
 pub struct Db {
@@ -77,5 +77,18 @@ impl Db {
                 .await
                 .unwrap();
         }
+    }
+
+    pub async fn create_order(&self, dto: CreateOrderDTO) {
+        let mut conn = self.get_conn().await;
+        sqlx::query("INSERT INTO ORDERS VALUES (?1, ?2, ?3, ?4)")
+            .bind(menu.name.clone().to_lowercase())
+            .bind(it.id)
+            .bind(it.name)
+            .bind(it.price as i64)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+
     }
 }

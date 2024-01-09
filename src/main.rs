@@ -6,6 +6,8 @@ mod menu;
 mod search;
 mod frontend;
 mod db;
+mod users;
+mod orders;
 
 pub fn routes(
     db: Db,

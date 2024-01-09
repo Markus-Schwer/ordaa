@@ -17,6 +17,7 @@
     in
     {
       devShells.${system}.default = pkgs.mkShell {
+        DATABASE_URL = "sqlite:db.sqlite";
         packages = with pkgs;[
           rustc
           cargo
