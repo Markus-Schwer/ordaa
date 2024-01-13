@@ -8,6 +8,9 @@ mod frontend;
 mod db;
 mod users;
 mod orders;
+mod schema;
+mod models;
+mod dto;
 
 pub fn routes(
     db: Db,
@@ -21,8 +24,8 @@ async fn main() {
     let (search_writer, search_reader) = init_search_index();
     let index_writer_handle = search_writer.start_index_writer(search_reader.clone());
 
-    let db = Db::new().await;
-    db.init_schema().await;
+    let db = Db::new();
+    db.init_schema();
     let server_handle = warp::serve(routes(db, search_reader)).run(([127, 0, 0, 1], 8080));
     let (_, _) = tokio::join!(server_handle, index_writer_handle);
 }

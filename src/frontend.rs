@@ -1,6 +1,6 @@
 use askama::Template;
 
-use crate::menu::Menu;
+use crate::dto::MenuDto;
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -21,7 +21,7 @@ pub struct AdminTemplate;
 #[derive(Template)]
 #[template(path = "menus.html")]
 pub struct MenusTemplate {
-    pub menus: Vec<Menu>
+    pub menus: Vec<MenuDto>
 }
 
 pub struct Item {
@@ -33,15 +33,14 @@ pub struct Item {
 #[derive(Template)]
 #[template(path = "menu.html")]
 pub struct MenuTemplate {
-    pub name: String,
-    pub items: Vec<Item>
+    pub menu: MenuDto,
 }
 
 pub mod filters {
     use askama::Template;
     use warp::{Filter, reply::html};
 
-    use crate::{menu::Menu, db::Db, search::SearchContextReader, filters::{with_db, with_searcher_ctx}};
+    use crate::{db::Db, search::SearchContextReader, filters::{with_db, with_searcher_ctx}, dto::MenuDto};
 
     use super::{IndexTemplate, AdminTemplate, OrdersTemplate, OrderTemplate, MenusTemplate, MenuTemplate, Item};
 
@@ -96,9 +95,9 @@ pub mod filters {
             .and(warp::get())
             .and(with_db(db.clone()))
             .and(with_searcher_ctx(ctx))
-            .and_then(|db: Db, ctx: SearchContextReader| async move {
+            .and_then(|db: Db, _: SearchContextReader| async move {
                 Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenusTemplate {
-                    menus: vec![Menu { name: "Sangam".into(), items: vec![]}]
+                    menus: db.all_menus()
                 }.render().unwrap()))
             })
     }
@@ -107,16 +106,14 @@ pub mod filters {
         db: Db,
         ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        warp::path!("menu")
+        warp::path!("menu" / String)
             .and(warp::get())
             .and(with_db(db.clone()))
             .and(with_searcher_ctx(ctx))
-            .and_then(|db: Db, ctx: SearchContextReader| async move {
+            .and_then(|path_id: String, db: Db, _: SearchContextReader| async move {
+                let id = path_id.parse::<i32>().unwrap();
                 Ok::<warp::reply::Html<String>, warp::Rejection>(html(MenuTemplate {
-                    name: "Sangam".into(),
-                    items: vec![
-                        Item { id: "42".into(), name: "Chicken Tikka".into(), price: format!("{},{}€", 15, 19) }
-                    ]
+                    menu: db.get_menu_by_id(id)
                 }.render().unwrap()))
             })
     }

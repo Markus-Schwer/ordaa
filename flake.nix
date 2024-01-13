@@ -17,7 +17,7 @@
     in
     {
       devShells.${system}.default = pkgs.mkShell {
-        DATABASE_URL = "sqlite:db.sqlite";
+        DATABASE_URL = "db.sqlite";
         packages = with pkgs;[
           rustc
           cargo
@@ -25,7 +25,7 @@
           openssl
           pkg-config
           sqlite
-          sqlx-cli
+          diesel-cli
         ];
       };
       formatter.${system} = treefmtEval.config.build.wrapper;

@@ -15,13 +15,22 @@
           <tr>
             <th scope="col">#</th>
             <th scope="col">Name</th>
+            <th scope="col">Url</th>
+            <th scope="col">Anzahl Artikel</th>
           </tr>
         </thead>
         <tbody>
         {% for menu in menus %}
-          <tr onclick="location.href='menu'" style="cursor:pointer;">
-            <th scope="row">{{loop.index}}</th>
+          <tr onclick="location.href='menu/{{menu.id}}'" style="cursor:pointer;">
+            <th scope="row">{{menu.id}}</th>
             <td>{{menu.name}}</td>
+            {% match menu.url %}
+              {% when Some with (url) %}
+                <td>{{url}}</td>
+              {% when None %}
+                <td></td>
+            {% endmatch %}
+            <td>{{menu.items.len()}}</td>
           </tr>
         {% endfor %}
         </tbody>

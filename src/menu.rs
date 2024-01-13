@@ -1,18 +1,17 @@
-use serde::{Deserialize, Serialize};
+use crate::dto::MenuItemDto;
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, sqlx::Type, Clone)]
-pub struct MenuItem {
-    pub id: String,
+pub struct Menu {
+    pub id: i32,
     pub name: String,
-    pub price: i64,
-    pub menu: String
+    pub url: Option<String>,
+    pub items: Vec<MenuItemDto>
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
-pub struct Menu {
+pub struct MenuItem {
+    pub id: i32,
+    pub short_name: String,
     pub name: String,
-    #[sqlx(skip)]
-    pub items: Vec<MenuItem>,
+    pub price: i32,
 }
 
 pub mod filters {
@@ -21,10 +20,8 @@ pub mod filters {
 
     use crate::{
         filters::{json_body, with_db, with_searcher_ctx},
-        search::SearchContextReader, db::Db,
+        search::SearchContextReader, db::Db, dto::NewMenuDto,
     };
-
-    use super::Menu;
 
     pub fn all(
         db: Db,
@@ -45,21 +42,21 @@ pub mod filters {
         let opt_query = warp::query::<FuzzyParam>()
             .map(Some)
             .or_else(|_| async { Ok::<(Option<FuzzyParam>,), std::convert::Infallible>((None,)) });
-        warp::path!("menu" / String)
+        warp::path!("api" / "menu" / i32)
             .and(warp::get())
             .and(opt_query)
             .and(with_db(db.clone()))
             .and(with_searcher_ctx(ctx))
             .and_then(
-                |name: String,
+                |id: i32,
                  query: Option<FuzzyParam>,
                  db: Db,
                  ctx: SearchContextReader| async move {
                     let items = if let Some(param) = query {
                         let ids = ctx.fuzz_menu_item_ids(param.search_string.as_str());
-                        db.get_items_by_id(ids, name).await
+                        db.get_items_by_id(ids, id)
                     } else {
-                        db.all_items(name).await
+                        db.all_items(id)
                     };
                     Ok::<warp::reply::Json, warp::Rejection>(warp::reply::json(&items))
                 },
@@ -70,15 +67,15 @@ pub mod filters {
         db: Db,
         ctx: SearchContextReader,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        warp::path!("menu" / String)
+        warp::path!("api" / "menu" / String)
             .and(warp::put())
             .and(json_body())
             .and(with_db(db.clone()))
             .and(with_searcher_ctx(ctx))
             .and_then(
-                |_: String, menu: Menu, db: Db, ctx: SearchContextReader| async move {
-                    ctx.index_write_sender.send(menu.clone()).unwrap();
-                    db.insert_menu(menu).await;
+                |_: String, new_menu: NewMenuDto, db: Db, ctx: SearchContextReader| async move {
+                    let menu = db.insert_menu(new_menu);
+                    ctx.index_write_sender.send(menu).unwrap();
                     Ok::<StatusCode, warp::Rejection>(StatusCode::OK)
                 },
             )

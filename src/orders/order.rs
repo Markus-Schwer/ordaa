@@ -1,15 +1,11 @@
-use crate::{users::User, menu::MenuItem};
-
-use super::state::State;
-
-pub struct Order {
+pub struct Order<'a> {
     // scoped to orders
     id: i64,
     // time when the order will automatically finalized
     order_deadline: Option<chrono::DateTime<chrono::Local>>,
     // estimated eta
     eta: Option<chrono::DateTime<chrono::Local>>,
-    items: Vec<OrderItem>,
+    items: Vec<OrderItem<'a>>,
     // person who is responisble for the order
     initiator: User,
     // person who paid for the order
@@ -17,14 +13,18 @@ pub struct Order {
     state: State
 }
 
-pub struct OrderItem {
+pub struct OrderItem<'a> {
     id: i64,
     user: User,
-    item: MenuItem,
+    item: &'a MenuItem,
     paid: bool
 }
 
-impl Order {
+use crate::{users::User, menu::MenuItem};
+
+use super::state::State;
+
+impl Order<'_> {
     // pub fn init(dto: CreateOrderDTO, id: i64) -> Self {
     //     Order { 
     //         id,
@@ -37,13 +37,13 @@ impl Order {
     //     }
     // }
 
-    pub fn add_item(&mut self, it: OrderItem) -> Result<(), String> {
-        if !matches!(self.state, State::CollectingOrderItems) {
-            return Err(format!("cannot add items to order in state {}", self.state));
-        }
-        self.items.push(it);
-        Ok(())
-    }
+    // pub fn add_item(&mut self, it: OrderItem) -> Result<(), String> {
+    //     if !matches!(self.state, State::CollectingOrderItems) {
+    //         return Err(format!("cannot add items to order in state {}", self.state));
+    //     }
+    //     self.items.push(it);
+    //     Ok(())
+    // }
 
     pub fn remove_item(&mut self, id: i64) -> Result<(), String> {
         if !matches!(self.state, State::CollectingOrderItems) {
