@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::models::{MenuItem, Menu};
+use crate::entity::models::{MenuItem, Menu};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct MenuDto {

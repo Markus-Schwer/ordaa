@@ -7,9 +7,9 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::prelude::*;
 use std::env;
 
-use crate::dto::{MenuItemDto, MenuDto, NewMenuDto};
-use crate::models::{MenuItem, Menu, Order, NewMenu, NewOrder, NewMenuItem};
-use crate::schema::{menus, orders, menu_items};
+use crate::boundary::dto::{MenuItemDto, MenuDto, NewMenuDto};
+use crate::entity::models::{MenuItem, Menu, Order, NewMenu, NewOrder, NewMenuItem};
+use crate::entity::schema::{menus, orders, menu_items};
 
 #[derive(Clone)]
 pub struct Db {

@@ -1,58 +1,32 @@
-use db::Db;
-use search::{init_search_index, SearchContextReader};
-use warp::Filter;
-
-mod menu;
-mod search;
+mod boundary;
+mod service;
+mod entity;
 mod frontend;
-mod db;
-mod users;
-mod orders;
-mod schema;
-mod models;
-mod dto;
 
-pub fn routes(
-    db: Db,
-    ctx: SearchContextReader,
-) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    menu::filters::all(db.clone(), ctx.clone()).or(frontend::filters::all(db.clone(), ctx.clone()))
-}
+use entity::db::Db;
+use entity::search::init_search_index;
+use actix_web::{web, App, HttpServer};
+use service::state::AppState;
 
-#[tokio::main]
-async fn main() {
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
     let (search_writer, search_reader) = init_search_index();
     let index_writer_handle = search_writer.start_index_writer(search_reader.clone());
 
     let db = Db::new();
     db.init_schema();
-    let server_handle = warp::serve(routes(db, search_reader)).run(([127, 0, 0, 1], 8080));
-    let (_, _) = tokio::join!(server_handle, index_writer_handle);
-}
+    let actix_handle = HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(AppState {
+                db: db.clone(),
+                search: search_reader.clone()
+            }))
+            .service(web::scope("/api").configure(boundary::menu::services_menu))
+            .configure(frontend::services_frontend)
+    })
+    .bind(("127.0.0.1", 8080))
+    .unwrap().run();
 
-pub mod filters {
-    use serde::de::DeserializeOwned;
-    use warp::Filter;
-
-    use crate::{search::SearchContextReader, db::Db};
-
-    pub fn with_db(
-        db: Db,
-    ) -> impl Filter<Extract = (Db,), Error = std::convert::Infallible> + Clone {
-        warp::any().map(move || db.clone())
-    }
-
-    pub fn with_searcher_ctx(
-        ctx: SearchContextReader,
-    ) -> impl Filter<Extract = (SearchContextReader,), Error = std::convert::Infallible> + Clone
-    {
-        warp::any().map(move || ctx.clone())
-    }
-
-    pub fn json_body<T: Send + DeserializeOwned>(
-    ) -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone {
-        // When accepting a body, we want a JSON body
-        // (and to reject huge payloads)...
-        warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-    }
+    let (_, _) = tokio::join!(index_writer_handle, actix_handle);
+    Ok(())
 }
