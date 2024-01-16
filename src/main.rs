@@ -21,7 +21,7 @@ async fn main() -> std::io::Result<()> {
                 db: db.clone(),
                 search: search_reader.clone()
             }))
-            .service(web::scope("/api").configure(boundary::menu::services_menu))
+            .service(web::scope("/api").configure(boundary::configure))
             .configure(frontend::services_frontend)
     })
     .bind(("127.0.0.1", 8080))

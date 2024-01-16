@@ -17,3 +17,4 @@ askama_actix = "0.14"
 askama = { version = "0.12", features = ["with-actix-web"] }
 tantivy = "0.21.1"
 chrono = "0.4.31"
+itertools = "0.12.0"

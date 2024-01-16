@@ -50,6 +50,7 @@ diesel::joinable!(menu_items -> menus (menu_id));
 diesel::joinable!(order_items -> menu_items (menu_item_id));
 diesel::joinable!(order_items -> orders (order_id));
 diesel::joinable!(order_items -> users (user));
+diesel::joinable!(orders -> users (initiator));
 
 diesel::allow_tables_to_appear_in_same_query!(
     menu_items,
