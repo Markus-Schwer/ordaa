@@ -1,9 +1,9 @@
 use diesel::prelude::*;
 
-use crate::{dto::{NewMenuDto, NewMenuItemDto}, schema::menu_items::menu_id};
+use crate::boundary::dto::{NewMenuDto, NewMenuItemDto, NewOrderDto};
 
-#[derive(Identifiable, Queryable, Selectable)]
-#[diesel(table_name = crate::schema::menus)]
+#[derive(Identifiable, Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::entity::schema::menus)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Menu {
     pub id: i32,
@@ -11,8 +11,12 @@ pub struct Menu {
     pub url: Option<String>,
 }
 
+impl Menu {
+    pub fn from_dto(id: i32, dto: NewMenuDto) -> Self { Self { id, name: dto.name, url: dto.url } }
+}
+
 #[derive(Insertable)]
-#[diesel(table_name = crate::schema::menus)]
+#[diesel(table_name = crate::entity::schema::menus)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewMenu {
     pub name: String,
@@ -24,7 +28,7 @@ impl NewMenu {
 }
 
 #[derive(Identifiable, Queryable, Selectable, Associations, Clone)]
-#[diesel(table_name = crate::schema::menu_items)]
+#[diesel(table_name = crate::entity::schema::menu_items)]
 #[diesel(belongs_to(Menu))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct MenuItem {
@@ -36,7 +40,7 @@ pub struct MenuItem {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = crate::schema::menu_items)]
+#[diesel(table_name = crate::entity::schema::menu_items)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewMenuItem {
     pub short_name: String,
@@ -49,8 +53,8 @@ impl NewMenuItem {
     pub fn from_dto(dto: NewMenuItemDto, menu: i32) -> Self { Self { short_name: dto.short_name, name: dto.name, menu_id: menu, price: dto.price } }
 }
 
-#[derive(Identifiable, Queryable, Selectable)]
-#[diesel(table_name = crate::schema::users)]
+#[derive(Identifiable, Queryable, Selectable, Clone)]
+#[diesel(table_name = crate::entity::schema::users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
     pub id: i32,
@@ -58,14 +62,14 @@ pub struct User {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = crate::schema::users)]
+#[diesel(table_name = crate::entity::schema::users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewUser {
     pub name: String
 }
 
-#[derive(Identifiable, Queryable, Selectable, Associations)]
-#[diesel(table_name = crate::schema::orders)]
+#[derive(Identifiable, Queryable, Selectable, Associations, Clone)]
+#[diesel(table_name = crate::entity::schema::orders)]
 #[diesel(belongs_to(User, foreign_key = initiator))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Order {
@@ -78,7 +82,7 @@ pub struct Order {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = crate::schema::orders)]
+#[diesel(table_name = crate::entity::schema::orders)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewOrder {
     pub order_deadline: Option<i32>,
@@ -88,8 +92,12 @@ pub struct NewOrder {
     pub state: String,
 }
 
-#[derive(Identifiable, Queryable, Selectable, Associations)]
-#[diesel(table_name = crate::schema::order_items)]
+impl NewOrder {
+    pub fn from_dto(dto: NewOrderDto) -> Self { Self { order_deadline: dto.order_deadline, eta: dto.eta, initiator: dto.initiator, sugar_person: dto.sugar_person, state: dto.state } }
+}
+
+#[derive(Identifiable, Queryable, Selectable, Associations, Clone)]
+#[diesel(table_name = crate::entity::schema::order_items)]
 #[diesel(belongs_to(Order))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct OrderItem {
@@ -101,7 +109,7 @@ pub struct OrderItem {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = crate::schema::order_items)]
+#[diesel(table_name = crate::entity::schema::order_items)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewOrderItem {
     pub menu_item_id: i32,

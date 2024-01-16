@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, future::Future};
 
 use tantivy::{collector::TopDocs, query::QueryParser, schema::*, Index, IndexReader};
 use tokio::{
@@ -6,7 +6,7 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::dto::MenuDto;
+use crate::boundary::dto::MenuDto;
 
 pub struct SearchContextWriter {
     index_write_receiver: UnboundedReceiver<MenuDto>,
@@ -53,26 +53,24 @@ pub fn init_search_index() -> (SearchContextWriter, SearchContextReader) {
 }
 
 impl SearchContextWriter {
-    pub fn start_index_writer(mut self, reader: SearchContextReader) -> JoinHandle<()> {
-        tokio::spawn({
-            let index = self.index.clone();
-            async move {
-                let mut writer = index.writer(500_000_000).unwrap();
-                while let Some(menu_val) = self.index_write_receiver.recv().await {
-                    for it in menu_val.items {
-                        writer
-                            .add_document(tantivy::doc!(
-                                reader.menu_field => menu_val.name.clone(),
-                                reader.id_field => i64::from(it.id),
-                                reader.name_field => it.name,
-                                reader.short_name_field => it.short_name
-                            ))
-                            .unwrap();
-                        writer.commit().unwrap();
-                    }
+    pub fn start_index_writer(mut self, reader: SearchContextReader) -> impl Future<Output=()> {
+        let index = self.index.clone();
+        async move {
+            let mut writer = index.writer(500_000_000).unwrap();
+            while let Some(menu_val) = self.index_write_receiver.recv().await {
+                for it in menu_val.items {
+                    writer
+                        .add_document(tantivy::doc!(
+                            reader.menu_field => menu_val.name.clone(),
+                            reader.id_field => i64::from(it.id),
+                            reader.name_field => it.name,
+                            reader.short_name_field => it.short_name
+                        ))
+                        .unwrap();
+                    writer.commit().unwrap();
                 }
             }
-        })
+        }
     }
 }
 

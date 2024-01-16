@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::models::{MenuItem, Menu};
+use crate::entity::models::{Menu, MenuItem, Order, OrderItem, User};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct MenuDto {
@@ -48,6 +48,10 @@ pub struct UserDto {
     pub name: String
 }
 
+impl UserDto {
+    pub fn from_db(db: User) -> Self { Self { id: db.id, name: db.name } }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct NewUserDto {
     pub name: String
@@ -62,6 +66,12 @@ pub struct OrderDto {
     pub sugar_person: Option<UserDto>,
     pub state: String,
     pub items: Vec<OrderItemDto>
+}
+
+impl OrderDto {
+    pub fn from_db(db: Order, initiator: UserDto, sugar_person: Option<UserDto>, items: Vec<OrderItemDto>) -> Self {
+        Self { id: db.id, order_deadline: db.order_deadline, eta: db.eta, initiator, sugar_person, state: db.state, items }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -79,7 +89,10 @@ pub struct OrderItemDto {
     pub menu_item_id: i32,
     pub user: UserDto,
     pub paid: bool,
-    pub order: OrderDto,
+}
+
+impl OrderItemDto {
+    pub fn from_db(db: OrderItem, user: UserDto) -> Self { Self { id: db.id, menu_item_id: db.menu_item_id, user, paid: db.paid } }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
