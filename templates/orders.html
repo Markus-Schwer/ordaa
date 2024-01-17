@@ -20,18 +20,19 @@
           </tr>
         </thead>
         <tbody>
-          <tr onclick="location.href='order/1'" style="cursor:pointer;">
-            <th scope="row">1</th>
-            <td>Sangam</td>
-            <td>17</td>
-            <td>Offen  Bestellschluss: 19:00 Uhr</td>
+        {% for order in orders %}
+          <tr onclick="location.href='order/{{order.id}}'" style="cursor:pointer;">
+            <th scope="row">{{order.id}}</th>
+            <td></td>
+            <td>{{order.items.len()}}</td>
+            {% match order.eta %}
+              {% when Some with (eta) %}
+                <td>{{order.state}}  Bestellschluss: {{eta}}</td>
+              {% when None %}
+                <td>{{order.state}}</td>
+            {% endmatch %}
           </tr>
-          <tr onclick="location.href='order/1'" style="cursor:pointer;">
-            <th scope="row">2</th>
-            <td>Sangam</td>
-            <td>2</td>
-            <td>Finalisiert  ETA: 20:00 Uhr</td>
-          </tr>
+        {% endfor %}
         </tbody>
       </table>
     </div>

@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-use crate::boundary::dto::{NewMenuDto, NewMenuItemDto, NewOrderDto};
+use crate::boundary::dto::{NewMenuDto, NewMenuItemDto, NewOrderDto, NewOrderItemDto};
 
 #[derive(Identifiable, Queryable, Selectable, Insertable)]
 #[diesel(table_name = crate::entity::schema::menus)]
@@ -114,6 +114,9 @@ pub struct OrderItem {
 pub struct NewOrderItem {
     pub menu_item_id: i32,
     pub user: i32,
-    pub paid: bool,
     pub order_id: i32,
+}
+
+impl NewOrderItem {
+    pub fn from_dto(dto: NewOrderItemDto) -> Self { Self { menu_item_id: dto.menu_item_id, user: dto.user, order_id: dto.order_id } }
 }

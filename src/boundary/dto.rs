@@ -42,7 +42,7 @@ pub struct NewMenuItemDto {
     pub price: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct UserDto {
     pub id: i32,
     pub name: String
@@ -86,19 +86,18 @@ pub struct NewOrderDto {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct OrderItemDto {
     pub id: i32,
-    pub menu_item_id: i32,
+    pub menu_item: MenuItemDto,
     pub user: UserDto,
     pub paid: bool,
 }
 
 impl OrderItemDto {
-    pub fn from_db(db: OrderItem, user: UserDto) -> Self { Self { id: db.id, menu_item_id: db.menu_item_id, user, paid: db.paid } }
+    pub fn from_db(db: OrderItem, user: UserDto, menu_item: MenuItemDto) -> Self { Self { id: db.id, menu_item, user, paid: db.paid } }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct NewOrderItemDto {
     pub menu_item_id: i32,
     pub user: i32,
-    pub paid: bool,
     pub order_id: i32,
 }
