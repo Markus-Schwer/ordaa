@@ -6,16 +6,16 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::boundary::dto::MenuDto;
+use crate::boundary::dto::MenuWithItemsDto;
 
 pub struct SearchContextWriter {
-    index_write_receiver: UnboundedReceiver<MenuDto>,
+    index_write_receiver: UnboundedReceiver<MenuWithItemsDto>,
     index: Index,
 }
 
 #[derive(Clone)]
 pub struct SearchContextReader {
-    pub index_write_sender: UnboundedSender<MenuDto>,
+    pub index_write_sender: UnboundedSender<MenuWithItemsDto>,
     menu_field: Field,
     id_field: Field,
     short_name_field: Field,
@@ -25,7 +25,7 @@ pub struct SearchContextReader {
 }
 
 pub fn init_search_index() -> (SearchContextWriter, SearchContextReader) {
-    let (index_write_sender, index_write_receiver) = unbounded_channel::<MenuDto>();
+    let (index_write_sender, index_write_receiver) = unbounded_channel::<MenuWithItemsDto>();
 
     let mut schema_builder = Schema::builder();
     let id_field = schema_builder.add_i64_field("id", STORED);

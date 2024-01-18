@@ -25,6 +25,7 @@ diesel::table! {
         user -> Integer,
         paid -> Bool,
         order_id -> Integer,
+        price -> Integer,
     }
 }
 
@@ -36,6 +37,7 @@ diesel::table! {
         initiator -> Integer,
         sugar_person -> Nullable<Integer>,
         state -> Text,
+        menu_id -> Integer,
     }
 }
 
@@ -51,6 +53,7 @@ diesel::joinable!(order_items -> menu_items (menu_item_id));
 diesel::joinable!(order_items -> orders (order_id));
 diesel::joinable!(order_items -> users (user));
 diesel::joinable!(orders -> users (initiator));
+diesel::joinable!(orders -> menus (menu_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     menu_items,

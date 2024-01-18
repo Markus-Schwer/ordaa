@@ -6,7 +6,7 @@ use actix_web::{web, Responder, get};
 use actix_files::Files;
 use askama::Template;
 
-use crate::{boundary::dto::{MenuDto, OrderDto, UserDto, OrderItemDto}, service::state::AppState};
+use crate::{boundary::dto::{OrderDto, UserDto, OrderItemDto, MenuWithItemsDto}, service::state::AppState};
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -33,13 +33,13 @@ pub struct AdminTemplate;
 #[derive(Template)]
 #[template(path = "menus.html")]
 pub struct MenusTemplate {
-    pub menus: Vec<MenuDto>
+    pub menus: Vec<MenuWithItemsDto>
 }
 
 #[derive(Template)]
 #[template(path = "menu.html")]
 pub struct MenuTemplate {
-    pub menu: MenuDto,
+    pub menu: MenuWithItemsDto,
 }
 
 pub fn services_frontend(cfg: &mut web::ServiceConfig) {
@@ -77,11 +77,11 @@ async fn get_orders(data: web::Data<AppState>) -> Result<impl Responder, Box<dyn
 async fn get_order(path: web::Path<(i32,)>, data: web::Data<AppState>) -> Result<impl Responder, Box<dyn Error>> {
     data.db.get_conn()?.transaction(|conn| {
         let order = data.db.get_order_by_id(conn, path.0)?;
-        let price_total: i32 = order.items.iter().map(|oi| oi.menu_item.price).sum();
+        let price_total: i32 = order.items.iter().map(|oi| oi.price).sum();
         let grouped_items: Vec<(UserDto, i32, Vec<OrderItemDto>)> = order.items.iter().group_by(|elt: &&OrderItemDto| elt.user.clone()).into_iter()
             .map(|(ge0, group)| {
                 let items: Vec<OrderItemDto> = group.cloned().collect();
-                let group_total = items.iter().map(|oi| oi.menu_item.price).sum();
+                let group_total = items.iter().map(|oi| oi.price).sum();
                 (ge0, group_total, items)
             })
             .collect();

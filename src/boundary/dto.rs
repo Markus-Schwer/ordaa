@@ -7,10 +7,21 @@ pub struct MenuDto {
     pub id: i32,
     pub name: String,
     pub url: Option<String>,
-    pub items: Vec<MenuItemDto>
 }
 
 impl MenuDto {
+    pub fn from_db(menu: Menu) -> Self { Self { id: menu.id, name: menu.name, url: menu.url } }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct MenuWithItemsDto {
+    pub id: i32,
+    pub name: String,
+    pub url: Option<String>,
+    pub items: Vec<MenuItemDto>
+}
+
+impl MenuWithItemsDto {
     pub fn from_db(menu: Menu, items: Vec<MenuItemDto>) -> Self { Self { id: menu.id, name: menu.name, url: menu.url, items } }
 }
 
@@ -65,12 +76,13 @@ pub struct OrderDto {
     pub initiator: UserDto,
     pub sugar_person: Option<UserDto>,
     pub state: String,
+    pub menu: MenuDto,
     pub items: Vec<OrderItemDto>
 }
 
 impl OrderDto {
-    pub fn from_db(db: Order, initiator: UserDto, sugar_person: Option<UserDto>, items: Vec<OrderItemDto>) -> Self {
-        Self { id: db.id, order_deadline: db.order_deadline, eta: db.eta, initiator, sugar_person, state: db.state, items }
+    pub fn from_db(db: Order, initiator: UserDto, sugar_person: Option<UserDto>, menu: MenuDto, items: Vec<OrderItemDto>) -> Self {
+        Self { id: db.id, order_deadline: db.order_deadline, eta: db.eta, initiator, sugar_person, state: db.state, menu, items }
     }
 }
 
@@ -81,6 +93,7 @@ pub struct NewOrderDto {
     pub initiator: i32,
     pub sugar_person: Option<i32>,
     pub state: String,
+    pub menu: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -89,10 +102,11 @@ pub struct OrderItemDto {
     pub menu_item: MenuItemDto,
     pub user: UserDto,
     pub paid: bool,
+    pub price: i32,
 }
 
 impl OrderItemDto {
-    pub fn from_db(db: OrderItem, user: UserDto, menu_item: MenuItemDto) -> Self { Self { id: db.id, menu_item, user, paid: db.paid } }
+    pub fn from_db(db: OrderItem, user: UserDto, menu_item: MenuItemDto) -> Self { Self { id: db.id, menu_item, user, paid: db.paid, price: db.price } }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -2,7 +2,7 @@ use diesel::prelude::*;
 
 use crate::boundary::dto::{NewMenuDto, NewMenuItemDto, NewOrderDto, NewOrderItemDto};
 
-#[derive(Identifiable, Queryable, Selectable, Insertable)]
+#[derive(Identifiable, Queryable, Selectable, Insertable, Clone)]
 #[diesel(table_name = crate::entity::schema::menus)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Menu {
@@ -71,6 +71,7 @@ pub struct NewUser {
 #[derive(Identifiable, Queryable, Selectable, Associations, Clone)]
 #[diesel(table_name = crate::entity::schema::orders)]
 #[diesel(belongs_to(User, foreign_key = initiator))]
+#[diesel(belongs_to(Menu))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Order {
     pub id: i32,
@@ -79,6 +80,7 @@ pub struct Order {
     pub initiator: i32,
     pub sugar_person: Option<i32>,
     pub state: String,
+    pub menu_id: i32,
 }
 
 #[derive(Insertable)]
@@ -90,10 +92,11 @@ pub struct NewOrder {
     pub initiator: i32,
     pub sugar_person: Option<i32>,
     pub state: String,
+    pub menu_id: i32,
 }
 
 impl NewOrder {
-    pub fn from_dto(dto: NewOrderDto) -> Self { Self { order_deadline: dto.order_deadline, eta: dto.eta, initiator: dto.initiator, sugar_person: dto.sugar_person, state: dto.state } }
+    pub fn from_dto(dto: NewOrderDto) -> Self { Self { order_deadline: dto.order_deadline, eta: dto.eta, initiator: dto.initiator, sugar_person: dto.sugar_person, state: dto.state, menu_id: dto.menu } }
 }
 
 #[derive(Identifiable, Queryable, Selectable, Associations, Clone)]
@@ -106,6 +109,7 @@ pub struct OrderItem {
     pub user: i32,
     pub paid: bool,
     pub order_id: i32,
+    pub price: i32,
 }
 
 #[derive(Insertable)]
@@ -115,8 +119,9 @@ pub struct NewOrderItem {
     pub menu_item_id: i32,
     pub user: i32,
     pub order_id: i32,
+    pub price: i32,
 }
 
 impl NewOrderItem {
-    pub fn from_dto(dto: NewOrderItemDto) -> Self { Self { menu_item_id: dto.menu_item_id, user: dto.user, order_id: dto.order_id } }
+    pub fn from_dto(dto: NewOrderItemDto, price: i32) -> Self { Self { menu_item_id: dto.menu_item_id, user: dto.user, order_id: dto.order_id, price } }
 }

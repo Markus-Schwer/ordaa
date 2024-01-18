@@ -9,7 +9,7 @@ use diesel::upsert::*;
 use std::env;
 use itertools::izip;
 
-use crate::boundary::dto::{MenuItemDto, MenuDto, NewMenuDto, NewOrderDto, OrderDto, OrderItemDto, UserDto, NewOrderItemDto};
+use crate::boundary::dto::{MenuItemDto, MenuWithItemsDto, NewMenuDto, NewOrderDto, OrderDto, OrderItemDto, UserDto, NewOrderItemDto, MenuDto};
 use crate::entity::models::{MenuItem, Menu, Order, NewMenu, NewOrder, NewMenuItem};
 use crate::entity::schema::{menus, orders, menu_items};
 
@@ -44,19 +44,19 @@ impl Db {
         self.get_conn().unwrap().run_pending_migrations(MIGRATIONS).unwrap();
     }
 
-    pub fn all_menus(&self, conn: &mut Connection) -> Result<Vec<MenuDto>, result::Error> {
+    pub fn all_menus(&self, conn: &mut Connection) -> Result<Vec<MenuWithItemsDto>, result::Error> {
         let menus = menus::table.select(Menu::as_select()).load(conn)?;
         let items = MenuItem::belonging_to(&menus).select(MenuItem::as_select()).load(conn)?;
         Ok(items.grouped_by(&menus).into_iter().zip(menus)
-            .map(|(mi, m): (Vec<MenuItem>, Menu)| MenuDto::from_db(m, mi.iter().map(|mi: &MenuItem| MenuItemDto::from_db(mi.clone())).collect::<Vec<MenuItemDto>>()))
-            .collect::<Vec<MenuDto>>())
+            .map(|(mi, m): (Vec<MenuItem>, Menu)| MenuWithItemsDto::from_db(m, mi.iter().map(|mi: &MenuItem| MenuItemDto::from_db(mi.clone())).collect::<Vec<MenuItemDto>>()))
+            .collect::<Vec<MenuWithItemsDto>>())
     }
 
-    pub fn get_menu_by_id(&self, conn: &mut Connection, id: i32) -> Result<MenuDto, result::Error> {
+    pub fn get_menu_by_id(&self, conn: &mut Connection, id: i32) -> Result<MenuWithItemsDto, result::Error> {
         let menu = menus::table.filter(menus::id.eq(id)).select(Menu::as_select()).first(conn)?;
         let items = MenuItem::belonging_to(&menu).select(MenuItem::as_select()).load(conn)?
             .iter().map(|mi: &MenuItem| MenuItemDto::from_db(mi.clone())).collect();
-        Ok(MenuDto::from_db(menu, items))
+        Ok(MenuWithItemsDto::from_db(menu, items))
     }
 
     pub fn all_menu_items(&self, conn: &mut Connection, menu_id: i32) -> Result<Vec<MenuItemDto>, result::Error> {
@@ -73,7 +73,7 @@ impl Db {
         Ok(MenuItemDto::from_db(menu_items::table.filter(menu_items::menu_id.eq(menu).and(menu_items::id.eq(id))).select(MenuItem::as_select()).first(conn)?))
     }
 
-    pub fn upsert_menu(&self, conn: &mut Connection, id: i32, menu: NewMenuDto) -> Result<MenuDto, result::Error> {
+    pub fn upsert_menu(&self, conn: &mut Connection, id: i32, menu: NewMenuDto) -> Result<MenuWithItemsDto, result::Error> {
         let result = diesel::insert_into(menus::table)
             .values(&Menu::from_dto(id, menu.clone()))
             .on_conflict(menus::id)
@@ -98,16 +98,16 @@ impl Db {
                 diesel::insert_into(menu_items::table).values(&NewMenuItem::from_dto(menu_item, res_id)).execute(conn)?;
             }
         }
-        Ok(MenuDto::from_db(result, self.all_menu_items(conn, res_id)?))
+        Ok(MenuWithItemsDto::from_db(result, self.all_menu_items(conn, res_id)?))
     }
 
-    pub fn insert_menu(&self, conn: &mut Connection, menu: NewMenuDto) -> Result<MenuDto, result::Error> {
+    pub fn insert_menu(&self, conn: &mut Connection, menu: NewMenuDto) -> Result<MenuWithItemsDto, result::Error> {
         let result = diesel::insert_into(menus::table).values(&NewMenu::from_dto(menu.clone())).returning(Menu::as_returning()).get_result(conn)?;
         let res_id = result.id;
         for menu_item in menu.items {
             diesel::insert_into(menu_items::table).values(&NewMenuItem::from_dto(menu_item, res_id)).execute(conn)?;
         }
-        Ok(MenuDto::from_db(result, self.all_menu_items(conn, res_id)?))
+        Ok(MenuWithItemsDto::from_db(result, self.all_menu_items(conn, res_id)?))
     }
 
     pub fn all_orders(&self, conn: &mut Connection) -> Result<Vec<OrderDto>, result::Error> {
@@ -129,11 +129,17 @@ impl Db {
             .select(Option::<User>::as_select())
             .load(conn)?;
 
-        Ok(izip!(&items, &initiators, &sugar_persons, &orders).map(|(oiu, i, sp, o): (&Vec<(OrderItem, User, MenuItem)>, &User, &Option<User>, &Order)| {
+        let joined_menus = orders::table
+            .inner_join(menus::table)
+            .select(Menu::as_select())
+            .load(conn)?;
+
+        Ok(izip!(&items, &initiators, &sugar_persons, &joined_menus, &orders).map(|(oiu, i, sp, m, o): (&Vec<(OrderItem, User, MenuItem)>, &User, &Option<User>, &Menu, &Order)| {
             OrderDto::from_db(
                 o.clone(),
                 UserDto::from_db(i.clone()),
                 sp.clone().map(|u| UserDto::from_db(u)),
+                MenuDto::from_db(m.clone()),
                 oiu.iter().map(|(oi, u, mi): &(OrderItem, User, MenuItem)| OrderItemDto::from_db(oi.clone(), UserDto::from_db(u.clone()), MenuItemDto::from_db(mi.clone()))).collect::<Vec<OrderItemDto>>()
                 )
         }).collect::<Vec<OrderDto>>())
@@ -143,22 +149,29 @@ impl Db {
         let order = orders::table.filter(orders::id.eq(id)).select(Order::as_select()).first(conn)?;
         let order_id = order.id;
 
-        let initiator: User = orders::table.find(order_id)
+        let initiator = UserDto::from_db(orders::table.find(order_id)
             .inner_join(users::table)
             .select(User::as_select())
-            .first(conn)?;
+            .first(conn)?);
 
         // TODO: diesel currently only supports joining by target table, not by foreign key, which
         // means that two foreign keys on orders to users cannot be queried. For now, only
         // initiator can be queried. The following query should fetch 'sugar_person', but only
         // fetches initiator.
-        let sugar_person: Option<User> = orders::table.find(order_id)
+        let sugar_person: Option<UserDto> = orders::table.find(order_id)
             .left_join(users::table)
             .select(Option::<User>::as_select())
-            .first::<Option<User>>(conn)?;
+            .first::<Option<User>>(conn)?
+            .map(|u| UserDto::from_db(u));
+
+        let menu = MenuDto::from_db(orders::table.find(order_id)
+                                    .inner_join(menus::table)
+                                    .select(Menu::as_select())
+                                    .first(conn)?);
 
         let items = self.all_order_items(conn, order.id)?;
-        Ok(OrderDto::from_db(order, UserDto::from_db(initiator), sugar_person.map(|u| UserDto::from_db(u)), items))
+
+        Ok(OrderDto::from_db(order, initiator, sugar_person, menu, items))
     }
 
     pub fn all_order_items(&self, conn: &mut Connection, order_id: i32) -> Result<Vec<OrderItemDto>, result::Error> {
@@ -178,26 +191,33 @@ impl Db {
             .get_result(conn)?;
         let order_id = order.id;
 
-        let initiator = orders::table.find(order_id)
+        let initiator = UserDto::from_db(orders::table.find(order_id)
             .inner_join(users::table)
             .select(User::as_select())
-            .first(conn)?;
+            .first(conn)?);
 
         // TODO: diesel currently only supports joining by target table, not by foreign key, which
         // means that two foreign keys on orders to users cannot be queried. For now, only
         // initiator can be queried. The following query should fetch 'sugar_person', but only
         // fetches initiator.
-        let sugar_person: Option<User> = orders::table.find(order_id)
+        let sugar_person: Option<UserDto> = orders::table.find(order_id)
             .left_join(users::table)
             .select(Option::<User>::as_select())
-            .first::<Option<User>>(conn)?;
+            .first::<Option<User>>(conn)?
+            .map(|u| UserDto::from_db(u));
 
-        Ok(OrderDto::from_db(order, UserDto::from_db(initiator), sugar_person.map(|u| UserDto::from_db(u)), self.all_order_items(conn, order_id)?))
+        let menu = MenuDto::from_db(orders::table.find(order_id)
+                                    .inner_join(menus::table)
+                                    .select(Menu::as_select())
+                                    .first(conn)?);
+
+        Ok(OrderDto::from_db(order, initiator, sugar_person, menu, self.all_order_items(conn, order_id)?))
     }
 
     pub fn create_order_item(&self, conn: &mut Connection, order_item: NewOrderItemDto) -> Result<OrderItemDto, result::Error> {
+        let price: i32 = menu_items::table.find(order_item.menu_item_id).select(menu_items::price).first(conn)?;
         let order_item = diesel::insert_into(order_items::table)
-            .values(&NewOrderItem::from_dto(order_item))
+            .values(&NewOrderItem::from_dto(order_item, price))
             .returning(OrderItem::as_returning())
             .get_result(conn)?;
         let order_item_id = order_item.id;
