@@ -21,8 +21,8 @@
         </thead>
         <tbody>
         {% for menu in menus %}
-          <tr onclick="location.href='menu/{{menu.id}}'" style="cursor:pointer;">
-            <th scope="row">{{menu.id}}</th>
+          <tr onclick="location.href='menu/{{menu.uuid}}'" style="cursor:pointer;">
+            <th scope="row">{{menu.uuid}}</th>
             <td>{{menu.name}}</td>
             {% match menu.url %}
               {% when Some with (url) %}

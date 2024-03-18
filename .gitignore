@@ -7,3 +7,6 @@ index
 # compiled
 /target
 result
+
+# devenv
+.devenv

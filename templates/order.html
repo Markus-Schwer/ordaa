@@ -7,7 +7,7 @@
 
 {% block content %}
   <div class="container my-5">
-    <h2>Bestellung #{{order.id}} bei Sangam</h2>
+    <h2>Bestellung #{{order.uuid}} bei Sangam</h2>
 
     <dl class="row">
       <dt class="col-sm-2">Status:</dt>
@@ -46,7 +46,7 @@
             <tr>
               <tbody>
                 <tr>
-                  <th scope="row" colspan="2">{{order_item.id}}</th>
+                  <th scope="row" colspan="2">{{order_item.uuid}}</th>
                   <td>{{order_item.menu_item.short_name}}</td>
                   <td>{{order_item.menu_item.name}}</td>
                   <td colspan="2">{{"{},{:2}€"|format(order_item.price / 100, order_item.price % 100)}}</td>

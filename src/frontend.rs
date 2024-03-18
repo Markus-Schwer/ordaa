@@ -1,12 +1,13 @@
 use std::error::Error;
 
-use itertools::Itertools;
-use diesel::prelude::*;
 use actix_web::{web, Responder, get};
 use actix_files::Files;
 use askama::Template;
+use itertools::Itertools;
+use sqlx::Connection;
+use uuid::Uuid;
 
-use crate::{boundary::dto::{OrderDto, UserDto, OrderItemDto, MenuWithItemsDto}, service::state::AppState};
+use crate::{service::state::AppState, entity::models::{User, MenuWithItems, OrderWithItems, OrderItemWithJoins}};
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -15,15 +16,15 @@ pub struct IndexTemplate;
 #[derive(Template)]
 #[template(path = "orders.html")]
 pub struct OrdersTemplate {
-    pub orders: Vec<OrderDto>
+    pub orders: Vec<OrderWithItems>
 }
 
 #[derive(Template)]
 #[template(path = "order.html")]
 pub struct OrderTemplate {
-    pub order: OrderDto,
+    pub order: OrderWithItems,
     pub price_total: i32,
-    pub grouped_items: Vec<(UserDto, i32, Vec<OrderItemDto>)>
+    pub grouped_items: Vec<(User, i32, Vec<OrderItemWithJoins>)>
 }
 
 #[derive(Template)]
@@ -33,13 +34,13 @@ pub struct AdminTemplate;
 #[derive(Template)]
 #[template(path = "menus.html")]
 pub struct MenusTemplate {
-    pub menus: Vec<MenuWithItemsDto>
+    pub menus: Vec<MenuWithItems>
 }
 
 #[derive(Template)]
 #[template(path = "menu.html")]
 pub struct MenuTemplate {
-    pub menu: MenuWithItemsDto,
+    pub menu: MenuWithItems,
 }
 
 pub fn services_frontend(cfg: &mut web::ServiceConfig) {
@@ -54,37 +55,56 @@ pub fn services_frontend(cfg: &mut web::ServiceConfig) {
 
 #[get("/menus")]
 async fn get_menus(data: web::Data<AppState>) -> Result<impl Responder, Box<dyn Error>> {
-    data.db.get_conn()?.transaction(|conn| {
-        Ok(MenusTemplate { menus: data.db.all_menus(conn)? })
-    })
+    let mut conn = data.db.get_conn().await?;
+    let mut tx = conn.begin().await?;
+
+    let menus = data.db.all_menus(&mut tx).await?;
+
+    tx.rollback().await?;
+    conn.close().await?;
+    Ok(MenusTemplate { menus })
 }
 
 #[get("/menu/{menu_id}")]
-async fn get_menu(path: web::Path<(i32,)>, data: web::Data<AppState>) -> Result<impl Responder, Box<dyn Error>> {
-    data.db.get_conn()?.transaction(|conn| {
-        Ok(MenuTemplate { menu: data.db.get_menu_by_id(conn, path.0)? })
-    })
+async fn get_menu(path: web::Path<(Uuid,)>, data: web::Data<AppState>) -> Result<impl Responder, Box<dyn Error>> {
+    let mut conn = data.db.get_conn().await?;
+    let mut tx = conn.begin().await?;
+
+    let menu = data.db.get_menu_by_uuid(&mut tx, path.0).await?;
+
+    tx.rollback().await?;
+    conn.close().await?;
+    Ok(MenuTemplate { menu })
 }
 
 #[get("/orders")]
 async fn get_orders(data: web::Data<AppState>) -> Result<impl Responder, Box<dyn Error>> {
-    data.db.get_conn()?.transaction(|conn| {
-        Ok(OrdersTemplate { orders: data.db.all_orders(conn)? })
-    })
+    let mut conn = data.db.get_conn().await?;
+    let mut tx = conn.begin().await?;
+
+    let orders = data.db.all_orders(&mut tx).await?;
+
+    tx.rollback().await?;
+    conn.close().await?;
+    Ok(OrdersTemplate { orders })
 }
 
 #[get("/order/{order_id}")]
-async fn get_order(path: web::Path<(i32,)>, data: web::Data<AppState>) -> Result<impl Responder, Box<dyn Error>> {
-    data.db.get_conn()?.transaction(|conn| {
-        let order = data.db.get_order_by_id(conn, path.0)?;
-        let price_total: i32 = order.items.iter().map(|oi| oi.price).sum();
-        let grouped_items: Vec<(UserDto, i32, Vec<OrderItemDto>)> = order.items.iter().group_by(|elt: &&OrderItemDto| elt.user.clone()).into_iter()
-            .map(|(ge0, group)| {
-                let items: Vec<OrderItemDto> = group.cloned().collect();
-                let group_total = items.iter().map(|oi| oi.price).sum();
-                (ge0, group_total, items)
-            })
-            .collect();
-        Ok(OrderTemplate { order, price_total, grouped_items })
-    })
+async fn get_order(path: web::Path<(Uuid,)>, data: web::Data<AppState>) -> Result<impl Responder, Box<dyn Error>> {
+    let mut conn = data.db.get_conn().await?;
+    let mut tx = conn.begin().await?;
+
+    let order = data.db.get_order_by_uuid(&mut tx, path.0).await?;
+    let price_total: i32 = order.items.iter().map(|oi| oi.price).sum();
+    let grouped_items: Vec<(User, i32, Vec<OrderItemWithJoins>)> = order.items.iter().group_by(|elt: &&OrderItemWithJoins| elt.order_user.clone()).into_iter()
+        .map(|(ge0, group)| {
+            let items: Vec<OrderItemWithJoins> = group.cloned().collect();
+            let group_total = items.iter().map(|oi| oi.price).sum();
+            (ge0, group_total, items)
+        })
+        .collect();
+
+    tx.rollback().await?;
+    conn.close().await?;
+    Ok(OrderTemplate { order, price_total, grouped_items })
 }

@@ -21,8 +21,8 @@
         </thead>
         <tbody>
         {% for order in orders %}
-          <tr onclick="location.href='order/{{order.id}}'" style="cursor:pointer;">
-            <th scope="row">{{order.id}}</th>
+          <tr onclick="location.href='order/{{order.uuid}}'" style="cursor:pointer;">
+            <th scope="row">{{order.uuid}}</th>
             <td>{{order.menu.name}}</td>
             <td>{{order.items.len()}}</td>
             {% match order.eta %}

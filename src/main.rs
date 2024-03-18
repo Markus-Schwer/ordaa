@@ -13,8 +13,8 @@ async fn main() -> std::io::Result<()> {
     let (search_writer, search_reader) = init_search_index();
     let index_writer_handle = search_writer.start_index_writer(search_reader.clone());
 
-    let db = Db::new();
-    db.init_schema();
+    let db = Db::new().await;
+    db.init_schema().await;
     let actix_handle = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
