@@ -8,10 +8,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     devenv.url = "github:cachix/devenv";
-    fenix = {
-      url = "github:nix-community/fenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = { self, nixpkgs, treefmt-nix, devenv, ... } @ inputs:
@@ -26,10 +22,7 @@
         modules = [
           {
             dotenv.disableHint = true;
-            languages.rust.enable = true;
-            # https://devenv.sh/reference/options/#languagesrustchannel
-            languages.rust.channel = "stable";
-            packages = with pkgs; [ sqlx-cli ];
+            languages.go.enable = true;
             env.DATABASE_URL = "postgresql:///dotinder";
 
             services.postgres = {
