@@ -23,7 +23,9 @@
           {
             dotenv.disableHint = true;
             languages.go.enable = true;
+            packages = with pkgs; [ go-migrate ];
             env.DATABASE_URL = "postgresql:///dotinder";
+            env.ADDRESS = "localhost:8080";
 
             services.postgres = {
               enable = true;

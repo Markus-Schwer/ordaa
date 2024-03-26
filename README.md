@@ -11,18 +11,24 @@ ordered -> order placed at restaurant (optional ETA)
 delivered -> paypal me link of user who paid is posted
 
 
-## dev
+## Getting Started
 
-You need to create an empty index dir before starting.
+open dev shell
 
-Then load the sangam menu:
 ```bash
-curl -X PUT --data "@sangam.json" -H 'Content-Type: application/json' -v http://localhost:8080/menu/sangam
+nix flake --impure
 ```
 
-Then try the fuzzy search:
+start database
+
 ```bash
-curl http://localhost:8080/menu/sangam\?search_string\=vindaloo
+devenv up
+```
+
+(optional) run database migrations manually
+
+```bash
+migrate -database ${DATABASE_URL} -path db/migrations up
 ```
 
 ## TODO
