@@ -65,17 +65,17 @@ func (server *RestBoundary) newMenu(w http.ResponseWriter, r *http.Request) {
 		rollback_err := tx.Rollback()
 		if rollback_err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (server *RestBoundary) newMenu(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(createdMenu)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -93,7 +93,7 @@ func (server *RestBoundary) allMenus(w http.ResponseWriter, r *http.Request) {
 	menus, err := server.repo.GetAllMenus(tx)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -101,7 +101,7 @@ func (server *RestBoundary) allMenus(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(menus)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -119,7 +119,7 @@ func (server *RestBoundary) getMenu(w http.ResponseWriter, r *http.Request) {
 	menus, err := server.repo.GetMenu(tx, uuid)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -127,7 +127,7 @@ func (server *RestBoundary) getMenu(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(menus)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -155,17 +155,17 @@ func (server *RestBoundary) updateMenu(w http.ResponseWriter, r *http.Request) {
 		rollback_err := tx.Rollback()
 		if rollback_err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -173,7 +173,7 @@ func (server *RestBoundary) updateMenu(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(createdMenu)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -193,16 +193,16 @@ func (server *RestBoundary) deleteMenu(w http.ResponseWriter, r *http.Request) {
 		rollback_err := tx.Rollback()
 		if rollback_err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
