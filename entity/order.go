@@ -54,7 +54,7 @@ type NewOrderItem struct {
 }
 
 func (*Repository) GetAllOrders(tx *sqlx.Tx) ([]OrderWithItems, error) {
-	orders_map := map[uuid.UUID]*OrderWithItems{}
+	ordersMap := map[uuid.UUID]*OrderWithItems{}
 	rows, err := tx.Queryx("SELECT * FROM orders")
 	if err != nil {
 		return nil, fmt.Errorf("could not get all orders from db: %w", err)
@@ -62,7 +62,7 @@ func (*Repository) GetAllOrders(tx *sqlx.Tx) ([]OrderWithItems, error) {
 	for rows.Next() {
 		var order OrderWithItems
 		rows.StructScan(&order)
-		orders_map[order.Uuid] = &order
+		ordersMap[order.Uuid] = &order
 	}
 
 	rows, err = tx.Queryx("SELECT oi.* FROM orders o JOIN order_items oi on o.uuid = oi.order_uuid")
@@ -70,13 +70,13 @@ func (*Repository) GetAllOrders(tx *sqlx.Tx) ([]OrderWithItems, error) {
 		return nil, fmt.Errorf("could not get all order_items from db: %w", err)
 	}
 	for rows.Next() {
-		var order_item OrderItem
-		rows.StructScan(&order_item)
-		orders_map[order_item.OrderUuid].Items = append(orders_map[order_item.OrderUuid].Items, order_item)
+		var orderItem OrderItem
+		rows.StructScan(&orderItem)
+		ordersMap[orderItem.OrderUuid].Items = append(ordersMap[orderItem.OrderUuid].Items, orderItem)
 	}
 
-	orders := make([]OrderWithItems, 0, len(orders_map))
-	for _, value := range orders_map {
+	orders := make([]OrderWithItems, 0, len(ordersMap))
+	for _, value := range ordersMap {
 		orders = append(orders, *value)
 	}
 
@@ -99,32 +99,32 @@ func (*Repository) GetOrderWithItems(tx sqlx.Tx, uuid uuid.UUID) (*OrderWithItem
 }
 
 func (*Repository) GetOrderItem(tx *sqlx.Tx, uuid uuid.UUID) (*OrderItem, error) {
-	var order_item OrderItem
-	if err := tx.Get(&order_item, "SELECT * FROM order_items WHERE id=?", uuid); err != nil {
+	var orderItem OrderItem
+	if err := tx.Get(&orderItem, "SELECT * FROM order_items WHERE id=?", uuid); err != nil {
 		return nil, fmt.Errorf("error getting order item %s: %w", uuid, err)
 	}
 
-	return &order_item, nil
+	return &orderItem, nil
 }
 
-func (*Repository) CreateOrderItem(tx *sqlx.Tx, order_item NewOrderItem) (*OrderItem, error) {
-	var uuid_string string
+func (*Repository) CreateOrderItem(tx *sqlx.Tx, orderItem NewOrderItem) (*OrderItem, error) {
+	var uuidString string
 	err := tx.Get(
-		&uuid_string,
+		&uuidString,
 		"INSERT INTO order_items (price, user_uuid, order_uuid, menu_item_uuid) VALUES ($1, $2, $3, $4) RETURNING uuid",
-		order_item.Price, order_item.User, order_item.OrderUuid, order_item.MenuItemUuid,
+		orderItem.Price, orderItem.User, orderItem.OrderUuid, orderItem.MenuItemUuid,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create order item: %w", err)
 	}
 
-	uuid := uuid.Must(uuid.FromString(uuid_string))
+	uuid := uuid.Must(uuid.FromString(uuidString))
 
 	return &OrderItem{
 		Uuid:         uuid,
-		Price:        order_item.Price,
-		User:         order_item.User,
-		OrderUuid:    order_item.OrderUuid,
-		MenuItemUuid: order_item.MenuItemUuid,
+		Price:        orderItem.Price,
+		User:         orderItem.User,
+		OrderUuid:    orderItem.OrderUuid,
+		MenuItemUuid: orderItem.MenuItemUuid,
 	}, nil
 }

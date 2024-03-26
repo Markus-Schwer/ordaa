@@ -40,7 +40,7 @@ type NewMenuItem struct {
 }
 
 func (*Repository) GetAllMenus(tx *sqlx.Tx) ([]MenuWithItems, error) {
-	menus_map := map[uuid.UUID]*MenuWithItems{}
+	menusMap := map[uuid.UUID]*MenuWithItems{}
 	rows, err := tx.Queryx("SELECT * FROM menus")
 	if err != nil {
 		return nil, fmt.Errorf("could not get all menus from db: %w", err)
@@ -48,7 +48,7 @@ func (*Repository) GetAllMenus(tx *sqlx.Tx) ([]MenuWithItems, error) {
 	for rows.Next() {
 		var menu MenuWithItems
 		rows.StructScan(&menu)
-		menus_map[menu.Uuid] = &menu
+		menusMap[menu.Uuid] = &menu
 	}
 
 	rows, err = tx.Queryx("SELECT mi.* FROM menus m JOIN menu_items mi on m.uuid = mi.menu_uuid")
@@ -56,28 +56,28 @@ func (*Repository) GetAllMenus(tx *sqlx.Tx) ([]MenuWithItems, error) {
 		return nil, fmt.Errorf("could not get all menu_items from db: %w", err)
 	}
 	for rows.Next() {
-		var menu_item MenuItem
-		rows.StructScan(&menu_item)
-		menus_map[menu_item.MenuUuid].Items = append(menus_map[menu_item.MenuUuid].Items, menu_item)
+		var menuItem MenuItem
+		rows.StructScan(&menuItem)
+		menusMap[menuItem.MenuUuid].Items = append(menusMap[menuItem.MenuUuid].Items, menuItem)
 	}
 
-	menus := make([]MenuWithItems, 0, len(menus_map))
-	for _, value := range menus_map {
+	menus := make([]MenuWithItems, 0, len(menusMap))
+	for _, value := range menusMap {
 		menus = append(menus, *value)
 	}
 
 	return menus, nil
 }
 
-func (repo *Repository) GetMenu(tx *sqlx.Tx, menu_uuid uuid.UUID) (*MenuWithItems, error) {
+func (repo *Repository) GetMenu(tx *sqlx.Tx, menuUuid uuid.UUID) (*MenuWithItems, error) {
 	var menu Menu
-	if err := tx.Get(&menu, "SELECT * FROM menus WHERE uuid = $1", menu_uuid); err != nil {
-		return nil, fmt.Errorf("failed to get menu %s: %w", menu_uuid, err)
+	if err := tx.Get(&menu, "SELECT * FROM menus WHERE uuid = $1", menuUuid); err != nil {
+		return nil, fmt.Errorf("failed to get menu %s: %w", menuUuid, err)
 	}
 
 	var items []MenuItem
-	if err := tx.Select(&items, "SELECT * FROM menu_items WHERE menu_uuid = $1", menu_uuid); err != nil {
-		return nil, fmt.Errorf("failed to get menu items for menu %s: %w", menu_uuid, err)
+	if err := tx.Select(&items, "SELECT * FROM menu_items WHERE menu_uuid = $1", menuUuid); err != nil {
+		return nil, fmt.Errorf("failed to get menu items for menu %s: %w", menuUuid, err)
 	}
 
 	return &MenuWithItems{
@@ -88,53 +88,53 @@ func (repo *Repository) GetMenu(tx *sqlx.Tx, menu_uuid uuid.UUID) (*MenuWithItem
 	}, nil
 }
 
-func (repo *Repository) GetMenuItem(tx *sqlx.Tx, menu_item_uuid uuid.UUID) (*MenuItem, error) {
+func (repo *Repository) GetMenuItem(tx *sqlx.Tx, menuItemUuid uuid.UUID) (*MenuItem, error) {
 	var menuItem MenuItem
-	if err := tx.Get(&menuItem, "SELECT * FROM menu_items WHERE uuid = $1", menu_item_uuid); err != nil {
-		return nil, fmt.Errorf("failed to get menu item %s: %w", menu_item_uuid, err)
+	if err := tx.Get(&menuItem, "SELECT * FROM menu_items WHERE uuid = $1", menuItemUuid); err != nil {
+		return nil, fmt.Errorf("failed to get menu item %s: %w", menuItemUuid, err)
 	}
 
 	return &menuItem, nil
 }
 
 func (repo *Repository) CreateMenu(tx *sqlx.Tx, menu *NewMenu) (*MenuWithItems, error) {
-	var uuid_string string
-	err := tx.Get(&uuid_string, "INSERT INTO menus (name, url) VALUES ($1, $2) RETURNING uuid", menu.Name, menu.Url)
+	var uuidString string
+	err := tx.Get(&uuidString, "INSERT INTO menus (name, url) VALUES ($1, $2) RETURNING uuid", menu.Name, menu.Url)
 	if err != nil {
 		return nil, fmt.Errorf("could not create menu %s: %w", menu.Name, err)
 	}
-	created_menu_uuid := uuid.Must(uuid.FromString(uuid_string))
+	createdMenuUuid := uuid.Must(uuid.FromString(uuidString))
 
-	menu_items := []MenuItem{}
-	for _, menu_item := range menu.Items {
-		var created_menu_item MenuItem
+	menuItems := []MenuItem{}
+	for _, menuItem := range menu.Items {
+		var createdMenuItem MenuItem
 		err = tx.Get(
-			&created_menu_item,
+			&createdMenuItem,
 			"INSERT INTO menu_items (name, short_name, price, menu_uuid) VALUES ($1, $2, $3, $4) RETURNING uuid, name, short_name, price, menu_uuid",
-			menu_item.Name, menu_item.ShortName, menu_item.Price, created_menu_uuid,
+			menuItem.Name, menuItem.ShortName, menuItem.Price, createdMenuUuid,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("could not create menu_item %s: %w", menu_item.Name, err)
+			return nil, fmt.Errorf("could not create menuItem %s: %w", menuItem.Name, err)
 		}
-		menu_items = append(menu_items, created_menu_item)
+		menuItems = append(menuItems, createdMenuItem)
 	}
 
-	return &MenuWithItems{Uuid: created_menu_uuid, Name: menu.Name, Url: menu.Url, Items: menu_items}, nil
+	return &MenuWithItems{Uuid: createdMenuUuid, Name: menu.Name, Url: menu.Url, Items: menuItems}, nil
 }
 
-func (repo *Repository) UpdateMenu(tx *sqlx.Tx, menu_uuid uuid.UUID, menu *NewMenu) (*MenuWithItems, error) {
-	existing_menu, err := repo.GetMenu(tx, menu_uuid)
+func (repo *Repository) UpdateMenu(tx *sqlx.Tx, menuUuid uuid.UUID, menu *NewMenu) (*MenuWithItems, error) {
+	existingMenu, err := repo.GetMenu(tx, menuUuid)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.Exec("UPDATE menus SET name = $2, url = $3 WHERE uuid = $1", menu_uuid, menu.Name, menu.Url)
+	_, err = tx.Exec("UPDATE menus SET name = $2, url = $3 WHERE uuid = $1", menuUuid, menu.Name, menu.Url)
 	if err != nil {
-		return nil, fmt.Errorf("could not update menu %s: %w", menu_uuid, err)
+		return nil, fmt.Errorf("could not update menu %s: %w", menuUuid, err)
 	}
 
 	existingMenuItemMap := make(map[string]MenuItem)
-	for _, item := range existing_menu.Items {
+	for _, item := range existingMenu.Items {
 		existingMenuItemMap[item.ShortName] = item
 	}
 
@@ -142,14 +142,14 @@ func (repo *Repository) UpdateMenu(tx *sqlx.Tx, menu_uuid uuid.UUID, menu *NewMe
 	for _, newItem := range menu.Items {
 		menuItemMap[newItem.ShortName] = newItem
 		if _, found := existingMenuItemMap[newItem.ShortName]; !found {
-			_, err = repo.CreateMenuItem(tx, &newItem, menu_uuid)
+			_, err = repo.CreateMenuItem(tx, &newItem, menuUuid)
 			if err != nil {
 				return nil, fmt.Errorf("error while creating missing menu items: %w", err)
 			}
 		}
 	}
 
-	for _, existingItem := range existing_menu.Items {
+	for _, existingItem := range existingMenu.Items {
 		if _, found := menuItemMap[existingItem.ShortName]; !found {
 			if err = repo.DeleteMenuItem(tx, existingItem.Uuid); err != nil {
 				return nil, fmt.Errorf("error while deleting orphan menu items: %w", err)
@@ -157,7 +157,7 @@ func (repo *Repository) UpdateMenu(tx *sqlx.Tx, menu_uuid uuid.UUID, menu *NewMe
 		}
 	}
 
-	return repo.GetMenu(tx, menu_uuid)
+	return repo.GetMenu(tx, menuUuid)
 }
 
 func (repo *Repository) CreateMenuItem(tx *sqlx.Tx, menuItem *NewMenuItem, menuUuid uuid.UUID) (*MenuItem, error) {
