@@ -31,11 +31,17 @@ func (server *RestBoundary) Start() {
 	router.HandleFunc("/menus/{uuid}", server.updateMenu).Methods("PUT")
 	router.HandleFunc("/menus/{uuid}", server.deleteMenu).Methods("DELETE")
 
-	//router.HandleFunc("/orders", server.newOrder).Methods("POST")
+	router.HandleFunc("/orders", server.newOrder).Methods("POST")
 	router.HandleFunc("/orders", server.allOrders).Methods("GET")
-	//router.HandleFunc("/orders/{uuid}", server.getOrder).Methods("GET")
-	//router.HandleFunc("/orders/{uuid}", server.updateOrder).Methods("PUT")
-	//router.HandleFunc("/orders/{uuid}", server.deleteOrder).Methods("DELETE")
+	router.HandleFunc("/orders/{uuid}", server.getOrder).Methods("GET")
+	router.HandleFunc("/orders/{uuid}", server.updateOrder).Methods("PUT")
+	router.HandleFunc("/orders/{uuid}", server.deleteOrder).Methods("DELETE")
+
+	router.HandleFunc("/users", server.newUser).Methods("POST")
+	router.HandleFunc("/users", server.allUsers).Methods("GET")
+	router.HandleFunc("/users/{uuid}", server.getUser).Methods("GET")
+	router.HandleFunc("/users/{uuid}", server.updateUser).Methods("PUT")
+	router.HandleFunc("/users/{uuid}", server.deleteUser).Methods("DELETE")
 
 	srv := &http.Server{
 		Handler: router,

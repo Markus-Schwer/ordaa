@@ -12,9 +12,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (server *RestBoundary) newOrder(w http.ResponseWriter, r *http.Request) {
-	var order entity.NewOrder
-	err := json.NewDecoder(r.Body).Decode(&order)
+func (server *RestBoundary) newUser(w http.ResponseWriter, r *http.Request) {
+	var user entity.NewUser
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -22,7 +22,7 @@ func (server *RestBoundary) newOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx := server.repo.Pool.MustBegin()
-	createdOrder, err := server.repo.CreateOrder(tx, &order)
+	createdUser, err := server.repo.CreateUser(tx, &user)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
@@ -42,7 +42,7 @@ func (server *RestBoundary) newOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdOrder)
+	err = json.NewEncoder(w).Encode(createdUser)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -50,9 +50,9 @@ func (server *RestBoundary) newOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (server *RestBoundary) allOrders(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) allUsers(w http.ResponseWriter, r *http.Request) {
 	tx := server.repo.Pool.MustBegin()
-	orders, err := server.repo.GetAllOrders(tx)
+	users, err := server.repo.GetAllUsers(tx)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -60,7 +60,7 @@ func (server *RestBoundary) allOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(orders)
+	err = json.NewEncoder(w).Encode(users)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -68,7 +68,7 @@ func (server *RestBoundary) allOrders(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (server *RestBoundary) getOrder(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) getUser(w http.ResponseWriter, r *http.Request) {
 	uuidString := mux.Vars(r)["uuid"]
 	uuid, err := uuid.FromString(uuidString)
 	if err != nil {
@@ -78,7 +78,7 @@ func (server *RestBoundary) getOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx := server.repo.Pool.MustBegin()
-	orders, err := server.repo.GetOrder(tx, uuid)
+	users, err := server.repo.GetUser(tx, uuid)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -86,7 +86,7 @@ func (server *RestBoundary) getOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(orders)
+	err = json.NewEncoder(w).Encode(users)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -94,7 +94,7 @@ func (server *RestBoundary) getOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (server *RestBoundary) updateOrder(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) updateUser(w http.ResponseWriter, r *http.Request) {
 	uuidString := mux.Vars(r)["uuid"]
 	uuid, err := uuid.FromString(uuidString)
 	if err != nil {
@@ -103,8 +103,8 @@ func (server *RestBoundary) updateOrder(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var order entity.NewOrder
-	err = json.NewDecoder(r.Body).Decode(&order)
+	var user entity.NewUser
+	err = json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -112,7 +112,7 @@ func (server *RestBoundary) updateOrder(w http.ResponseWriter, r *http.Request) 
 	}
 
 	tx := server.repo.Pool.MustBegin()
-	createdOrder, err := server.repo.UpdateOrder(tx, uuid, &order)
+	createdUser, err := server.repo.UpdateUser(tx, uuid, &user)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
@@ -132,7 +132,7 @@ func (server *RestBoundary) updateOrder(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdOrder)
+	err = json.NewEncoder(w).Encode(createdUser)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -140,7 +140,7 @@ func (server *RestBoundary) updateOrder(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (server *RestBoundary) deleteOrder(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) deleteUser(w http.ResponseWriter, r *http.Request) {
 	uuidString := mux.Vars(r)["uuid"]
 	uuid, err := uuid.FromString(uuidString)
 	if err != nil {
@@ -150,7 +150,7 @@ func (server *RestBoundary) deleteOrder(w http.ResponseWriter, r *http.Request) 
 	}
 
 	tx := server.repo.Pool.MustBegin()
-	err = server.repo.DeleteOrder(tx, uuid)
+	err = server.repo.DeleteUser(tx, uuid)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
@@ -170,4 +170,3 @@ func (server *RestBoundary) deleteOrder(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusOK)
 }
-
