@@ -61,6 +61,12 @@ func (server *RestBoundary) Start() {
 
 	// create auth service with providers
 	service := auth.NewService(options)
+	msgTemplate := "http://localhost:8080/auth/matrix/login?token={{.Token}}"
+	service.AddVerifProvider("matrix", msgTemplate, provider.SenderFunc(func(address string, text string) error {
+		log.Ctx(server.ctx).Info().Msgf("sending message to %s: %s", address, text)
+		return nil
+	}))
+
 	service.AddDirectProviderWithUserIDFunc("local", provider.CredCheckerFunc(func(user, password string) (ok bool, err error) {
 		tx := server.repo.Pool.MustBegin()
 		dbUser, err := server.repo.FindPasswordUser(tx, user)
