@@ -9,8 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/frontend"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/rest"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 
@@ -23,11 +27,11 @@ func main() {
 	flag.BoolVar(&jsonFormat, "j", false, "logging in json format")
 	flag.Parse()
 	databaseUrl := os.Getenv(entity.DatabaseUrlKey)
-	address := os.Getenv(rest.AddressKey)
+	address := os.Getenv(boundary.AddressKey)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = context.WithValue(ctx, entity.DatabaseUrlKey, databaseUrl)
-	ctx = context.WithValue(ctx, rest.AddressKey, address)
+	ctx = context.WithValue(ctx, boundary.AddressKey, address)
 	if !jsonFormat {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
@@ -47,8 +51,15 @@ func main() {
 		log.Ctx(ctx).Fatal().Err(err).Msg(err.Error())
 	}
 
-	server := rest.NewRestBoundary(ctx, repo)
-	go server.Start()
+	router := mux.NewRouter()
+	authOptions := auth.NewAuthOptions(repo)
+	authService := auth.NewAuthService(authOptions, repo, ctx)
+	authRouter := auth.NewAuthRouter(authService, router)
+
+	rest.NewRestBoundary(ctx, repo).Start(router, authRouter)
+	frontend.NewFrontendBoundary(ctx, repo).Start(router, authRouter)
+
+	go boundary.StartHttpServer(ctx, router)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

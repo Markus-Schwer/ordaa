@@ -1,0 +1,60 @@
+package frontend
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gofrs/uuid"
+	"github.com/gorilla/mux"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+)
+
+func (server *FrontendBoundary) getMenu(w http.ResponseWriter, r *http.Request) {
+	uuid_string := mux.Vars(r)["uuid"]
+	uuid, err := uuid.FromString(uuid_string)
+	if err != nil {
+		menu(nil, err).Render(server.ctx, w)
+		return
+	}
+
+	tx := server.repo.Pool.MustBegin()
+	dbMenu, err := server.repo.GetMenu(tx, uuid)
+	if err != nil {
+		menu(nil, err).Render(server.ctx, w)
+		return
+	}
+
+	menu(dbMenu, nil).Render(r.Context(), w)
+}
+
+templ menu(menu *entity.MenuWithItems, err error) {
+	@layout("Menü", err) {
+		<div class="container my-5">
+			<h2>Menü: { menu.Name }</h2>
+			<dl class="row">
+				<dt class="col-sm-2">Url:</dt>
+				<dd class="col-sm-10"><a href={ templ.URL(menu.Url) }>{ menu.Url }</a></dd>
+			</dl>
+			<div class="table-responsive">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th scope="col">Abkürzung</th>
+							<th scope="col">Name</th>
+							<th scope="col" class="text-end">Preis</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, item := range menu.Items {
+							<tr>
+								<td>{ item.ShortName }</td>
+								<td>{ item.Name }</td>
+								<td class="text-end">{ fmt.Sprintf("%d,%2d€", item.Price / 100, item.Price % 100) }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	}
+}

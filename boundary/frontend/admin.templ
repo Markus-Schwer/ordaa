@@ -1,0 +1,10 @@
+package frontend
+
+templ admin() {
+	@layout("Admin", nil) {
+		<div class="container my-5">
+			<h1>Admin</h1>
+		</div>
+		<script>document.querySelector('.nav-item a[href="/admin"]').classList.add("active");</script>
+	}
+}

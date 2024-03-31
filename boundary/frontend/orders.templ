@@ -1,0 +1,96 @@
+package frontend
+
+import (
+	"net/http"
+	"time"
+	"fmt"
+	"github.com/gofrs/uuid"
+)
+
+type Order struct {
+	Uuid          string
+	State         string
+	OrderDeadline string
+	Eta           string
+	MenuUuid      string
+	MenuName      string
+	NumItems      string
+}
+
+func (server *FrontendBoundary) allOrders(w http.ResponseWriter, r *http.Request) {
+	tx := server.repo.Pool.MustBegin()
+	allOrders, err := server.repo.GetAllOrders(tx)
+	if err != nil {
+		orders(nil, err).Render(r.Context(), w)
+		return
+	}
+
+	menus, err := server.repo.GetAllMenus(tx)
+	if err != nil {
+		orders(nil, err).Render(r.Context(), w)
+		return
+	}
+
+	menuNames := map[uuid.UUID]string{}
+	for _, menu := range menus {
+		menuNames[menu.Uuid] = menu.Name
+	}
+
+	mappedOrders := []Order{}
+	for _, order := range allOrders {
+		var orderDeadline, eta string
+		if order.OrderDeadline != nil {
+			orderDeadline = order.OrderDeadline.Format(time.TimeOnly)
+		}
+		if order.Eta != nil {
+			eta = order.Eta.Format(time.TimeOnly)
+		}
+
+		mappedOrders = append(mappedOrders, Order{
+			Uuid:          order.Uuid.String(),
+			State:         order.State,
+			OrderDeadline: orderDeadline,
+			Eta:           eta,
+			MenuUuid:      order.MenuUuid.String(),
+			MenuName:      menuNames[order.MenuUuid],
+			NumItems:      fmt.Sprintf("%d", len(order.Items)),
+		})
+	}
+
+	orders(mappedOrders, nil).Render(r.Context(), w)
+}
+
+script openOrder(uuid string) {
+location.href = `/orders/${uuid}`;
+}
+
+templ orders(ordersArray []Order, err error) {
+	@layout("Bestellungen", err) {
+		<div class="container my-5">
+			<h2>Bestellungen</h2>
+			<div class="table-responsive">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th scope="col">Restaurant</th>
+							<th scope="col">Anzahl Bestellungen</th>
+							<th scope="col">Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						if ordersArray != nil {
+							for _, order := range ordersArray {
+								<tr onClick={ openOrder(order.Uuid) } style="cursor:pointer;">
+									<td>{ order.MenuName }</td>
+									<td>{ order.NumItems }</td>
+									<td>{ order.State }</td>
+								</tr>
+							}
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<script>document.querySelector('.nav-item a[href="/orders"]').classList.add("active");</script>
+	}
+}

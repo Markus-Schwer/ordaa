@@ -1,12 +1,7 @@
-secret.txt
-
-# data
-db.sqlite
-index
-
-# compiled
-/target
 result
 
 # devenv
 .devenv
+
+# templ
+*_templ.go

@@ -1,0 +1,53 @@
+package frontend
+
+import (
+	"fmt"
+	"net/http"
+
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"github.com/gofrs/uuid"
+)
+
+func (server *FrontendBoundary) allMenus(w http.ResponseWriter, r *http.Request) {
+	tx := server.repo.Pool.MustBegin()
+	allMenus, err := server.repo.GetAllMenus(tx)
+	if err != nil {
+		menus(nil, err).Render(r.Context(), w)
+		return
+	}
+
+	menus(allMenus, nil).Render(r.Context(), w)
+}
+
+script openMenu(uuid uuid.UUID) {
+location.href = `/menus/${uuid}`;
+}
+
+templ menus(menusArray []entity.MenuWithItems, err error) {
+	@layout("Menüs", err) {
+		<div class="container my-5">
+			<h2>Menüs</h2>
+			<div class="table-responsive">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th scope="col">Name</th>
+							<th scope="col">Url</th>
+							<th scope="col">Anzahl Artikel</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, menu := range menusArray {
+							<tr onClick={ openMenu(menu.Uuid) } style="cursor:pointer;">
+								<td>{ menu.Name }</td>
+								<td><a href={ templ.URL(menu.Url) }>{ menu.Url }</a></td>
+								<td>{ fmt.Sprintf("%d", len(menu.Items)) }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<script>document.querySelector('.nav-item a[href="/menus"]').classList.add("active");</script>
+	}
+}
