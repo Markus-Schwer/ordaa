@@ -4,9 +4,3 @@ build:
     - tag=$(date +%s)
     - mkdir -p "/var/tmp/"
     - nix develop --command skopeo login --username "$SFZ_REGISTRY_USER" --password "$SFZ_REGISTRY_PASSWORD" "$SFZ_REGISTRY"
-    - nix build .#omega-star
-    - nix develop --command skopeo --insecure-policy copy docker-archive://$(readlink -f ./result) docker://$SFZ_REGISTRY/dotinder/omega-star:${tag}
-    - nix build .#galactus
-    - nix develop --command skopeo --insecure-policy copy docker-archive://$(readlink -f ./result) docker://$SFZ_REGISTRY/dotinder/galactus:${tag}
-    - nix build .#malenalau
-    - nix develop --command skopeo --insecure-policy copy docker-archive://$(readlink -f ./result) docker://$SFZ_REGISTRY/dotinder/malenalau:${tag}

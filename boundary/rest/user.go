@@ -8,12 +8,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
 
 	_ "github.com/lib/pq"
 )
 
-func (server *RestBoundary) newUser(w http.ResponseWriter, r *http.Request) {
-	var user entity.NewUser
+func (server *RestBoundary) registerUser(w http.ResponseWriter, r *http.Request) {
+	var user entity.NewPasswordUser
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -21,8 +22,29 @@ func (server *RestBoundary) newUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user.Password, err = crypto.GeneratePasswordHash(user.Password)
+	if err != nil {
+		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	tx := server.repo.Pool.MustBegin()
-	createdUser, err := server.repo.CreateUser(tx, &user)
+	createdUser, err := server.repo.CreateUser(tx, &entity.NewUser{Name: user.Username})
+	if err != nil {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user.UserUuid = createdUser.Uuid
+
+	createdPwUser, err := server.repo.CreatePasswordUser(tx, &user)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
@@ -42,7 +64,7 @@ func (server *RestBoundary) newUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdUser)
+	err = json.NewEncoder(w).Encode(createdPwUser)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
