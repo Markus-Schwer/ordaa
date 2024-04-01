@@ -1,0 +1,50 @@
+package frontend
+
+import (
+	"net/http"
+	"github.com/go-pkgz/auth/token"
+	"github.com/rs/zerolog/log"
+)
+
+func (server *FrontendBoundary) signup(w http.ResponseWriter, r *http.Request) {
+	user, err := token.GetUserInfo(r);
+	if err != nil {
+		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
+		signup(nil, nil).Render(r.Context(), w)
+		return
+	}
+
+	signup(&user, nil).Render(r.Context(), w)
+}
+
+templ signup(user *token.User, err error) {
+	@layout("Signup", err, user) {
+		<div class="container my-5">
+			<form style="max-width: 330px;" class="m-auto needs-validation" novalidate="" action="/signup" method="post">
+				<h1 class="h3 mb-3 fw-normal">Account Erstellen</h1>
+				<div class="row g-3">
+					<div class="col-12">
+						<label for="username" class="form-label">Username</label>
+						<div class="input-group has-validation">
+							<input type="text" class="form-control" id="username" placeholder="Username" required="" />
+							<div class="invalid-feedback">
+								Your username is required.
+							</div>
+						</div>
+					</div>
+					<div class="col-12">
+						<label for="password" class="form-label">Password</label>
+						<div class="input-group has-validation">
+							<input type="password" class="form-control" id="password" placeholder="Password" required="" />
+							<div class="invalid-feedback">
+								Your password is required.
+							</div>
+						</div>
+					</div>
+				</div>
+				<hr class="my-4"></hr>
+				<button class="w-100 btn btn-primary btn-lg" type="submit">Account Erstellen</button>
+			</form>
+		</div>
+	}
+}

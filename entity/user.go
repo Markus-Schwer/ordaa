@@ -35,7 +35,7 @@ type PasswordUser struct {
 }
 
 type NewPasswordUser struct {
-	UserUuid uuid.UUID `db:"user_uuid" json:"user_uuid"`
+	UserUuid uuid.UUID `db:"user_uuid" json:"-"`
 	Username string    `db:"username" json:"username"`
 	Password string    `db:"password" json:"password"`
 }

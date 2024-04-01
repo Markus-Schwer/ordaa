@@ -21,10 +21,11 @@ func (server *RestBoundary) registerUser(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Ctx(server.ctx).Info().Msgf("registering user %s", user.Username)
 
 	user.Password, err = crypto.GeneratePasswordHash(user.Password)
 	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+		log.Ctx(server.ctx).Error().Err(err).Msg("error generating password hash")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -34,11 +35,11 @@ func (server *RestBoundary) registerUser(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+			log.Ctx(server.ctx).Error().Err(err).Msg("error rolling back transaction")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+		log.Ctx(server.ctx).Error().Err(err).Msg("error creating user")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -48,17 +49,17 @@ func (server *RestBoundary) registerUser(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+			log.Ctx(server.ctx).Error().Err(err).Msg("error rolling back transaction")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+		log.Ctx(server.ctx).Error().Err(err).Msg("error creating password user")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = tx.Commit()
 	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+		log.Ctx(server.ctx).Error().Err(err).Msg("error committing transaction")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

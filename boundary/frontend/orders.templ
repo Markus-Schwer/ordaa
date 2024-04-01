@@ -5,6 +5,8 @@ import (
 	"time"
 	"fmt"
 	"github.com/gofrs/uuid"
+	"github.com/rs/zerolog/log"
+	"github.com/go-pkgz/auth/token"
 )
 
 type Order struct {
@@ -18,16 +20,23 @@ type Order struct {
 }
 
 func (server *FrontendBoundary) allOrders(w http.ResponseWriter, r *http.Request) {
+	user, err := token.GetUserInfo(r);
+	if err != nil {
+		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
+		menus(nil, nil, err).Render(r.Context(), w)
+		return
+	}
+
 	tx := server.repo.Pool.MustBegin()
 	allOrders, err := server.repo.GetAllOrders(tx)
 	if err != nil {
-		orders(nil, err).Render(r.Context(), w)
+		orders(nil, &user, err).Render(r.Context(), w)
 		return
 	}
 
 	menus, err := server.repo.GetAllMenus(tx)
 	if err != nil {
-		orders(nil, err).Render(r.Context(), w)
+		orders(nil, &user, err).Render(r.Context(), w)
 		return
 	}
 
@@ -57,15 +66,15 @@ func (server *FrontendBoundary) allOrders(w http.ResponseWriter, r *http.Request
 		})
 	}
 
-	orders(mappedOrders, nil).Render(r.Context(), w)
+	orders(mappedOrders, &user, nil).Render(r.Context(), w)
 }
 
 script openOrder(uuid string) {
 location.href = `/orders/${uuid}`;
 }
 
-templ orders(ordersArray []Order, err error) {
-	@layout("Bestellungen", err) {
+templ orders(ordersArray []Order, user *token.User, err error) {
+	@layout("Bestellungen", err, user) {
 		<div class="container my-5">
 			<h2>Bestellungen</h2>
 			<div class="table-responsive">

@@ -4,27 +4,36 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/rs/zerolog/log"
+	"github.com/go-pkgz/auth/token"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 	"github.com/gofrs/uuid"
 )
 
 func (server *FrontendBoundary) allMenus(w http.ResponseWriter, r *http.Request) {
-	tx := server.repo.Pool.MustBegin()
-	allMenus, err := server.repo.GetAllMenus(tx)
+	user, err := token.GetUserInfo(r);
 	if err != nil {
-		menus(nil, err).Render(r.Context(), w)
+		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
+		menus(nil, nil, err).Render(r.Context(), w)
 		return
 	}
 
-	menus(allMenus, nil).Render(r.Context(), w)
+	tx := server.repo.Pool.MustBegin()
+	allMenus, err := server.repo.GetAllMenus(tx)
+	if err != nil {
+		menus(nil, &user, err).Render(r.Context(), w)
+		return
+	}
+
+	menus(allMenus, &user, err).Render(r.Context(), w)
 }
 
 script openMenu(uuid uuid.UUID) {
 location.href = `/menus/${uuid}`;
 }
 
-templ menus(menusArray []entity.MenuWithItems, err error) {
-	@layout("Menüs", err) {
+templ menus(menusArray []entity.MenuWithItems, user *token.User, err error) {
+	@layout("Menüs", err, user) {
 		<div class="container my-5">
 			<h2>Menüs</h2>
 			<div class="table-responsive">

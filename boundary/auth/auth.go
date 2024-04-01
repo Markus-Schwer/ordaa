@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/go-pkgz/auth"
@@ -21,6 +20,7 @@ func NewAuthOptions(repo *entity.Repository) *auth.Opts {
 		SecretReader: token.SecretFunc(func(id string) (string, error) { // secret key for JWT
 			return "secret", nil
 		}),
+		DisableXSRF:    true,            // needed for development on localhost
 		TokenDuration:  time.Minute * 5, // token expires in 5 minutes
 		CookieDuration: time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
 		Issuer:         "dotinder",
@@ -58,7 +58,7 @@ func NewAuthService(options *auth.Opts, repo *entity.Repository, ctx context.Con
 		return nil
 	}))
 
-	service.AddDirectProviderWithUserIDFunc("local", provider.CredCheckerFunc(func(user, password string) (ok bool, err error) {
+	service.AddDirectProvider("local", provider.CredCheckerFunc(func(user, password string) (ok bool, err error) {
 		tx := repo.Pool.MustBegin()
 		dbUser, err := repo.FindPasswordUser(tx, user)
 		if err != nil {
@@ -72,22 +72,6 @@ func NewAuthService(options *auth.Opts, repo *entity.Repository, ctx context.Con
 		}
 		ok, err = crypto.ComparePasswordAndHash(password, dbUser.Password)
 		return ok, err
-	}), provider.UserIDFunc(func(user string, r *http.Request) string {
-		tx := repo.Pool.MustBegin()
-		dbUser, err := repo.FindPasswordUser(tx, user)
-		if err != nil {
-			if err = tx.Rollback(); err != nil {
-				log.Ctx(ctx).Error().Err(err).Msg(err.Error())
-				return user
-			}
-			log.Ctx(ctx).Error().Err(err).Msg(err.Error())
-			return user
-		}
-		if err = tx.Rollback(); err != nil {
-			log.Ctx(ctx).Error().Err(err).Msg(err.Error())
-			return user
-		}
-		return dbUser.UserUuid.String()
 	}))
 
 	return service
@@ -101,11 +85,11 @@ func NewAuthRouter(service *auth.Service, router *mux.Router) *mux.Router {
 
 	// retrieve auth middleware
 	m := service.Middleware()
+	router.Use(m.Trace)
 
 	authRouter := router.NewRoute().Subrouter()
-	authRouter.Use(m.Trace)
 	authRouter.Use(m.Auth)
+	authRouter.Use(m.Trace)
 
 	return authRouter
 }
-

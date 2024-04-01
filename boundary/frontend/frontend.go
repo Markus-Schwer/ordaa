@@ -3,7 +3,6 @@ package frontend
 import (
 	"context"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
@@ -20,12 +19,14 @@ func NewFrontendBoundary(ctx context.Context, repo *entity.Repository) *Frontend
 }
 
 func (server *FrontendBoundary) Start(router *mux.Router, authRouter *mux.Router) {
-	router.Handle("/", templ.Handler(index()))
-	router.HandleFunc("/orders", server.allOrders)
-	router.HandleFunc("/orders/{uuid}", server.getOrder)
-	router.HandleFunc("/menus", server.allMenus)
-	router.HandleFunc("/menus/{uuid}", server.getMenu)
-	router.Handle("/admin", templ.Handler(admin()))
+	router.HandleFunc("/", server.index)
+	authRouter.HandleFunc("/orders", server.allOrders)
+	authRouter.HandleFunc("/orders/{uuid}", server.getOrder)
+	authRouter.HandleFunc("/menus", server.allMenus)
+	authRouter.HandleFunc("/menus/{uuid}", server.getMenu)
+	authRouter.HandleFunc("/admin", server.admin)
+	router.HandleFunc("/login", server.login)
+	router.HandleFunc("/signup", server.signup)
 }
 
 

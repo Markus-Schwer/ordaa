@@ -1,7 +1,24 @@
 package frontend
 
-templ admin() {
-	@layout("Admin", nil) {
+import (
+	"net/http"
+	"github.com/rs/zerolog/log"
+	"github.com/go-pkgz/auth/token"
+)
+
+func (server *FrontendBoundary) admin(w http.ResponseWriter, r *http.Request) {
+	user, err := token.GetUserInfo(r);
+	if err != nil {
+		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
+		admin(nil, err).Render(r.Context(), w)
+		return
+	}
+
+	admin(&user, nil).Render(r.Context(), w)
+}
+
+templ admin(user *token.User, err error) {
+	@layout("Admin", err, user) {
 		<div class="container my-5">
 			<h1>Admin</h1>
 		</div>

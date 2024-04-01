@@ -4,31 +4,40 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-pkgz/auth/token"
+	"github.com/rs/zerolog/log"
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
 
 func (server *FrontendBoundary) getMenu(w http.ResponseWriter, r *http.Request) {
+	user, err := token.GetUserInfo(r);
+	if err != nil {
+		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
+		menu(nil, nil, err).Render(r.Context(), w)
+		return
+	}
+
 	uuid_string := mux.Vars(r)["uuid"]
 	uuid, err := uuid.FromString(uuid_string)
 	if err != nil {
-		menu(nil, err).Render(server.ctx, w)
+		menu(nil, &user, err).Render(server.ctx, w)
 		return
 	}
 
 	tx := server.repo.Pool.MustBegin()
 	dbMenu, err := server.repo.GetMenu(tx, uuid)
 	if err != nil {
-		menu(nil, err).Render(server.ctx, w)
+		menu(nil, &user, err).Render(server.ctx, w)
 		return
 	}
 
-	menu(dbMenu, nil).Render(r.Context(), w)
+	menu(dbMenu, &user, nil).Render(r.Context(), w)
 }
 
-templ menu(menu *entity.MenuWithItems, err error) {
-	@layout("Menü", err) {
+templ menu(menu *entity.MenuWithItems, user *token.User, err error) {
+	@layout("Menü", err, user) {
 		<div class="container my-5">
 			<h2>Menü: { menu.Name }</h2>
 			<dl class="row">
