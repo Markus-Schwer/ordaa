@@ -2,17 +2,20 @@ package rest
 
 import (
 	"context"
+
 	"github.com/gorilla/mux"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
 
 type RestBoundary struct {
-	ctx  context.Context
-	repo *entity.Repository
+	ctx         context.Context
+	repo        *entity.Repository
+	authService *auth.AuthService
 }
 
-func NewRestBoundary(ctx context.Context, repo *entity.Repository) *RestBoundary {
-	return &RestBoundary{ctx: ctx, repo: repo}
+func NewRestBoundary(ctx context.Context, repo *entity.Repository, authSerivce *auth.AuthService) *RestBoundary {
+	return &RestBoundary{ctx: ctx, repo: repo, authService: authSerivce}
 }
 
 func (server *RestBoundary) Start(router *mux.Router, authRouter *mux.Router) {
@@ -38,4 +41,6 @@ func (server *RestBoundary) Start(router *mux.Router, authRouter *mux.Router) {
 	authRouter.HandleFunc("/api/users/{uuid}", server.getUser).Methods("GET")
 	authRouter.HandleFunc("/api/users/{uuid}", server.updateUser).Methods("PUT")
 	authRouter.HandleFunc("/api/users/{uuid}", server.deleteUser).Methods("DELETE")
+
+	router.HandleFunc("/api/login", server.login).Methods("POST")
 }

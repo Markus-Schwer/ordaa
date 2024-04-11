@@ -15,10 +15,19 @@ func (server *FrontendBoundary) login(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if r.ContentLength != 0 {
+		tx := server.repo.Pool.MustBegin()
 		creds := auth.Credentials{Username: r.FormValue("username"), Password: r.FormValue("password")}
-		token, err = server.authService.Signin(&creds)
+		token, err = server.authService.Signin(tx, &creds)
 		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				login(nil, rollbackErr).Render(r.Context(), w)
+				return
+			}
 			login(nil, err).Render(r.Context(), w)
+		}
+		if err = tx.Rollback(); err != nil {
+			login(nil, err).Render(r.Context(), w)
+			return
 		}
 		err = auth.SetJwtCookie(token, w, r)
 		if err != nil {

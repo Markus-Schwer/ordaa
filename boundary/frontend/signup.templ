@@ -52,17 +52,23 @@ func (server *FrontendBoundary) signup(w http.ResponseWriter, r *http.Request) {
 			signup(token, err).Render(r.Context(), w)
 			return
 		}
+		newToken, err := server.authService.Signin(tx, &auth.Credentials{Username: newUser.Username, Password: newUser.Password})
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				signup(token, rollbackErr).Render(r.Context(), w)
+				return
+			}
+			signup(token, err).Render(r.Context(), w)
+			return
+		}
+
 		err = tx.Commit()
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg("error committing transaction")
 			signup(token, err).Render(r.Context(), w)
 			return
 		}
-		newToken, err := server.authService.Signin(&auth.Credentials{Username: newUser.Username, Password: newUser.Password})
-		if err != nil {
-			signup(token, err).Render(r.Context(), w)
-			return
-		}
+
 		err = auth.SetJwtCookie(newToken, w, r)
 		if err != nil {
 			signup(token, err).Render(r.Context(), w)

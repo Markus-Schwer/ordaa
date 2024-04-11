@@ -9,6 +9,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
@@ -35,21 +37,14 @@ type AuthService struct {
 	repo *entity.Repository
 }
 
-func NewAuthService(repo *entity.Repository) *AuthService {
-	return &AuthService{repo: repo}
+func NewAuthService(ctx context.Context, repo *entity.Repository) *AuthService {
+	return &AuthService{ctx: ctx, repo: repo}
 }
 
-func (a *AuthService) Signin(creds *Credentials) (*jwt.Token, error) {
-	tx := a.repo.Pool.MustBegin()
+func (a *AuthService) Signin(tx *sqlx.Tx, creds *Credentials) (*jwt.Token, error) {
 	dbUser, err := a.repo.FindPasswordUser(tx, creds.Username)
 	if err != nil {
-		if err = tx.Rollback(); err != nil {
-			return nil, fmt.Errorf("error during rollback: %w", err)
-		}
 		return nil, err
-	}
-	if err = tx.Rollback(); err != nil {
-		return nil, fmt.Errorf("error during rollback: %w", err)
 	}
 	ok, err := crypto.ComparePasswordAndHash(creds.Password, dbUser.Password)
 	if err != nil || !ok {
@@ -72,18 +67,26 @@ func (a *AuthService) Signin(creds *Credentials) (*jwt.Token, error) {
 
 	// Declare the token with the algorithm used for signing, and the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	log.Ctx(a.ctx).Info().Msgf("token %v", token)
 
 	// Finally, we set the client cookie for "token" as the JWT we just generated
 	// we also set an expiry time which is the same as the token itself
 	return token, nil
 }
 
-func SetJwtCookie(token *jwt.Token, w http.ResponseWriter, r *http.Request) error {
-	// Create the JWT string
+func SignToken(token *jwt.Token) (string, error) {
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		// If there is an error in creating the JWT return an internal server error
-		return fmt.Errorf("error while signing token: %w", err)
+		return "", fmt.Errorf("error while signing token: %w", err)
+	}
+	return tokenString, nil
+}
+
+func SetJwtCookie(token *jwt.Token, w http.ResponseWriter, r *http.Request) error {
+	// Create the JWT string
+	tokenString, err := SignToken(token)
+	if err != nil {
+		return err
 	}
 
 	expoirationTime, err := token.Claims.GetExpirationTime()
