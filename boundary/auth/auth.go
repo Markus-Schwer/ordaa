@@ -2,94 +2,196 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/go-pkgz/auth"
-	"github.com/go-pkgz/auth/avatar"
-	"github.com/go-pkgz/auth/provider"
-	"github.com/go-pkgz/auth/token"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
-	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
 
-func NewAuthOptions(repo *entity.Repository) *auth.Opts {
-	// define options
-	options := auth.Opts{
-		SecretReader: token.SecretFunc(func(id string) (string, error) { // secret key for JWT
-			return "secret", nil
-		}),
-		DisableXSRF:    true,            // needed for development on localhost
-		TokenDuration:  time.Minute * 5, // token expires in 5 minutes
-		CookieDuration: time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
-		Issuer:         "dotinder",
-		URL:            "http://localhost:8080",
-		AvatarStore:    avatar.NewLocalFS("/tmp"),
-		BasicAuthChecker: func(user, passwd string) (bool, token.User, error) {
-			tx := repo.Pool.MustBegin()
-			dbUser, err := repo.FindPasswordUser(tx, user)
-			if err != nil {
-				if err = tx.Rollback(); err != nil {
-					return false, token.User{}, err
-				}
-				return false, token.User{}, err
-			}
-			if err = tx.Rollback(); err != nil {
-				return false, token.User{}, err
-			}
-			ok, err := crypto.ComparePasswordAndHash(passwd, dbUser.Password)
-			if err != nil {
-				return false, token.User{}, err
-			}
-			return ok, token.User{ID: dbUser.Uuid.String(), Name: dbUser.Username}, nil
+// Create the JWT key used to create the signature
+var jwtKey = []byte("my_secret_key")
+
+// Create a struct to read the username and password from the request body
+type Credentials struct {
+	Password string `json:"password"`
+	Username string `json:"username"`
+}
+
+// Create a struct that will be encoded to a JWT.
+// We add jwt.RegisteredClaims as an embedded type, to provide fields like expiry time
+type Claims struct {
+	Username string `json:"username"`
+	UserUuid string `json:"user_uuid"`
+	jwt.RegisteredClaims
+}
+
+type AuthService struct {
+	ctx  context.Context
+	repo *entity.Repository
+}
+
+func NewAuthService(repo *entity.Repository) *AuthService {
+	return &AuthService{repo: repo}
+}
+
+func (a *AuthService) Signin(creds *Credentials) (*jwt.Token, error) {
+	tx := a.repo.Pool.MustBegin()
+	dbUser, err := a.repo.FindPasswordUser(tx, creds.Username)
+	if err != nil {
+		if err = tx.Rollback(); err != nil {
+			return nil, fmt.Errorf("error during rollback: %w", err)
+		}
+		return nil, err
+	}
+	if err = tx.Rollback(); err != nil {
+		return nil, fmt.Errorf("error during rollback: %w", err)
+	}
+	ok, err := crypto.ComparePasswordAndHash(creds.Password, dbUser.Password)
+	if err != nil || !ok {
+		return nil, errors.New("invalid credentials")
+	}
+
+	// Declare the expiration time of the token
+	// here, we have kept it as 5 minutes
+	expirationTime := time.Now().Add(5 * time.Minute)
+	// Create the JWT claims, which includes the username and expiry time
+	claims := &Claims{
+		Username: creds.Username,
+		UserUuid: dbUser.Uuid.String(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject: creds.Username,
+			// In JWT, the expiry time is expressed as unix milliseconds
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 
-	return &options
+	// Declare the token with the algorithm used for signing, and the claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Finally, we set the client cookie for "token" as the JWT we just generated
+	// we also set an expiry time which is the same as the token itself
+	return token, nil
 }
 
-func NewAuthService(options *auth.Opts, repo *entity.Repository, ctx context.Context) *auth.Service {
-	// create auth service with providers
-	service := auth.NewService(*options)
-	msgTemplate := "http://localhost:8080/auth/matrix/login?token={{.Token}}"
-	service.AddVerifProvider("matrix", msgTemplate, provider.SenderFunc(func(address string, text string) error {
-		log.Ctx(ctx).Info().Msgf("sending message to %s: %s", address, text)
-		return nil
-	}))
+func SetJwtCookie(token *jwt.Token, w http.ResponseWriter, r *http.Request) error {
+	// Create the JWT string
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		// If there is an error in creating the JWT return an internal server error
+		return fmt.Errorf("error while signing token: %w", err)
+	}
 
-	service.AddDirectProvider("local", provider.CredCheckerFunc(func(user, password string) (ok bool, err error) {
-		tx := repo.Pool.MustBegin()
-		dbUser, err := repo.FindPasswordUser(tx, user)
-		if err != nil {
-			if err = tx.Rollback(); err != nil {
-				return false, err
-			}
-			return false, err
-		}
-		if err = tx.Rollback(); err != nil {
-			return false, err
-		}
-		ok, err = crypto.ComparePasswordAndHash(password, dbUser.Password)
-		return ok, err
-	}))
+	expoirationTime, err := token.Claims.GetExpirationTime()
+	if err != nil {
+		return fmt.Errorf("error while getting expiration time: %w", err)
+	}
 
-	return service
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
+		Expires: expoirationTime.Time,
+	})
+
+	return nil
 }
 
-func NewAuthRouter(service *auth.Service, router *mux.Router) *mux.Router {
-	// setup auth routes
-	authRoutes, avaRoutes := service.Handlers()
-	router.PathPrefix("/auth").Handler(authRoutes)  // add auth handlers
-	router.PathPrefix("/avatar").Handler(avaRoutes) // add avatar handlers
+func (a *AuthService) CheckAuthCookie(r *http.Request) (*jwt.Token, bool) {
+	// We can obtain the session token from the requests cookies, which come with every request
+	c, err := r.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			return nil, false
+		}
+		// For any other type of error, return a bad request status
+		return nil, false
+	}
 
-	// retrieve auth middleware
-	m := service.Middleware()
-	router.Use(m.Trace)
+	// Get the JWT string from the cookie
+	tknStr := c.Value
 
+	// Initialize a new instance of `Claims`
+	claims := &Claims{}
+
+	// Parse the JWT string and store the result in `claims`.
+	// Note that we are passing the key in this method as well. This method will return an error
+	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
+	// or if the signature does not match
+	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return nil, false
+		}
+		return nil, false
+	}
+	if !tkn.Valid {
+		return nil, false
+	}
+
+	return tkn, true
+}
+
+func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) error {
+	token, ok := a.CheckAuthCookie(r)
+	if !ok {
+		return errors.New("not authenticated")
+	}
+
+	expiresAt, err := token.Claims.GetExpirationTime()
+	if err != nil {
+		return err
+	}
+
+	// We ensure that a new token is not issued until enough time has elapsed
+	// In this case, a new token will only be issued if the old token is within
+	// 30 seconds of expiry. Otherwise, return a bad request status
+	if time.Until(expiresAt.Time) > 30*time.Second {
+		return err
+	}
+
+	// Now, create a new token for the current use, with a renewed expiration time
+	expirationTime := time.Now().Add(5 * time.Minute)
+	// Initialize a new instance of `Claims`
+	claims := &Claims{}
+	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
+	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	err = SetJwtCookie(newToken, w, r)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *AuthService) Logout(w http.ResponseWriter, r *http.Request) {
+	// immediately clear the token cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Expires: time.Now(),
+	})
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func NewAuthRouter(auth *AuthService, router *mux.Router) *mux.Router {
 	authRouter := router.NewRoute().Subrouter()
-	authRouter.Use(m.Auth)
-	authRouter.Use(m.Trace)
+	authRouter.Use(mux.MiddlewareFunc(func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, ok := auth.CheckAuthCookie(r)
+			if !ok {
+				auth.Logout(w, r)
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+			}
+			auth.Refresh(w, r)
+			handler.ServeHTTP(w, r)
+		})
+	}))
 
 	return authRouter
 }

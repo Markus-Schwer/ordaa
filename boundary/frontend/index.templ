@@ -2,23 +2,21 @@ package frontend
 
 import (
 	"net/http"
-	"github.com/rs/zerolog/log"
-	"github.com/go-pkgz/auth/token"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func (server *FrontendBoundary) index(w http.ResponseWriter, r *http.Request) {
-	user, err := token.GetUserInfo(r);
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
+	token, ok := server.authService.CheckAuthCookie(r)
+	if !ok {
 		index(nil, nil).Render(r.Context(), w)
 		return
 	}
 
-	index(&user, nil).Render(r.Context(), w)
+	index(token, nil).Render(r.Context(), w)
 }
 
-templ index(user *token.User, err error) {
-	@layout("Quick Start", err, user) {
+templ index(token *jwt.Token, err error) {
+	@layout("Quick Start", err, token) {
 		<div class="container my-5">
 			<h1>.inder Quick Start</h1>
 			<p class="lead text-body-secondary">

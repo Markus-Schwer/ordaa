@@ -2,23 +2,80 @@ package frontend
 
 import (
 	"net/http"
-	"github.com/go-pkgz/auth/token"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/zerolog/log"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
 )
 
 func (server *FrontendBoundary) signup(w http.ResponseWriter, r *http.Request) {
-	user, err := token.GetUserInfo(r);
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
-		signup(nil, nil).Render(r.Context(), w)
+	var err error
+	token, _ := server.authService.CheckAuthCookie(r)
+
+	if r.ContentLength != 0 {
+		log.Ctx(server.ctx).Info().Msg("registering user")
+		newUser := entity.NewPasswordUser{Username: r.FormValue("username"), Password: r.FormValue("password")}
+		log.Ctx(server.ctx).Info().Msgf("registering user %s", newUser.Username)
+
+		newUser.Password, err = crypto.GeneratePasswordHash(newUser.Password)
+		if err != nil {
+			log.Ctx(server.ctx).Error().Err(err).Msg("error generating password hash")
+			signup(token, err).Render(r.Context(), w)
+			return
+		}
+
+		tx := server.repo.Pool.MustBegin()
+		createdUser, err := server.repo.CreateUser(tx, &entity.NewUser{Name: newUser.Username})
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Ctx(server.ctx).Error().Err(err).Msg("error rolling back transaction")
+				signup(token, err).Render(r.Context(), w)
+				return
+			}
+			log.Ctx(server.ctx).Error().Err(err).Msg("error creating user")
+			signup(token, err).Render(r.Context(), w)
+			return
+		}
+		newUser.UserUuid = createdUser.Uuid
+
+		_, err = server.repo.CreatePasswordUser(tx, &newUser)
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Ctx(server.ctx).Error().Err(err).Msg("error rolling back transaction")
+				signup(token, err).Render(r.Context(), w)
+				return
+			}
+			log.Ctx(server.ctx).Error().Err(err).Msg("error creating password user")
+			signup(token, err).Render(r.Context(), w)
+			return
+		}
+		err = tx.Commit()
+		if err != nil {
+			log.Ctx(server.ctx).Error().Err(err).Msg("error committing transaction")
+			signup(token, err).Render(r.Context(), w)
+			return
+		}
+		newToken, err := server.authService.Signin(&auth.Credentials{Username: newUser.Username, Password: newUser.Password})
+		if err != nil {
+			signup(token, err).Render(r.Context(), w)
+			return
+		}
+		err = auth.SetJwtCookie(newToken, w, r)
+		if err != nil {
+			signup(token, err).Render(r.Context(), w)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-
-	signup(&user, nil).Render(r.Context(), w)
+	signup(token, nil).Render(r.Context(), w)
 }
 
-templ signup(user *token.User, err error) {
-	@layout("Signup", err, user) {
+templ signup(token *jwt.Token, err error) {
+	@layout("Signup", err, token) {
 		<div class="container my-5">
 			<form style="max-width: 330px;" class="m-auto needs-validation" novalidate="" action="/signup" method="post">
 				<h1 class="h3 mb-3 fw-normal">Account Erstellen</h1>
@@ -26,7 +83,7 @@ templ signup(user *token.User, err error) {
 					<div class="col-12">
 						<label for="username" class="form-label">Username</label>
 						<div class="input-group has-validation">
-							<input type="text" class="form-control" id="username" placeholder="Username" required="" />
+							<input type="text" class="form-control" id="username" name="username" placeholder="Username" required="" />
 							<div class="invalid-feedback">
 								Your username is required.
 							</div>
@@ -35,7 +92,7 @@ templ signup(user *token.User, err error) {
 					<div class="col-12">
 						<label for="password" class="form-label">Password</label>
 						<div class="input-group has-validation">
-							<input type="password" class="form-control" id="password" placeholder="Password" required="" />
+							<input type="password" class="form-control" id="password" name="password" placeholder="Password" required="" />
 							<div class="invalid-feedback">
 								Your password is required.
 							</div>

@@ -28,6 +28,11 @@ func (server *RestBoundary) Start(router *mux.Router, authRouter *mux.Router) {
 	authRouter.HandleFunc("/api/orders/{uuid}", server.updateOrder).Methods("PUT")
 	authRouter.HandleFunc("/api/orders/{uuid}", server.deleteOrder).Methods("DELETE")
 
+	authRouter.HandleFunc("/api/orders/{order_uuid}/items", server.newOrderItem).Methods("GET")
+	authRouter.HandleFunc("/api/orders/{order_uuid}/items", server.allOrderItems).Methods("GET")
+	authRouter.HandleFunc("/api/orders/{order_uuid}/items/{uuid}", server.updateOrderItem).Methods("PUT")
+	authRouter.HandleFunc("/api/orders/{order_uuid}/items/{uuid}", server.deleteOrderItem).Methods("DELETE")
+
 	router.HandleFunc("/api/users", server.registerUser).Methods("POST")
 	authRouter.HandleFunc("/api/users", server.allUsers).Methods("GET")
 	authRouter.HandleFunc("/api/users/{uuid}", server.getUser).Methods("GET")

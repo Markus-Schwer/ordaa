@@ -49,6 +49,7 @@ type NewOrder struct {
 
 type NewOrderItem struct {
 	Price        int       `json:"price"`
+	Paid         bool      `json:"paid"`
 	User         uuid.UUID `json:"user"`
 	MenuItemUuid uuid.UUID `json:"menu_item_uuid"`
 }
@@ -98,6 +99,16 @@ func (*Repository) GetOrder(tx *sqlx.Tx, uuid uuid.UUID) (*OrderWithItems, error
 	return &order, nil
 }
 
+func (*Repository) GetAllOrderItems(tx *sqlx.Tx, orderUuid uuid.UUID) ([]OrderItem, error) {
+	orderItems := []OrderItem{}
+	err := tx.Select(&orderItems, "SELECT * FROM order_items")
+	if err != nil {
+		return nil, fmt.Errorf("could not get all order items from db: %w", err)
+	}
+
+	return orderItems, nil
+}
+
 func (*Repository) GetOrderItem(tx *sqlx.Tx, uuid uuid.UUID) (*OrderItem, error) {
 	var orderItem OrderItem
 	if err := tx.Get(&orderItem, "SELECT * FROM order_items WHERE uuid=$1", uuid); err != nil {
@@ -111,7 +122,7 @@ func (*Repository) CreateOrderItem(tx *sqlx.Tx, order_uuid uuid.UUID, orderItem 
 	var uuidString string
 	err := tx.Get(
 		&uuidString,
-		"INSERT INTO order_items (price, user_uuid, menu_item_uuid, order_uuid) VALUES ($1, $2, $3, $4) RETURNING uuid",
+		"INSERT INTO order_items (price, order_user, menu_item_uuid, order_uuid) VALUES ($1, $2, $3, $4) RETURNING uuid",
 		orderItem.Price, orderItem.User, orderItem.MenuItemUuid, order_uuid,
 	)
 	if err != nil {
@@ -153,6 +164,18 @@ func (repo *Repository) UpdateOrder(tx *sqlx.Tx, orderUuid uuid.UUID, order *New
 	}
 
 	return repo.GetOrder(tx, orderUuid)
+}
+
+func (repo *Repository) UpdateOrderItem(tx *sqlx.Tx, orderItemUuid uuid.UUID, orderItem *NewOrderItem) (*OrderItem, error) {
+	_, err := tx.Exec(
+		"UPDATE order_items SET price = $2, user_uuid = $3, menu_item_uuid = $4, order_uuid = $5 WHERE uuid = $1",
+		orderItemUuid, orderItem.User, orderItem.MenuItemUuid, orderItem.Price, orderItem.Paid,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not update order %s: %w", orderItemUuid, err)
+	}
+
+	return repo.GetOrderItem(tx, orderItemUuid)
 }
 
 func (repo *Repository) DeleteOrderItem(tx *sqlx.Tx, orderItemUuid uuid.UUID) error {

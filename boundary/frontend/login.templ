@@ -2,25 +2,39 @@ package frontend
 
 import (
 	"net/http"
-	"github.com/go-pkgz/auth/token"
+	"github.com/golang-jwt/jwt/v5"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
 	"github.com/rs/zerolog/log"
 )
 
 func (server *FrontendBoundary) login(w http.ResponseWriter, r *http.Request) {
-	user, err := token.GetUserInfo(r);
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
-		login(nil, nil).Render(r.Context(), w)
-		return
+	var err error
+	token, ok := server.authService.CheckAuthCookie(r)
+	if !ok {
+		log.Ctx(server.ctx).Info().Msg("No auth cookie")
+	}
+	
+	if r.ContentLength != 0 {
+		creds := auth.Credentials{Username: r.FormValue("username"), Password: r.FormValue("password")}
+		token, err = server.authService.Signin(&creds)
+		if err != nil {
+			login(nil, err).Render(r.Context(), w)
+		}
+		err = auth.SetJwtCookie(token, w, r)
+		if err != nil {
+			login(nil, err).Render(r.Context(), w)
+		}
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 
-	login(&user, nil).Render(r.Context(), w)
+	login(token, nil).Render(r.Context(), w)
 }
 
-templ login(user *token.User, err error) {
-	@layout("Login", err, user) {
+templ login(token *jwt.Token, err error) {
+	@layout("Login", err, token) {
 		<div class="container my-5">
-			<form style="max-width: 330px;" class="m-auto needs-validation" hx-post="/auth/local/login" hx-target="#result">
+			<form style="max-width: 330px;" class="m-auto needs-validation" action="/login" method="post">
 				<h1 class="h3 mb-3 fw-normal">Anmelden</h1>
 				<div class="row g-3">
 					<div class="col-12">
@@ -30,7 +44,7 @@ templ login(user *token.User, err error) {
 								type="text"
 								class="form-control"
 								id="username"
-								name="user"
+								name="username"
 								placeholder="Username"
 								required=""
 							/>
@@ -46,7 +60,7 @@ templ login(user *token.User, err error) {
 								type="password"
 								class="form-control"
 								id="password"
-								name="passwd"
+								name="password"
 								placeholder="Password"
 								required=""
 							/>
@@ -59,7 +73,6 @@ templ login(user *token.User, err error) {
 				</div>
 				<button class="w-100 btn btn-primary btn-lg my-4" type="submit">Login</button>
 			</form>
-			<div id="result"></div>
 		</div>
 	}
 }

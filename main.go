@@ -52,12 +52,11 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	authOptions := auth.NewAuthOptions(repo)
-	authService := auth.NewAuthService(authOptions, repo, ctx)
+	authService := auth.NewAuthService(repo)
 	authRouter := auth.NewAuthRouter(authService, router)
 
 	rest.NewRestBoundary(ctx, repo).Start(router, authRouter)
-	frontend.NewFrontendBoundary(ctx, repo).Start(router, authRouter)
+	frontend.NewFrontendBoundary(ctx, repo, authService).Start(router, authRouter)
 
 	go boundary.StartHttpServer(ctx, router)
 

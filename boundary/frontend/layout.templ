@@ -1,10 +1,10 @@
 package frontend
 
 import (
-	"github.com/go-pkgz/auth/token"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-templ layout(title string, err error, user *token.User) {
+templ layout(title string, err error, token *jwt.Token) {
 	<!DOCTYPE html>
 	<html class="h-100" lang="de">
 		<head>
@@ -46,7 +46,7 @@ templ layout(title string, err error, user *token.User) {
 								<a class="nav-link" href="/admin">Admin</a>
 							</li>
 						</ul>
-						if user == nil {
+						if token == nil {
 							<div class="text-end mb-2 mb-lg-0">
 								<a href="/login" class="btn btn-outline-primary me-2">Login</a>
 								<a href="/signup" class="btn btn-primary">Sign-up</a>
@@ -59,20 +59,21 @@ templ layout(title string, err error, user *token.User) {
 									data-bs-toggle="dropdown"
 									aria-expanded="false"
 								>
-									<img
-										src={ user.Picture }
-										alt={ user.Name }
-										width="32"
-										height="32"
-										class="rounded-circle"
-									/>
+									if sub, err := token.Claims.GetSubject(); err == nil {
+										<img
+											alt={ sub }
+											width="32"
+											height="32"
+											class="rounded-circle"
+										/>
+									}
 								</a>
 								<ul class="dropdown-menu text-small">
 									<li><a class="dropdown-item" href="#">Settings</a></li>
 									<li>
 										<hr class="dropdown-divider"/>
 									</li>
-									<li><a class="dropdown-item" href="/auth/logout">Sign out</a></li>
+									<li><a class="dropdown-item" href="/logout">Sign out</a></li>
 								</ul>
 							</div>
 						}

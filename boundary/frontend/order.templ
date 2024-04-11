@@ -1,14 +1,16 @@
 package frontend
 
 import (
+	"strings"
+	"errors"
 	"fmt"
 	"net/http"
 	"github.com/rs/zerolog/log"
-	"github.com/go-pkgz/auth/token"
 	"github.com/gorilla/mux"
 	"github.com/gofrs/uuid"
 	"time"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type OrderWithItems struct {
@@ -37,36 +39,35 @@ type OrderItem struct {
 }
 
 func (server *FrontendBoundary) getOrder(w http.ResponseWriter, r *http.Request) {
-	user, err := token.GetUserInfo(r);
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("failed to get user info")
-		menus(nil, nil, err).Render(r.Context(), w)
+	token, ok := server.authService.CheckAuthCookie(r)
+	if !ok {
+		order(nil, nil, errors.New("unauthorized")).Render(r.Context(), w)
 		return
 	}
 
 	uuid_string := mux.Vars(r)["uuid"]
 	orderUuid, err := uuid.FromString(uuid_string)
 	if err != nil {
-		order(nil, &user, err).Render(server.ctx, w)
+		order(nil, token, err).Render(server.ctx, w)
 		return
 	}
 
 	tx := server.repo.Pool.MustBegin()
 	dbOrder, err := server.repo.GetOrder(tx, orderUuid)
 	if err != nil {
-		order(nil, &user, err).Render(server.ctx, w)
+		order(nil, token, err).Render(server.ctx, w)
 		return
 	}
 
 	users, err := server.repo.GetAllUsers(tx)
 	if err != nil {
-		order(nil, &user, err).Render(server.ctx, w)
+		order(nil, token, err).Render(server.ctx, w)
 		return
 	}
 
 	userMap := make(map[uuid.UUID]*entity.User)
-	for _, user := range users {
-		userMap[user.Uuid] = &user
+	for i := range users {
+		userMap[users[i].Uuid] = &users[i]
 	}
 
 	initiator := userMap[dbOrder.Initiator]
@@ -78,12 +79,12 @@ func (server *FrontendBoundary) getOrder(w http.ResponseWriter, r *http.Request)
 
 	menu, err := server.repo.GetMenu(tx, dbOrder.MenuUuid)
 	if err != nil {
-		order(nil, &user, err).Render(server.ctx, w)
+		order(nil, token, err).Render(server.ctx, w)
 		return
 	}
 	menuItemsMap := make(map[uuid.UUID]*entity.MenuItem)
-	for _, menuItem := range menu.Items {
-		menuItemsMap[menuItem.Uuid] = &menuItem
+	for i := range menu.Items {
+		menuItemsMap[menu.Items[i].Uuid] = &menu.Items[i]
 	}
 
 	var orderDeadline, eta string
@@ -92,6 +93,48 @@ func (server *FrontendBoundary) getOrder(w http.ResponseWriter, r *http.Request)
 	}
 	if dbOrder.Eta != nil {
 		eta = dbOrder.Eta.Format(time.TimeOnly)
+	}
+
+	if r.ContentLength != 0 {
+		shortName := strings.Split(r.FormValue("menu_item"), ":")[0]
+		if shortName == "" {
+			order(nil, token, errors.New("short name is empty")).Render(server.ctx, w)
+			return
+		}
+
+		var menuItem *entity.MenuItem
+		for _, item := range menu.Items {
+			if item.ShortName == shortName {
+				menuItem = &item
+				log.Ctx(server.ctx).Info().Msgf("found menu item %s", item.Uuid)
+				log.Ctx(server.ctx).Info().Msgf("found menu item in map %s", menuItemsMap[item.Uuid].Uuid)
+				break
+			}
+		}
+
+		username, err := token.Claims.GetSubject()
+		if err != nil {
+			order(nil, token, fmt.Errorf("get username from token %w", err)).Render(server.ctx, w)
+		}
+
+		log.Ctx(server.ctx).Info().Msgf("user id %s", username)
+		pwUser, err := server.repo.FindPasswordUser(tx, username)
+		if err != nil {
+			order(nil, token, fmt.Errorf("could not find pw user %w", err)).Render(server.ctx, w)
+			return
+		}
+
+		createdOrderItem, err := server.repo.CreateOrderItem(tx, orderUuid, entity.NewOrderItem{MenuItemUuid: menuItem.Uuid, User: pwUser.UserUuid, Price: menuItem.Price})
+		if err != nil {
+			order(nil, token, fmt.Errorf("could not create order item %w", err)).Render(server.ctx, w)
+			return
+		}
+		err = tx.Commit()
+		if err != nil {
+			order(nil, token, fmt.Errorf("could not commit transaction %w", err)).Render(server.ctx, w)
+			return
+		}
+		dbOrder.Items = append(dbOrder.Items, *createdOrderItem)
 	}
 
 	groupedItems := map[uuid.UUID]*GroupedItem{}
@@ -115,7 +158,6 @@ func (server *FrontendBoundary) getOrder(w http.ResponseWriter, r *http.Request)
 			existingGroupItem.Items = append(existingGroupItem.Items, item)
 			existingGroupItem.Price += item.MenuItem.Price
 		}
-
 	}
 
 	groupedItemsArray := []*GroupedItem{}
@@ -132,12 +174,18 @@ func (server *FrontendBoundary) getOrder(w http.ResponseWriter, r *http.Request)
 		Eta:           eta,
 		Menu:          menu,
 		GroupedItems:  groupedItemsArray,
-	}, &user, nil).Render(r.Context(), w)
+	}, token, nil).Render(r.Context(), w)
 }
 
-templ order(order *OrderWithItems, user *token.User, err error) {
-	@layout("Menü", err, user) {
+templ order(order *OrderWithItems, token *jwt.Token, err error) {
+	@layout("Menü", err, token) {
 		<div class="container my-5">
+			<nav aria-label="breadcrumb">
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/orders">Bestellungen</a></li>
+					<li class="breadcrumb-item active" aria-current="page">{ order.Menu.Name }</li>
+				</ol>
+			</nav>
 			<h2>Order: { order.Menu.Name }</h2>
 			<dl class="row">
 				<dt class="col-sm-2">Menu:</dt>
@@ -149,7 +197,22 @@ templ order(order *OrderWithItems, user *token.User, err error) {
 				<dt class="col-sm-2">Gestartet von:</dt>
 				<dd class="col-sm-10">{ order.Initiator.Name }</dd>
 			</dl>
-			<div class="table-responsive">
+			<hr></hr>
+			<form action={ templ.SafeURL(fmt.Sprintf("/orders/%s", order.Uuid)) } method="POST">
+				<div class="mb-5">
+					<label for="menuDataList" class="form-label">Menü bestellen</label>
+					<div class="input-group">
+						<input class="form-control" list="datalistOptions" id="menuDataList" name="menu_item" aria-describedby="add-order-addon"></input>
+						<datalist id="datalistOptions">
+							for _, item := range order.Menu.Items {
+								<option value={ fmt.Sprintf("%s: %s", item.ShortName, item.Name) }></option>
+							}
+						</datalist>
+						<button type="submit" class="btn btn-primary" id="add-order-addon">+</button>
+					</div>
+				</div>
+			</form>
+			<div class="table-responsive" id="#orders-table">
 				<table class="table table-hover">
 					<thead>
 						<tr>
@@ -161,17 +224,16 @@ templ order(order *OrderWithItems, user *token.User, err error) {
 					<tbody>
 						for _, groupedItem := range order.GroupedItems {
 							<tr class="table-group-divider">
-								<td>{ groupedItem.User.Name }</td>
-								<th scope="row" colspan="4">{ groupedItem.User.Name }</th>
-								<td>{ fmt.Sprintf("%d,%2d€", groupedItem.Price/100, groupedItem.Price%100) }</td>
+								<th scope="row" colspan="2">{ groupedItem.User.Name }</th>
+								<td class="text-end"><strong>{ fmt.Sprintf("%d,%2d€", groupedItem.Price/100, groupedItem.Price%100) }</strong></td>
 							</tr>
 							for _, orderItem := range groupedItem.Items {
 								<tr>
 									<tbody>
 										<tr>
-											<th scope="row" colspan="2">{ orderItem.MenuItem.ShortName }</th>
+											<th scope="row">{ orderItem.MenuItem.ShortName }</th>
 											<td>{ orderItem.MenuItem.Name }</td>
-											<td colspan="2">{ fmt.Sprintf("%d,%2d€", orderItem.MenuItem.Price/100, orderItem.MenuItem.Price%100) }</td>
+											<td colspan="2" class="text-end">{ fmt.Sprintf("%d,%2d€", orderItem.MenuItem.Price/100, orderItem.MenuItem.Price%100) }</td>
 										</tr>
 									</tbody>
 								</tr>
