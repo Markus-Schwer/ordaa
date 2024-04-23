@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo-jwt/v4"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
@@ -82,7 +84,7 @@ func SignToken(token *jwt.Token) (string, error) {
 	return tokenString, nil
 }
 
-func SetJwtCookie(token *jwt.Token, w http.ResponseWriter, r *http.Request) error {
+func SetJwtCookie(token *jwt.Token, c echo.Context) error {
 	// Create the JWT string
 	tokenString, err := SignToken(token)
 	if err != nil {
@@ -94,7 +96,7 @@ func SetJwtCookie(token *jwt.Token, w http.ResponseWriter, r *http.Request) erro
 		return fmt.Errorf("error while getting expiration time: %w", err)
 	}
 
-	http.SetCookie(w, &http.Cookie{
+	c.SetCookie(&http.Cookie{
 		Name:    "token",
 		Value:   tokenString,
 		Expires: expoirationTime.Time,
@@ -103,28 +105,13 @@ func SetJwtCookie(token *jwt.Token, w http.ResponseWriter, r *http.Request) erro
 	return nil
 }
 
-func (a *AuthService) CheckAuthCookie(r *http.Request) (*jwt.Token, bool) {
-	// We can obtain the session token from the requests cookies, which come with every request
-	c, err := r.Cookie("token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			// If the cookie is not set, return an unauthorized status
-			return nil, false
-		}
-		// For any other type of error, return a bad request status
+func (a *AuthService) CheckTokenString(tknStr string) (*jwt.Token, bool) {
+	if tknStr == "" {
 		return nil, false
 	}
 
-	// Get the JWT string from the cookie
-	tknStr := c.Value
-
-	// Initialize a new instance of `Claims`
 	claims := &Claims{}
 
-	// Parse the JWT string and store the result in `claims`.
-	// Note that we are passing the key in this method as well. This method will return an error
-	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
-	// or if the signature does not match
 	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
 		return jwtKey, nil
 	})
@@ -141,8 +128,36 @@ func (a *AuthService) CheckAuthCookie(r *http.Request) (*jwt.Token, bool) {
 	return tkn, true
 }
 
-func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) error {
-	token, ok := a.CheckAuthCookie(r)
+func (a *AuthService) CheckAuthHeader(c echo.Context) (*jwt.Token, bool) {
+	authHeader := c.Request().Header.Get("Authorization")
+	if authHeader == "" {
+		return nil, false
+	}
+	splitAuthHeader := strings.Split(authHeader, " ")
+	if len(splitAuthHeader) != 2 {
+		return nil, false
+	}
+
+	tknStr := splitAuthHeader[1]
+	log.Ctx(a.ctx).Info().Msgf("token string %s", tknStr)
+	return a.CheckTokenString(tknStr)
+}
+
+func (a *AuthService) CheckAuthCookie(c echo.Context) (*jwt.Token, bool) {
+	cookie, err := c.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return nil, false
+		}
+		return nil, false
+	}
+
+	tknStr := cookie.Value
+	return a.CheckTokenString(tknStr)
+}
+
+func (a *AuthService) Refresh(c echo.Context) error {
+	token, ok := a.CheckAuthCookie(c)
 	if !ok {
 		return errors.New("not authenticated")
 	}
@@ -166,35 +181,25 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) error {
 	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
 	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	err = SetJwtCookie(newToken, w, r)
+	err = SetJwtCookie(newToken, c)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *AuthService) Logout(w http.ResponseWriter, r *http.Request) {
+func (a *AuthService) Logout(c echo.Context) {
 	// immediately clear the token cookie
-	http.SetCookie(w, &http.Cookie{
+	c.SetCookie(&http.Cookie{
 		Name:    "token",
 		Expires: time.Now(),
 	})
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func NewAuthRouter(auth *AuthService, router *mux.Router) *mux.Router {
-	authRouter := router.NewRoute().Subrouter()
-	authRouter.Use(mux.MiddlewareFunc(func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, ok := auth.CheckAuthCookie(r)
-			if !ok {
-				auth.Logout(w, r)
-				http.Redirect(w, r, "/login", http.StatusSeeOther)
-			}
-			auth.Refresh(w, r)
-			handler.ServeHTTP(w, r)
-		})
-	}))
-
-	return authRouter
+func AuthMiddleware(auth *AuthService, unauthorizedHandler func(echo.Context, error) error) echo.MiddlewareFunc {
+	return echojwt.WithConfig(echojwt.Config{
+		SigningKey:  jwtKey,
+		ErrorHandler: unauthorizedHandler,
+		//SigningMethod: jwt.SigningMethodRS256.Name,
+	})
 }

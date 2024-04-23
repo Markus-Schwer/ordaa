@@ -9,12 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/frontend"
+	//"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/frontend"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/rest"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 
@@ -51,12 +51,11 @@ func main() {
 		log.Ctx(ctx).Fatal().Err(err).Msg(err.Error())
 	}
 
-	router := mux.NewRouter()
+	router := echo.New()
 	authService := auth.NewAuthService(ctx, repo)
-	authRouter := auth.NewAuthRouter(authService, router)
 
-	rest.NewRestBoundary(ctx, repo, authService).Start(router, authRouter)
-	frontend.NewFrontendBoundary(ctx, repo, authService).Start(router, authRouter)
+	rest.NewRestBoundary(ctx, repo, authService).Start(router)
+	//frontend.NewFrontendBoundary(ctx, repo, authService).Start(router)
 
 	go boundary.StartHttpServer(ctx, router)
 

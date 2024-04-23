@@ -2,8 +2,9 @@ package rest
 
 import (
 	"context"
+	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
@@ -18,29 +19,35 @@ func NewRestBoundary(ctx context.Context, repo *entity.Repository, authSerivce *
 	return &RestBoundary{ctx: ctx, repo: repo, authService: authSerivce}
 }
 
-func (server *RestBoundary) Start(router *mux.Router, authRouter *mux.Router) {
-	authRouter.HandleFunc("/api/menus", server.newMenu).Methods("POST")
-	authRouter.HandleFunc("/api/menus", server.allMenus).Methods("GET")
-	authRouter.HandleFunc("/api/menus/{uuid}", server.getMenu).Methods("GET")
-	authRouter.HandleFunc("/api/menus/{uuid}", server.updateMenu).Methods("PUT")
-	authRouter.HandleFunc("/api/menus/{uuid}", server.deleteMenu).Methods("DELETE")
+func (server *RestBoundary) Start(router *echo.Echo) {
+	authRouter := router.Group("/api", auth.AuthMiddleware(server.authService, func(c echo.Context, err error) error {
+		server.authService.Logout(c)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	}))
 
-	authRouter.HandleFunc("/api/orders", server.newOrder).Methods("POST")
-	authRouter.HandleFunc("/api/orders", server.allOrders).Methods("GET")
-	authRouter.HandleFunc("/api/orders/{uuid}", server.getOrder).Methods("GET")
-	authRouter.HandleFunc("/api/orders/{uuid}", server.updateOrder).Methods("PUT")
-	authRouter.HandleFunc("/api/orders/{uuid}", server.deleteOrder).Methods("DELETE")
+	authRouter.POST("/menus", server.newMenu)
+	authRouter.GET("/menus", server.allMenus)
+	authRouter.GET("/menus/:uuid", server.getMenu)
+	authRouter.PUT("/menus/:uuid", server.updateMenu)
+	authRouter.DELETE("/menus/:uuid", server.deleteMenu)
 
-	authRouter.HandleFunc("/api/orders/{order_uuid}/items", server.newOrderItem).Methods("GET")
-	authRouter.HandleFunc("/api/orders/{order_uuid}/items", server.allOrderItems).Methods("GET")
-	authRouter.HandleFunc("/api/orders/{order_uuid}/items/{uuid}", server.updateOrderItem).Methods("PUT")
-	authRouter.HandleFunc("/api/orders/{order_uuid}/items/{uuid}", server.deleteOrderItem).Methods("DELETE")
+	authRouter.POST("/orders", server.newOrder)
+	authRouter.GET("/orders", server.allOrders)
+	authRouter.GET("/orders/:uuid", server.getOrder)
+	authRouter.PUT("/orders/:uuid", server.updateOrder)
+	authRouter.DELETE("/orders/:uuid", server.deleteOrder)
 
-	router.HandleFunc("/api/users", server.registerUser).Methods("POST")
-	authRouter.HandleFunc("/api/users", server.allUsers).Methods("GET")
-	authRouter.HandleFunc("/api/users/{uuid}", server.getUser).Methods("GET")
-	authRouter.HandleFunc("/api/users/{uuid}", server.updateUser).Methods("PUT")
-	authRouter.HandleFunc("/api/users/{uuid}", server.deleteUser).Methods("DELETE")
+	authRouter.POST("/orders/:order_uuid/items", server.newOrderItem)
+	authRouter.GET("/orders/:order_uuid/items", server.allOrderItems)
+	authRouter.GET("/orders/:order_uuid/items/:uuid", server.getOrderItem)
+	authRouter.PUT("/orders/:order_uuid/items/:uuid", server.updateOrderItem)
+	authRouter.DELETE("/orders/:order_uuid/items/:uuid", server.deleteOrderItem)
 
-	router.HandleFunc("/api/login", server.login).Methods("POST")
+	router.POST("/api/users", server.registerUser)
+	authRouter.GET("/users", server.allUsers)
+	authRouter.GET("/users/:uuid", server.getUser)
+	authRouter.PUT("/users/:uuid", server.updateUser)
+	authRouter.DELETE("/users/:uuid", server.deleteUser)
+
+	router.POST("/api/login", server.login)
 }

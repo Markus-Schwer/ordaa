@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
 
 const AddressKey = "ADDRESS"
 
-func StartHttpServer(ctx context.Context, router *mux.Router) {
+func StartHttpServer(ctx context.Context, router *echo.Echo) {
 	srv := &http.Server{
 		Handler: router,
 		Addr:    ctx.Value(AddressKey).(string),

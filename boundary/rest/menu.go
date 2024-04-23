@@ -1,24 +1,22 @@
 package rest
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/gofrs/uuid"
-	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 
 	_ "github.com/lib/pq"
 )
 
-func (server *RestBoundary) newMenu(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) newMenu(c echo.Context) error {
 	var menu entity.NewMenu
-	err := json.NewDecoder(r.Body).Decode(&menu)
+	err := c.Bind(&menu)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
@@ -27,88 +25,65 @@ func (server *RestBoundary) newMenu(w http.ResponseWriter, r *http.Request) {
 		rollback_err := tx.Rollback()
 		if rollback_err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdMenu)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, createdMenu)
+	return nil
 }
 
-func (server *RestBoundary) allMenus(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) allMenus(c echo.Context) error {
 	tx := server.repo.Pool.MustBegin()
 	menus, err := server.repo.GetAllMenus(tx)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(menus)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, menus)
+	return nil
 }
 
-func (server *RestBoundary) getMenu(w http.ResponseWriter, r *http.Request) {
-	uuid_string := mux.Vars(r)["uuid"]
+func (server *RestBoundary) getMenu(c echo.Context) error {
+	uuid_string := c.Param("uuid")
 	uuid, err := uuid.FromString(uuid_string)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
 	menus, err := server.repo.GetMenu(tx, uuid)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(menus)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, menus)
+	return nil
 }
 
-func (server *RestBoundary) updateMenu(w http.ResponseWriter, r *http.Request) {
-	uuid_string := mux.Vars(r)["uuid"]
+func (server *RestBoundary) updateMenu(c echo.Context) error {
+	uuid_string := c.Param("uuid")
 	uuid, err := uuid.FromString(uuid_string)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	var menu entity.NewMenu
-	err = json.NewDecoder(r.Body).Decode(&menu)
+	err = c.Bind(&menu)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
@@ -117,36 +92,27 @@ func (server *RestBoundary) updateMenu(w http.ResponseWriter, r *http.Request) {
 		rollback_err := tx.Rollback()
 		if rollback_err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdMenu)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, createdMenu)
+	return nil
 }
 
-func (server *RestBoundary) deleteMenu(w http.ResponseWriter, r *http.Request) {
-	uuid_string := mux.Vars(r)["uuid"]
+func (server *RestBoundary) deleteMenu(c echo.Context) error {
+	uuid_string := c.Param("uuid")
 	uuid, err := uuid.FromString(uuid_string)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
@@ -155,19 +121,18 @@ func (server *RestBoundary) deleteMenu(w http.ResponseWriter, r *http.Request) {
 		rollback_err := tx.Rollback()
 		if rollback_err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	c.NoContent(http.StatusOK)
+	return nil
 }
 

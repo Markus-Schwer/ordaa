@@ -83,6 +83,10 @@ func (repo *Repository) DeleteUser(tx *sqlx.Tx, userUuid uuid.UUID) error {
 		return fmt.Errorf("could not delete user %s: %w", userUuid, err)
 	}
 
+	// TODO: check if the user is a password or matrix user
+	repo.DeleteMatrixUser(tx, userUuid)
+	repo.DeletePasswordUser(tx, userUuid)
+
 	return nil
 }
 

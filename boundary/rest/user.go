@@ -1,33 +1,30 @@
 package rest
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/gofrs/uuid"
-	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 
 	_ "github.com/lib/pq"
 )
 
-func (server *RestBoundary) registerUser(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) registerUser(c echo.Context) error {
 	var user entity.NewPasswordUser
-	err := json.NewDecoder(r.Body).Decode(&user)
+	err := c.Bind(&user)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 	log.Ctx(server.ctx).Info().Msgf("registering user %s", user.Username)
 
 	user.Password, err = crypto.GeneratePasswordHash(user.Password)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg("error generating password hash")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
@@ -36,12 +33,10 @@ func (server *RestBoundary) registerUser(w http.ResponseWriter, r *http.Request)
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg("error rolling back transaction")
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg("error creating user")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	user.UserUuid = createdUser.Uuid
 
@@ -50,88 +45,65 @@ func (server *RestBoundary) registerUser(w http.ResponseWriter, r *http.Request)
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg("error rolling back transaction")
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg("error creating password user")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg("error committing transaction")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdPwUser)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusCreated, createdPwUser)
+	return nil
 }
 
-func (server *RestBoundary) allUsers(w http.ResponseWriter, r *http.Request) {
+func (server *RestBoundary) allUsers(c echo.Context) error {
 	tx := server.repo.Pool.MustBegin()
 	users, err := server.repo.GetAllUsers(tx)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(users)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, users)
+	return nil
 }
 
-func (server *RestBoundary) getUser(w http.ResponseWriter, r *http.Request) {
-	uuidString := mux.Vars(r)["uuid"]
+func (server *RestBoundary) getUser(c echo.Context) error {
+	uuidString := c.Param("uuid")
 	uuid, err := uuid.FromString(uuidString)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
 	users, err := server.repo.GetUser(tx, uuid)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(users)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, users)
+	return nil
 }
 
-func (server *RestBoundary) updateUser(w http.ResponseWriter, r *http.Request) {
-	uuidString := mux.Vars(r)["uuid"]
+func (server *RestBoundary) updateUser(c echo.Context) error {
+	uuidString := c.Param("uuid")
 	uuid, err := uuid.FromString(uuidString)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	var user entity.NewUser
-	err = json.NewDecoder(r.Body).Decode(&user)
+	err = c.Bind(&user)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
@@ -140,36 +112,27 @@ func (server *RestBoundary) updateUser(w http.ResponseWriter, r *http.Request) {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(createdUser)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, createdUser)
+	return nil
 }
 
-func (server *RestBoundary) deleteUser(w http.ResponseWriter, r *http.Request) {
-	uuidString := mux.Vars(r)["uuid"]
+func (server *RestBoundary) deleteUser(c echo.Context) error {
+	uuidString := c.Param("uuid")
 	uuid, err := uuid.FromString(uuidString)
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	tx := server.repo.Pool.MustBegin()
@@ -178,18 +141,17 @@ func (server *RestBoundary) deleteUser(w http.ResponseWriter, r *http.Request) {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	c.NoContent(http.StatusNoContent)
+	return nil
 }
