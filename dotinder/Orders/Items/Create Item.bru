@@ -1,0 +1,19 @@
+meta {
+  name: Create Item
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/orders/{{order_uuid}}/items
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "price": 69,
+    "user": "010b3e35-6654-4d97-8400-8d6351289cd2",
+    "menu_item_uuid": "783d3c2e-49b0-45ed-bf50-889ac0f2ec7f"
+  }
+}

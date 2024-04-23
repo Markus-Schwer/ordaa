@@ -1,0 +1,16 @@
+meta {
+  name: Delete Item
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/orders/{{order_uuid}}/items/{{uuid}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  order_uuid: 
+  uuid: 
+}

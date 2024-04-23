@@ -1,0 +1,39 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:pre-request {
+  const axios = require('axios');
+  
+  const baseUrl = bru.getEnvVar('baseUrl');
+  const username = bru.getEnvVar('username');
+  const password = bru.getEnvVar('password');
+  
+  const axiosInstance = axios.create({
+    baseURL: baseUrl,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  const data = {
+    username: username,
+    password: password,
+  };
+  
+  await axiosInstance.post('/api/login', data).then(response => {
+    const accessToken = response.data.jwt;
+    console.log('Authentication successful!');
+    console.log('Access token:', accessToken);
+  
+    // Use the access token for subsequent API requests
+    bru.setVar('token', accessToken);
+  })
+  .catch(error => {
+    console.error('Authentication failed:', error);
+  });
+}

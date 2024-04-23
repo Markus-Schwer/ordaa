@@ -1,0 +1,15 @@
+meta {
+  name: Get Order
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/orders/{{uuid}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  uuid: c50b16cc-b8c5-4907-85ca-f36e8367c886
+}

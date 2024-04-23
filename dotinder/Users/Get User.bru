@@ -1,0 +1,15 @@
+meta {
+  name: Get User
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/users/{{uuid}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  uuid: 
+}
