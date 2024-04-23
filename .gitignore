@@ -1,7 +1,20 @@
-result
+/result
+/html/node_modules
+/html/build
+
+# env
+.env
+.env.*
+!.env.example
 
 # devenv
 .devenv
 
 # templ
 *_templ.go
+
+# svelte
+/html/.svelte-kit
+/html/package
+/html/vite.config.js.timestamp-*
+/html/vite.config.ts.timestamp-*

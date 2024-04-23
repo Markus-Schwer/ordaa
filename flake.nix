@@ -25,7 +25,9 @@
           {
             dotenv.disableHint = true;
             languages.go.enable = true;
-            packages = with pkgs; [ go-migrate (templ system) reflex ];
+            languages.javascript.enable = true;
+            packages = with pkgs; [ go-migrate (templ system) reflex nodePackages.svelte-language-server ];
+
             env.DATABASE_URL = "postgresql:///dotinder";
             env.ADDRESS = "localhost:8080";
 
@@ -55,6 +57,16 @@
 
           preBuild = ''
             ${templ system}/bin/templ generate
+          '';
+        };
+        html = pkgs.buildNpmPackage {
+          pname = "fontend";
+          version = "1.0.0";
+          src = html/.;
+          npmDepsHash = "sha256-wiBI0HfLlddZsVduJgy5ax3RCS1lzL3o6Q1ccK3+HEI=";
+          installPhase = ''
+            mkdir $out
+            cp -r build/* $out/
           '';
         };
       };

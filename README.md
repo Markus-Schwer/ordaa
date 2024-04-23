@@ -2,6 +2,19 @@
 
 > Chicken Masala legende Wollmilchsau
 
+## UI pages
+
+- login/logout/signup
+- admin area (user management)
+- profile page (link matrix account, set username, ...)
+- startpage with tutorial, later dashboards
+- menus route with list of all menus
+    - single menu detail page
+- orders overview page with list of all orders (grouped by restaurant and active
+  orders)
+    - order detail page, table with orders grouped by user with total price
+
+
 ## order state flow
 
 open -> users can add, modify and delete orders (optional Bestellschluss)
