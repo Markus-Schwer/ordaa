@@ -9,20 +9,50 @@ import (
 
 type User struct {
 	Uuid *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	Name string    `gorm:"column:name" json:"name"`
+	Name string     `gorm:"column:name" json:"name"`
 }
 
 type MatrixUser struct {
 	Uuid     *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	UserUuid uuid.UUID `gorm:"column:user_uuid" json:"user_uuid"`
-	Username string    `gorm:"column:username" json:"username"`
+	UserUuid uuid.UUID  `gorm:"column:user_uuid" json:"user_uuid"`
+	Username string     `gorm:"column:username" json:"username"`
 }
 
 type PasswordUser struct {
 	Uuid     *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	UserUuid uuid.UUID `gorm:"column:user_uuid" json:"user_uuid"`
-	Username string    `gorm:"column:username" json:"username"`
-	Password string    `gorm:"column:password" json:"-"`
+	UserUuid uuid.UUID  `gorm:"column:user_uuid" json:"user_uuid"`
+	Username string     `gorm:"column:username" json:"username"`
+	Password string     `gorm:"column:password" json:"-"`
+}
+
+func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
+	newUuid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("could not create uuid: %w", err)
+	}
+
+	user.Uuid = &newUuid
+	return nil
+}
+
+func (matrixUser *MatrixUser) BeforeCreate(tx *gorm.DB) (err error) {
+	newUuid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("could not create uuid: %w", err)
+	}
+
+	matrixUser.Uuid = &newUuid
+	return nil
+}
+
+func (passwordUser *PasswordUser) BeforeCreate(tx *gorm.DB) (err error) {
+	newUuid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("could not create uuid: %w", err)
+	}
+
+	passwordUser.Uuid = &newUuid
+	return nil
 }
 
 func (*Repository) GetAllUsers(tx *gorm.DB) ([]User, error) {
@@ -101,7 +131,7 @@ func (repo *Repository) GetMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID) (*M
 func (repo *Repository) CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser) (*MatrixUser, error) {
 	err := tx.Create(&matrixUser).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not create user %s: %w", matrixUser.Username, err)
+		return nil, fmt.Errorf("could not create matrix user %s: %w", matrixUser.Username, err)
 	}
 	return matrixUser, nil
 }
@@ -161,7 +191,7 @@ func (repo *Repository) GetPasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID)
 func (repo *Repository) CreatePasswordUser(tx *gorm.DB, passwordUser *PasswordUser) (*PasswordUser, error) {
 	err := tx.Create(&passwordUser).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not create user %s: %w", passwordUser.Username, err)
+		return nil, fmt.Errorf("could not create password user %s: %w", passwordUser.Username, err)
 	}
 	return passwordUser, nil
 }

@@ -28,6 +28,26 @@ type OrderItem struct {
 	MenuItemUuid uuid.UUID  `gorm:"column:menu_item_uuid" json:"menu_item_uuid"`
 }
 
+func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
+	newUuid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("could not create uuid: %w", err)
+	}
+
+	order.Uuid = &newUuid
+	return nil
+}
+
+func (orderItem *OrderItem) BeforeCreate(tx *gorm.DB) (err error) {
+	newUuid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("could not create uuid: %w", err)
+	}
+
+	orderItem.Uuid = &newUuid
+	return nil
+}
+
 func (*Repository) GetAllOrders(tx *gorm.DB) ([]Order, error) {
 	orders := []Order{}
 	err := tx.Model(&Order{}).Preload("Items").Find(&orders).Error
