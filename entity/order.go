@@ -5,103 +5,51 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 type Order struct {
-	Uuid          uuid.UUID  `db:"uuid" json:"uuid"`
-	Initiator     uuid.UUID  `db:"initiator" json:"initiator"`
-	SugarPerson   *uuid.UUID `db:"sugar_person" json:"sugar_person"`
-	State         string     `db:"state" json:"state"`
-	OrderDeadline *time.Time `db:"order_deadline" json:"order_deadline"`
-	Eta           *time.Time `db:"eta" json:"eta"`
-	MenuUuid      uuid.UUID  `db:"menu_uuid" json:"menu_uuid"`
-}
-
-type OrderWithItems struct {
-	Uuid          uuid.UUID   `db:"uuid" json:"uuid"`
-	Initiator     uuid.UUID   `db:"initiator" json:"initiator"`
-	SugarPerson   *uuid.UUID  `db:"sugar_person" json:"sugar_person"`
-	State         string      `db:"state" json:"state"`
-	OrderDeadline *time.Time  `db:"order_deadline" json:"order_deadline"`
-	Eta           *time.Time  `db:"eta" json:"eta"`
-	MenuUuid      uuid.UUID   `db:"menu_uuid" json:"menu_uuid"`
-	Items         []OrderItem `db:"items" json:"items"`
+	Uuid          *uuid.UUID  `gorm:"column:uuid;primaryKey" json:"uuid"`
+	Initiator     uuid.UUID   `gorm:"column:initiator" json:"initiator"`
+	SugarPerson   *uuid.UUID  `gorm:"column:sugar_person" json:"sugar_person"`
+	State         string      `gorm:"column:state" json:"state"`
+	OrderDeadline *time.Time  `gorm:"column:order_deadline" json:"order_deadline"`
+	Eta           *time.Time  `gorm:"column:eta" json:"eta"`
+	MenuUuid      uuid.UUID   `gorm:"column:menu_uuid" json:"menu_uuid"`
+	Items         []OrderItem `gorm:"foreignKey:order_uuid" json:"items"`
 }
 
 type OrderItem struct {
-	Uuid         uuid.UUID `db:"uuid" json:"uuid"`
-	Price        int       `db:"price" json:"price"`
-	Paid         bool      `db:"paid" json:"paid"`
-	User         uuid.UUID `db:"order_user" json:"order_user"`
-	OrderUuid    uuid.UUID `db:"order_uuid" json:"order_uuid"`
-	MenuItemUuid uuid.UUID `db:"menu_item_uuid" json:"menu_item_uuid"`
+	Uuid         *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
+	Price        int        `gorm:"column:price" json:"price"`
+	Paid         bool       `gorm:"column:paid" json:"paid"`
+	User         uuid.UUID  `gorm:"column:order_user" json:"order_user"`
+	OrderUuid    uuid.UUID  `gorm:"column:order_uuid" json:"order_uuid"`
+	MenuItemUuid uuid.UUID  `gorm:"column:menu_item_uuid" json:"menu_item_uuid"`
 }
 
-type NewOrder struct {
-	Initiator     uuid.UUID  `json:"initiator"`
-	SugarPerson   *uuid.UUID `json:"sugar_person"`
-	State         string     `json:"state"`
-	OrderDeadline *time.Time `json:"order_deadline"`
-	Eta           *time.Time `json:"eta"`
-	MenuUuid      uuid.UUID  `json:"menu_uuid"`
-}
-
-type NewOrderItem struct {
-	Price        int       `json:"price"`
-	Paid         bool      `json:"paid"`
-	User         uuid.UUID `json:"user"`
-	MenuItemUuid uuid.UUID `json:"menu_item_uuid"`
-}
-
-func (*Repository) GetAllOrders(tx *sqlx.Tx) ([]OrderWithItems, error) {
-	ordersMap := map[uuid.UUID]*OrderWithItems{}
-	rows, err := tx.Queryx("SELECT * FROM orders")
+func (*Repository) GetAllOrders(tx *gorm.DB) ([]Order, error) {
+	orders := []Order{}
+	err := tx.Model(&Order{}).Preload("Items").Find(&orders).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not get all orders from db: %w", err)
-	}
-	for rows.Next() {
-		var order OrderWithItems
-		rows.StructScan(&order)
-		ordersMap[order.Uuid] = &order
-	}
-
-	rows, err = tx.Queryx("SELECT oi.* FROM orders o JOIN order_items oi on o.uuid = oi.order_uuid")
-	if err != nil {
-		return nil, fmt.Errorf("could not get all order_items from db: %w", err)
-	}
-	for rows.Next() {
-		var orderItem OrderItem
-		rows.StructScan(&orderItem)
-		ordersMap[orderItem.OrderUuid].Items = append(ordersMap[orderItem.OrderUuid].Items, orderItem)
-	}
-
-	orders := make([]OrderWithItems, 0, len(ordersMap))
-	for _, value := range ordersMap {
-		orders = append(orders, *value)
 	}
 
 	return orders, nil
 }
 
-func (*Repository) GetOrder(tx *sqlx.Tx, uuid uuid.UUID) (*OrderWithItems, error) {
-	var order OrderWithItems
-	if err := tx.Get(&order, "SELECT * FROM orders WHERE uuid=$1", uuid); err != nil {
+func (*Repository) GetOrder(tx *gorm.DB, uuid uuid.UUID) (*Order, error) {
+	var order Order
+	if err := tx.Model(&Order{}).Preload("Items").First(&order, uuid).Error; err != nil {
 		return nil, fmt.Errorf("error getting order %s: %w", uuid, err)
 	}
 
-	var orderItems []OrderItem
-	if err := tx.Select(&orderItems, "SELECT * FROM order_items WHERE order_uuid=$1", order.Uuid); err != nil {
-		return nil, fmt.Errorf("error getting order items for order %s: %w", uuid, err)
-	}
-
-	order.Items = orderItems
 	return &order, nil
 }
 
-func (*Repository) GetAllOrderItems(tx *sqlx.Tx, orderUuid uuid.UUID) ([]OrderItem, error) {
+func (*Repository) GetAllOrderItems(tx *gorm.DB, orderUuid uuid.UUID) ([]OrderItem, error) {
 	orderItems := []OrderItem{}
-	err := tx.Select(&orderItems, "SELECT * FROM order_items")
+	err := tx.Find(&orderItems).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not get all order items from db: %w", err)
 	}
@@ -109,77 +57,74 @@ func (*Repository) GetAllOrderItems(tx *sqlx.Tx, orderUuid uuid.UUID) ([]OrderIt
 	return orderItems, nil
 }
 
-func (*Repository) GetOrderItem(tx *sqlx.Tx, uuid uuid.UUID) (*OrderItem, error) {
-	var orderItem OrderItem
-	if err := tx.Get(&orderItem, "SELECT * FROM order_items WHERE uuid=$1", uuid); err != nil {
+func (*Repository) GetOrderItem(tx *gorm.DB, uuid uuid.UUID) (*OrderItem, error) {
+	orderItem := OrderItem{}
+	if err := tx.First(&orderItem, uuid).Error; err != nil {
 		return nil, fmt.Errorf("error getting order item %s: %w", uuid, err)
 	}
 
 	return &orderItem, nil
 }
 
-func (*Repository) CreateOrderItem(tx *sqlx.Tx, order_uuid uuid.UUID, orderItem NewOrderItem) (*OrderItem, error) {
-	var uuidString string
-	err := tx.Get(
-		&uuidString,
-		"INSERT INTO order_items (price, order_user, menu_item_uuid, order_uuid) VALUES ($1, $2, $3, $4) RETURNING uuid",
-		orderItem.Price, orderItem.User, orderItem.MenuItemUuid, order_uuid,
-	)
+func (*Repository) CreateOrderItem(tx *gorm.DB, order_uuid uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+	err := tx.Create(&orderItem).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not create order item: %w", err)
 	}
 
-	uuid := uuid.Must(uuid.FromString(uuidString))
-
-	return &OrderItem{
-		Uuid:         uuid,
-		Price:        orderItem.Price,
-		User:         orderItem.User,
-		OrderUuid:    order_uuid,
-		MenuItemUuid: orderItem.MenuItemUuid,
-	}, nil
+	return orderItem, nil
 }
 
-func (repo *Repository) CreateOrder(tx *sqlx.Tx, order *NewOrder) (*Order, error) {
-	var createdOrder Order
-	err := tx.Get(
-		&createdOrder,
-		"INSERT INTO orders (initiator, sugar_person, state, order_deadline, eta, menu_uuid) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-		order.Initiator, order.SugarPerson, order.State, order.OrderDeadline, order.Eta, order.MenuUuid,
-	)
+func (repo *Repository) CreateOrder(tx *gorm.DB, order *Order) (*Order, error) {
+	err := tx.Create(&order).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not create order: %w", err)
 	}
 
-	return &createdOrder, nil
+	return order, nil
 }
 
-func (repo *Repository) UpdateOrder(tx *sqlx.Tx, orderUuid uuid.UUID, order *NewOrder) (*OrderWithItems, error) {
-	_, err := tx.Exec(
-		"UPDATE orders SET initiator = $2, sugar_person = $3, state = $4, order_deadline = $5, eta = $6, menu_uuid = $7 WHERE uuid = $1",
-		orderUuid, order.Initiator, order.SugarPerson, order.State, order.OrderDeadline, order.Eta, order.MenuUuid,
-	)
+func (repo *Repository) UpdateOrder(tx *gorm.DB, orderUuid uuid.UUID, order *Order) (*Order, error) {
+	existingOrder, err := repo.GetOrder(tx, orderUuid)
 	if err != nil {
 		return nil, fmt.Errorf("could not update order %s: %w", orderUuid, err)
 	}
 
-	return repo.GetOrder(tx, orderUuid)
-}
+	existingOrder.Initiator = order.Initiator
+	existingOrder.SugarPerson = order.SugarPerson
+	existingOrder.State = order.State
+	existingOrder.OrderDeadline = order.OrderDeadline
+	existingOrder.Eta = order.Eta
 
-func (repo *Repository) UpdateOrderItem(tx *sqlx.Tx, orderItemUuid uuid.UUID, orderItem *NewOrderItem) (*OrderItem, error) {
-	_, err := tx.Exec(
-		"UPDATE order_items SET price = $2, user_uuid = $3, menu_item_uuid = $4, order_uuid = $5 WHERE uuid = $1",
-		orderItemUuid, orderItem.User, orderItem.MenuItemUuid, orderItem.Price, orderItem.Paid,
-	)
+	err = tx.Save(existingOrder).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not update order %s: %w", orderItemUuid, err)
+		return nil, fmt.Errorf("could not update order %s: %w", orderUuid, err)
 	}
 
-	return repo.GetOrderItem(tx, orderItemUuid)
+	return existingOrder, nil
 }
 
-func (repo *Repository) DeleteOrderItem(tx *sqlx.Tx, orderItemUuid uuid.UUID) error {
-	_, err := tx.Exec("DELETE FROM order_items WHERE uuid = $1", orderItemUuid)
+func (repo *Repository) UpdateOrderItem(tx *gorm.DB, orderItemUuid uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+	existingOrderItem, err := repo.GetOrderItem(tx, orderItemUuid)
+	if err != nil {
+		return nil, fmt.Errorf("could not update order item %s: %w", orderItemUuid, err)
+	}
+
+	existingOrderItem.User = orderItem.User
+	existingOrderItem.Price = orderItem.Price
+	existingOrderItem.Paid = orderItem.Paid
+	existingOrderItem.MenuItemUuid = orderItem.MenuItemUuid
+
+	err = tx.Save(existingOrderItem).Error
+	if err != nil {
+		return nil, fmt.Errorf("could not update order item %s: %w", orderItemUuid, err)
+	}
+
+	return existingOrderItem, nil
+}
+
+func (repo *Repository) DeleteOrderItem(tx *gorm.DB, orderItemUuid uuid.UUID) error {
+	err := tx.Delete(&OrderItem{}, orderItemUuid).Error
 	if err != nil {
 		return fmt.Errorf("could not delete order item %s: %w", orderItemUuid, err)
 	}
@@ -187,8 +132,8 @@ func (repo *Repository) DeleteOrderItem(tx *sqlx.Tx, orderItemUuid uuid.UUID) er
 	return nil
 }
 
-func (repo *Repository) DeleteOrder(tx *sqlx.Tx, orderUuid uuid.UUID) error {
-	_, err := tx.Exec("DELETE FROM orders WHERE uuid = $1", orderUuid)
+func (repo *Repository) DeleteOrder(tx *gorm.DB, orderUuid uuid.UUID) error {
+	err := tx.Delete(&OrderItem{}, orderUuid).Error
 	if err != nil {
 		return fmt.Errorf("could not delete order %s: %w", orderUuid, err)
 	}

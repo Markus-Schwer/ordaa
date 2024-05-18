@@ -3,24 +3,25 @@ package entity
 import (
 	"context"
 
-	"github.com/jmoiron/sqlx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 const DatabaseUrlKey = "DATABASE_URL"
 
 type Repository struct {
-	Pool sqlx.DB
-	ctx  context.Context
+	Db  *gorm.DB
+	ctx context.Context
 }
 
 func NewRepository(ctx context.Context, databaseUrl string) (*Repository, error) {
-	db, err := sqlx.Connect("postgres", databaseUrl)
+	db, err := gorm.Open(postgres.Open(databaseUrl), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
 	return &Repository{
-		Pool: *db,
-		ctx:  ctx,
+		Db:  db,
+		ctx: ctx,
 	}, nil
 }

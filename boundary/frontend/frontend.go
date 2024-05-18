@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
@@ -21,7 +21,12 @@ func NewFrontendBoundary(ctx context.Context, repo *entity.Repository, authServi
 	return &FrontendBoundary{ctx: ctx, repo: repo, authService: authService}
 }
 
-func (server *FrontendBoundary) Start(router *mux.Router) {
+func (server *FrontendBoundary) Start(router *echo.Echo) {
+	authRouter := router.Group("/", auth.AuthMiddleware(server.authService, func(c echo.Context, err error) error {
+		server.authService.Logout(c)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	}))
+
 	authRouter := router.NewRoute().Subrouter()
 	authRouter.Use(auth.AuthMiddleware(server.authService, mux.MiddlewareFunc(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

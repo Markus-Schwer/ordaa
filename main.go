@@ -68,13 +68,13 @@ func main() {
 	os.Exit(0)
 }
 
-func importMenu(filename string) (*entity.NewMenu, error) {
+func importMenu(filename string) (*entity.Menu, error) {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	var menu entity.NewMenu
+	var menu entity.Menu
 	if err := json.Unmarshal(bytes, &menu); err != nil {
 		return nil, err
 	}

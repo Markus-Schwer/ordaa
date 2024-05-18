@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
+	"gorm.io/gorm"
 )
 
 type LoginResponse struct {
@@ -20,24 +21,22 @@ func (server *RestBoundary) login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	tx := server.repo.Pool.MustBegin()
-	token, err := server.authService.Signin(tx, &creds)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-	rawToken, err := auth.SignToken(token)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
+	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+		token, err := server.authService.Signin(tx, &creds)
+		if err != nil {
+			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
+		}
+		rawToken, err := auth.SignToken(token)
+		if err != nil {
+			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
+		}
 
-	if err = tx.Rollback(); err!= nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("error rolling back transaction")
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
+		tx.Rollback()
 
-	loginResponse := LoginResponse{Jwt: rawToken}
-	c.JSON(http.StatusOK, loginResponse)
-	return nil
+		loginResponse := LoginResponse{Jwt: rawToken}
+		c.JSON(http.StatusOK, loginResponse)
+		return nil
+	})
 }

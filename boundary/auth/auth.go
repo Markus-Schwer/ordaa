@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo-jwt/v4"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jmoiron/sqlx"
+	"github.com/labstack/echo-jwt/v4"
+	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gorm.io/gorm"
 )
 
 // Create the JWT key used to create the signature
@@ -43,7 +43,7 @@ func NewAuthService(ctx context.Context, repo *entity.Repository) *AuthService {
 	return &AuthService{ctx: ctx, repo: repo}
 }
 
-func (a *AuthService) Signin(tx *sqlx.Tx, creds *Credentials) (*jwt.Token, error) {
+func (a *AuthService) Signin(tx *gorm.DB, creds *Credentials) (*jwt.Token, error) {
 	dbUser, err := a.repo.FindPasswordUser(tx, creds.Username)
 	if err != nil {
 		return nil, err
