@@ -151,10 +151,10 @@ func (repo *Repository) UpdateMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID, 
 	return existingMatrixUser, nil
 }
 
-func (repo *Repository) DeleteMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID) error {
-	err := tx.Delete(&MatrixUser{Uuid: &matrixUserUuid}).Error
+func (repo *Repository) DeleteMatrixUser(tx *gorm.DB, userUuid uuid.UUID) error {
+	err := tx.Where(&MatrixUser{UserUuid: userUuid}).Delete(&MatrixUser{}).Error
 	if err != nil {
-		return fmt.Errorf("could not delete user %s: %w", matrixUserUuid, err)
+		return fmt.Errorf("could not delete user %s: %w", userUuid, err)
 	}
 
 	return nil
@@ -213,10 +213,10 @@ func (repo *Repository) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid uuid.UU
 	return existingPasswordUser, nil
 }
 
-func (repo *Repository) DeletePasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID) error {
-	err := tx.Delete(&PasswordUser{Uuid: &passwordUserUuid}).Error
+func (repo *Repository) DeletePasswordUser(tx *gorm.DB, userUuid uuid.UUID) error {
+	err := tx.Where(&PasswordUser{UserUuid: userUuid}).Delete(&PasswordUser{}).Error
 	if err != nil {
-		return fmt.Errorf("could not delete user %s: %w", passwordUserUuid, err)
+		return fmt.Errorf("could not delete user %s: %w", userUuid, err)
 	}
 
 	return nil
