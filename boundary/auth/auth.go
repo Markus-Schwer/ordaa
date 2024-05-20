@@ -36,10 +36,10 @@ type Claims struct {
 
 type AuthService struct {
 	ctx  context.Context
-	repo *entity.Repository
+	repo entity.Repository
 }
 
-func NewAuthService(ctx context.Context, repo *entity.Repository) *AuthService {
+func NewAuthService(ctx context.Context, repo entity.Repository) *AuthService {
 	return &AuthService{ctx: ctx, repo: repo}
 }
 

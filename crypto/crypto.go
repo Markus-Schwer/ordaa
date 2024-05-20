@@ -74,7 +74,7 @@ func randomSecret(length uint32) ([]byte, error) {
 // GenerateHash using the password and provided salt.
 // If not salt value provided fallback to random value
 // generated of a given length.
-func (a *Argon2idHash) generateHash(password, salt []byte) (*HashSalt, error) {
+func (a *Argon2idHash) generateHash(password []byte, salt []byte) (*HashSalt, error) {
 	var err error
 	// If salt is not provided generate a salt of
 	// the configured salt length.

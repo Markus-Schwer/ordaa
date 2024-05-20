@@ -18,7 +18,7 @@ func (server *RestBoundary) newMenu(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		createdMenu, err := server.repo.CreateMenu(tx, &menu)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -30,7 +30,7 @@ func (server *RestBoundary) newMenu(c echo.Context) error {
 }
 
 func (server *RestBoundary) allMenus(c echo.Context) error {
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		menus, err := server.repo.GetAllMenus(tx)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -50,7 +50,7 @@ func (server *RestBoundary) getMenu(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		menus, err := server.repo.GetMenu(tx, uuid)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -77,7 +77,7 @@ func (server *RestBoundary) updateMenu(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		createdMenu, err := server.repo.UpdateMenu(tx, uuid, &menu)
 		if err != nil {
 			tx.Rollback()
@@ -98,7 +98,7 @@ func (server *RestBoundary) deleteMenu(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		err = server.repo.DeleteMenu(tx, uuid)
 		if err != nil {
 			tx.Rollback()

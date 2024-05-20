@@ -11,11 +11,11 @@ import (
 
 type RestBoundary struct {
 	ctx         context.Context
-	repo        *entity.Repository
+	repo        entity.Repository
 	authService *auth.AuthService
 }
 
-func NewRestBoundary(ctx context.Context, repo *entity.Repository, authSerivce *auth.AuthService) *RestBoundary {
+func NewRestBoundary(ctx context.Context, repo entity.Repository, authSerivce *auth.AuthService) *RestBoundary {
 	return &RestBoundary{ctx: ctx, repo: repo, authService: authSerivce}
 }
 

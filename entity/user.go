@@ -22,7 +22,7 @@ type PasswordUser struct {
 	Uuid     *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
 	UserUuid uuid.UUID  `gorm:"column:user_uuid" json:"user_uuid"`
 	Username string     `gorm:"column:username" json:"username"`
-	Password string     `gorm:"column:password" json:"-"`
+	Password string     `gorm:"column:password" json:"password"`
 }
 
 func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
@@ -55,7 +55,7 @@ func (passwordUser *PasswordUser) BeforeCreate(tx *gorm.DB) (err error) {
 	return nil
 }
 
-func (*Repository) GetAllUsers(tx *gorm.DB) ([]User, error) {
+func (*RepositoryImpl) GetAllUsers(tx *gorm.DB) ([]User, error) {
 	users := []User{}
 	err := tx.Find(&users).Error
 	if err != nil {
@@ -65,7 +65,7 @@ func (*Repository) GetAllUsers(tx *gorm.DB) ([]User, error) {
 	return users, nil
 }
 
-func (repo *Repository) GetUser(tx *gorm.DB, userUuid uuid.UUID) (*User, error) {
+func (repo *RepositoryImpl) GetUser(tx *gorm.DB, userUuid uuid.UUID) (*User, error) {
 	var user User
 	if err := tx.First(&user, userUuid).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user %s: %w", userUuid, err)
@@ -74,7 +74,7 @@ func (repo *Repository) GetUser(tx *gorm.DB, userUuid uuid.UUID) (*User, error) 
 	return &user, nil
 }
 
-func (repo *Repository) CreateUser(tx *gorm.DB, user *User) (*User, error) {
+func (repo *RepositoryImpl) CreateUser(tx *gorm.DB, user *User) (*User, error) {
 	err := tx.Create(&user).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not create user %s: %w", user.Name, err)
@@ -82,7 +82,7 @@ func (repo *Repository) CreateUser(tx *gorm.DB, user *User) (*User, error) {
 	return user, nil
 }
 
-func (repo *Repository) UpdateUser(tx *gorm.DB, userUuid uuid.UUID, user *User) (*User, error) {
+func (repo *RepositoryImpl) UpdateUser(tx *gorm.DB, userUuid uuid.UUID, user *User) (*User, error) {
 	foundUser, err := repo.GetUser(tx, userUuid)
 	if err != nil {
 		return nil, fmt.Errorf("could not update user %s: %w", userUuid, err)
@@ -96,7 +96,7 @@ func (repo *Repository) UpdateUser(tx *gorm.DB, userUuid uuid.UUID, user *User) 
 	return foundUser, nil
 }
 
-func (repo *Repository) DeleteUser(tx *gorm.DB, userUuid uuid.UUID) error {
+func (repo *RepositoryImpl) DeleteUser(tx *gorm.DB, userUuid uuid.UUID) error {
 	err := tx.Delete(&User{Uuid: &userUuid}).Error
 	if err != nil {
 		return fmt.Errorf("could not delete user %s: %w", userUuid, err)
@@ -109,7 +109,7 @@ func (repo *Repository) DeleteUser(tx *gorm.DB, userUuid uuid.UUID) error {
 	return nil
 }
 
-func (*Repository) GetAllMatrixUsers(tx *gorm.DB) ([]MatrixUser, error) {
+func (*RepositoryImpl) GetAllMatrixUsers(tx *gorm.DB) ([]MatrixUser, error) {
 	matrixUsers := []MatrixUser{}
 	err := tx.Find(&matrixUsers).Error
 	if err != nil {
@@ -119,7 +119,7 @@ func (*Repository) GetAllMatrixUsers(tx *gorm.DB) ([]MatrixUser, error) {
 	return matrixUsers, nil
 }
 
-func (repo *Repository) GetMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID) (*MatrixUser, error) {
+func (repo *RepositoryImpl) GetMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID) (*MatrixUser, error) {
 	var matrixUser MatrixUser
 	if err := tx.Where(&MatrixUser{Uuid: &matrixUserUuid}).First(&matrixUser).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user %s: %w", matrixUserUuid, err)
@@ -128,7 +128,7 @@ func (repo *Repository) GetMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID) (*M
 	return &matrixUser, nil
 }
 
-func (repo *Repository) CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser) (*MatrixUser, error) {
+func (repo *RepositoryImpl) CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser) (*MatrixUser, error) {
 	err := tx.Create(&matrixUser).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not create matrix user %s: %w", matrixUser.Username, err)
@@ -136,7 +136,7 @@ func (repo *Repository) CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser) (*
 	return matrixUser, nil
 }
 
-func (repo *Repository) UpdateMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID, matrixUser *MatrixUser) (*MatrixUser, error) {
+func (repo *RepositoryImpl) UpdateMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID, matrixUser *MatrixUser) (*MatrixUser, error) {
 	existingMatrixUser, err := repo.GetMatrixUser(tx, matrixUserUuid)
 	if err != nil {
 		return nil, fmt.Errorf("could not update user %s: %w", matrixUserUuid, err)
@@ -151,7 +151,7 @@ func (repo *Repository) UpdateMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID, 
 	return existingMatrixUser, nil
 }
 
-func (repo *Repository) DeleteMatrixUser(tx *gorm.DB, userUuid uuid.UUID) error {
+func (repo *RepositoryImpl) DeleteMatrixUser(tx *gorm.DB, userUuid uuid.UUID) error {
 	err := tx.Where(&MatrixUser{UserUuid: userUuid}).Delete(&MatrixUser{}).Error
 	if err != nil {
 		return fmt.Errorf("could not delete user %s: %w", userUuid, err)
@@ -160,7 +160,7 @@ func (repo *Repository) DeleteMatrixUser(tx *gorm.DB, userUuid uuid.UUID) error 
 	return nil
 }
 
-func (*Repository) GetAllPasswordUsers(tx *gorm.DB) ([]PasswordUser, error) {
+func (*RepositoryImpl) GetAllPasswordUsers(tx *gorm.DB) ([]PasswordUser, error) {
 	passwordUsers := []PasswordUser{}
 	err := tx.Find(&passwordUsers).Error
 	if err != nil {
@@ -170,7 +170,7 @@ func (*Repository) GetAllPasswordUsers(tx *gorm.DB) ([]PasswordUser, error) {
 	return passwordUsers, nil
 }
 
-func (repo *Repository) FindPasswordUser(tx *gorm.DB, username string) (*PasswordUser, error) {
+func (repo *RepositoryImpl) FindPasswordUser(tx *gorm.DB, username string) (*PasswordUser, error) {
 	var passwordUser PasswordUser
 	if err := tx.Where(&PasswordUser{Username: username}).Find(&passwordUser).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user %s: %w", username, err)
@@ -179,7 +179,7 @@ func (repo *Repository) FindPasswordUser(tx *gorm.DB, username string) (*Passwor
 	return &passwordUser, nil
 }
 
-func (repo *Repository) GetPasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID) (*PasswordUser, error) {
+func (repo *RepositoryImpl) GetPasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID) (*PasswordUser, error) {
 	var passwordUser PasswordUser
 	if err := tx.Where(&PasswordUser{Uuid: &passwordUserUuid}).First(&passwordUser).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user %s: %w", passwordUserUuid, err)
@@ -188,7 +188,7 @@ func (repo *Repository) GetPasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID)
 	return &passwordUser, nil
 }
 
-func (repo *Repository) CreatePasswordUser(tx *gorm.DB, passwordUser *PasswordUser) (*PasswordUser, error) {
+func (repo *RepositoryImpl) CreatePasswordUser(tx *gorm.DB, passwordUser *PasswordUser) (*PasswordUser, error) {
 	err := tx.Create(&passwordUser).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not create password user %s: %w", passwordUser.Username, err)
@@ -196,7 +196,7 @@ func (repo *Repository) CreatePasswordUser(tx *gorm.DB, passwordUser *PasswordUs
 	return passwordUser, nil
 }
 
-func (repo *Repository) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID, passwordUser *PasswordUser) (*PasswordUser, error) {
+func (repo *RepositoryImpl) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID, passwordUser *PasswordUser) (*PasswordUser, error) {
 	existingPasswordUser, err := repo.GetPasswordUser(tx, passwordUserUuid)
 	if err != nil {
 		return nil, fmt.Errorf("could not update user %s: %w", passwordUserUuid, err)
@@ -213,7 +213,7 @@ func (repo *Repository) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid uuid.UU
 	return existingPasswordUser, nil
 }
 
-func (repo *Repository) DeletePasswordUser(tx *gorm.DB, userUuid uuid.UUID) error {
+func (repo *RepositoryImpl) DeletePasswordUser(tx *gorm.DB, userUuid uuid.UUID) error {
 	err := tx.Where(&PasswordUser{UserUuid: userUuid}).Delete(&PasswordUser{}).Error
 	if err != nil {
 		return fmt.Errorf("could not delete user %s: %w", userUuid, err)

@@ -21,7 +21,7 @@ func (server *RestBoundary) login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		token, err := server.authService.Signin(tx, &creds)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -33,10 +33,7 @@ func (server *RestBoundary) login(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 
-		tx.Rollback()
-
 		loginResponse := LoginResponse{Jwt: rawToken}
-		c.JSON(http.StatusOK, loginResponse)
-		return nil
+		return c.JSON(http.StatusOK, loginResponse)
 	})
 }

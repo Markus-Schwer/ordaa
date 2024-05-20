@@ -26,7 +26,7 @@ func (server *RestBoundary) registerUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		createdUser, err := server.repo.CreateUser(tx, &entity.User{Name: user.Username})
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg("error creating user")
@@ -34,6 +34,7 @@ func (server *RestBoundary) registerUser(c echo.Context) error {
 		}
 		user.UserUuid = *createdUser.Uuid
 
+		log.Ctx(server.ctx).Info().Msgf("created pw user %s, %s", user.Username, user.Password)
 		createdPwUser, err := server.repo.CreatePasswordUser(tx, &user)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg("error creating password user")
@@ -45,7 +46,7 @@ func (server *RestBoundary) registerUser(c echo.Context) error {
 }
 
 func (server *RestBoundary) allUsers(c echo.Context) error {
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		users, err := server.repo.GetAllUsers(tx)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -64,7 +65,7 @@ func (server *RestBoundary) getUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		users, err := server.repo.GetUser(tx, uuid)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -90,7 +91,7 @@ func (server *RestBoundary) updateUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		createdUser, err := server.repo.UpdateUser(tx, uuid, &user)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
@@ -109,7 +110,7 @@ func (server *RestBoundary) deleteUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return server.repo.Db.Transaction(func(tx *gorm.DB) error {
+	return server.repo.Transaction(func(tx *gorm.DB) error {
 		err = server.repo.DeleteUser(tx, uuid)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
