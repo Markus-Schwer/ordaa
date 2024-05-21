@@ -53,7 +53,7 @@ func (*RepositoryImpl) GetAllMenus(tx *gorm.DB) ([]Menu, error) {
 
 func (repo *RepositoryImpl) GetMenu(tx *gorm.DB, menuUuid uuid.UUID) (*Menu, error) {
 	var menu Menu
-	if err := tx.First(&menu, menuUuid).Error; err != nil {
+	if err := tx.Model(&Menu{}).Preload("Items").First(&menu, menuUuid).Error; err != nil {
 		return nil, fmt.Errorf("failed to get menu %s: %w", menuUuid, err)
 	}
 

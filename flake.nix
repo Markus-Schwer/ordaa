@@ -26,10 +26,11 @@
             dotenv.disableHint = true;
             languages.go.enable = true;
             languages.javascript.enable = true;
-            packages = with pkgs; [ go-migrate (templ system) reflex nodePackages.svelte-language-server ];
+            packages = with pkgs; [ go-migrate (templ system) reflex gcc nodePackages.svelte-language-server ];
 
             env.DATABASE_URL = "postgresql:///dotinder";
             env.ADDRESS = "localhost:8080";
+            env.CGO_ENABLED = "1";
 
             services.postgres = {
               enable = true;
