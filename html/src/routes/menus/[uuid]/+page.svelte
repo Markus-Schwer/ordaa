@@ -3,7 +3,7 @@
     import { page } from "$app/stores";
 
     async function getMenus(uuid) {
-        const res = await fetch(`http://localhost:8080/api/menus/${uuid}`);
+        const res = await fetch(`/api/menus/${uuid}`);
         let menuObj = await res.json();
 
         if (res.ok) {

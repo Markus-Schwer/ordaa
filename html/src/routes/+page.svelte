@@ -8,7 +8,7 @@
 
     async function handleLogin() {
         const res = await fetch(
-            `http://localhost:8080/api/${register ? "users" : "login"}`,
+            `/api/${register ? "users" : "login"}`,
             {
                 method: "POST",
                 headers: {

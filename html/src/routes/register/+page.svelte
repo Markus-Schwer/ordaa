@@ -18,7 +18,7 @@
         if (!passwordsMatch) {
             return;
         }
-        const res = await fetch(`http://localhost:8080/api/users`, {
+        const res = await fetch(`/api/users`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

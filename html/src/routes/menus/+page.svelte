@@ -14,7 +14,7 @@
     let promise = getMenus();
 
     async function getMenus() {
-        const res = await fetch("http://localhost:8080/api/menus", {
+        const res = await fetch("/api/menus", {
             headers: {
                 Authorization: `Bearer ${get(token)}`,
             },
