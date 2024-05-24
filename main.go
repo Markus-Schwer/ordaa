@@ -14,7 +14,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
-	//"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/frontend"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/rest"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 
