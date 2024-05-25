@@ -4,6 +4,7 @@
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import { get } from "svelte/store";
+    import axios from "$lib/api";
 
     let username, password, password2, passwordsMatch;
     $: passwordsMatch = password === password2;
@@ -14,28 +15,18 @@
         }
     });
 
-    async function handleLogin() {
+    async function handleRegister() {
         if (!passwordsMatch) {
             return;
         }
-        const res = await fetch(`/api/users`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                username,
-                password,
-            }),
+        return await axios.post(`/api/users`, {
+            username,
+            password,
+        }).then((res) => {
+            goto("/login");
+        }).catch((err) => {
+            alert(err);
         });
-        if (res.ok) {
-            const body = await res.json();
-            token.set(body.jwt);
-            goto("/");
-        } else {
-            const text = await res.text();
-            alert(text);
-        }
     }
 </script>
 
@@ -78,7 +69,7 @@
             Passwords don't match.
         </Helper>
     {/if}
-    <Button on:click={handleLogin} class="w-full">Register</Button>
+    <Button on:click={handleRegister} class="w-full">Register</Button>
     <div class="text-sm">
         Already registered? <a
             href="/login"

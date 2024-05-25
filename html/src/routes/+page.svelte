@@ -1,5 +1,6 @@
 <script>
     import { token } from "$lib/auth";
+    import axios from "$lib/api";
 
     import { Alert } from 'flowbite-svelte';
 
@@ -7,26 +8,15 @@
     let register = false;
 
     async function handleLogin() {
-        const res = await fetch(
-            `/api/${register ? "users" : "login"}`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    username,
-                    password,
-                }),
-            }
-        );
-        if (res.ok) {
-            const body = await res.json();
-            token.set(body.jwt);
-        } else {
-            const text = await res.text();
-            alert(text);
-        }
+        return await axios.post(`/api/${register ? "users" : "login"}`, {
+            username,
+            password,
+        }).then((res) => {
+            // TODO: this won't work when registering a user...
+            token.set(res.data.jwt);
+        }).catch((err) => {
+            alert(err);
+        });
     }
 </script>
 <div class="p-8">

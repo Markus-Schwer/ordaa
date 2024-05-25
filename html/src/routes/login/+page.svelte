@@ -4,6 +4,7 @@
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import { get } from "svelte/store";
+    import axios from "$lib/api";
 
     let username, password;
 
@@ -14,24 +15,15 @@
     });
 
     async function handleLogin() {
-        const res = await fetch("/api/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                username,
-                password,
-            }),
-        });
-        if (res.ok) {
-            const body = await res.json();
-            token.set(body.jwt);
+        return await axios.post("/api/login", {
+            username,
+            password,
+        }).then((res) => {
+            token.set(res.data.jwt);
             goto("/");
-        } else {
-            const text = await res.text();
-            alert(text);
-        }
+        }).catch((err) => {
+            alert(err);
+        });
     }
 </script>
 

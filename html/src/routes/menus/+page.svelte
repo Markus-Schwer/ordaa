@@ -4,6 +4,7 @@
     import { Alert, Spinner } from "flowbite-svelte";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
+    import axios from "$lib/api";
 
     onMount(() => {
         if (get(token) == null) {
@@ -14,18 +15,11 @@
     let promise = getMenus();
 
     async function getMenus() {
-        const res = await fetch("/api/menus", {
-            headers: {
-                Authorization: `Bearer ${get(token)}`,
-            },
+        return await axios.get("/api/menus").then((res) => {
+            return res.data;
+        }).catch((err) => {
+            throw new Error(err);
         });
-        const resObj = await res.json();
-
-        if (res.ok) {
-            return resObj;
-        } else {
-            throw new Error(res);
-        }
     }
 </script>
 

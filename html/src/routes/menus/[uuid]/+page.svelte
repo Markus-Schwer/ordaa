@@ -1,12 +1,12 @@
 <script>
     import { onMount } from "svelte";
     import { page } from "$app/stores";
+    import axios from "$lib/api";
 
-    async function getMenus(uuid) {
-        const res = await fetch(`/api/menus/${uuid}`);
-        let menuObj = await res.json();
+    async function getMenu(uuid) {
+        return await axios.get(`/api/menus/${uuid}`).then((res) => {
+            let menuObj = res.data;
 
-        if (res.ok) {
             menuObj.items = menuObj.items.sort((a, b) =>
                 a.short_name.localeCompare(b.short_name, undefined, {
                     numeric: true,
@@ -14,9 +14,9 @@
                 })
             );
             return menuObj;
-        } else {
+        }).catch((err) => {
             throw new Error(menuObj);
-        }
+        });
     }
 
     onMount(async () => {
@@ -33,7 +33,7 @@
         </tr>
     </thead>
 
-    {#await getMenus($page.params.uuid)}
+    {#await getMenu($page.params.uuid)}
         <p>...waiting</p>
     {:then menu}
         {#each menu.items as item}
