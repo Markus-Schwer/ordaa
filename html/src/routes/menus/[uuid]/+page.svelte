@@ -20,7 +20,7 @@
     }
 
     onMount(async () => {
-        console.log(await getMenus($page.params.uuid));
+        console.log(await getMenu($page.params.uuid));
     });
 </script>
 
