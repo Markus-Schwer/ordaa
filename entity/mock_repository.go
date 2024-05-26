@@ -37,9 +37,9 @@ func (repo *MockRepository) GetAllMenus(tx *gorm.DB) ([]Menu, error) {
 	return repo.menus, nil
 }
 
-func (repo *MockRepository) GetMenu(tx *gorm.DB, menuUuid uuid.UUID) (*Menu, error) {
+func (repo *MockRepository) GetMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Menu, error) {
 	for _, m := range repo.menus {
-		if *m.Uuid == menuUuid {
+		if *m.Uuid == *menuUuid {
 			return &m, nil
 		}
 	}
@@ -47,9 +47,9 @@ func (repo *MockRepository) GetMenu(tx *gorm.DB, menuUuid uuid.UUID) (*Menu, err
 	return nil, errors.New("menu not found")
 }
 
-func (repo *MockRepository) GetMenuItem(tx *gorm.DB, menuItemUuid uuid.UUID) (*MenuItem, error) {
+func (repo *MockRepository) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*MenuItem, error) {
 	for _, mi := range repo.menuItems {
-		if *mi.Uuid == menuItemUuid {
+		if *mi.Uuid == *menuItemUuid {
 			return &mi, nil
 		}
 	}
@@ -68,7 +68,7 @@ func (repo *MockRepository) CreateMenu(tx *gorm.DB, menu *Menu) (*Menu, error) {
 	return menu, nil
 }
 
-func (repo *MockRepository) UpdateMenu(tx *gorm.DB, menuUuid uuid.UUID, menu *Menu) (*Menu, error) {
+func (repo *MockRepository) UpdateMenu(tx *gorm.DB, menuUuid *uuid.UUID, menu *Menu) (*Menu, error) {
 	if err := repo.DeleteMenu(tx, menuUuid); err != nil {
 		return nil, err
 	}
@@ -78,13 +78,13 @@ func (repo *MockRepository) UpdateMenu(tx *gorm.DB, menuUuid uuid.UUID, menu *Me
 	return menu, nil
 }
 
-func (repo *MockRepository) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem, menuUuid uuid.UUID) (*MenuItem, error) {
+func (repo *MockRepository) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem, menuUuid *uuid.UUID) (*MenuItem, error) {
 	*menuItem.Uuid, _ = uuid.NewV4()
 	repo.menuItems = append(repo.menuItems, *menuItem)
 
 	foundIndex := -1
 	for i, m := range repo.menus {
-		if *m.Uuid == menuUuid {
+		if *m.Uuid == *menuUuid {
 			foundIndex = i
 		}
 	}
@@ -97,14 +97,14 @@ func (repo *MockRepository) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem, menu
 	return menuItem, nil
 }
 
-func (repo *MockRepository) DeleteMenuItem(tx *gorm.DB, menuItemUuid uuid.UUID) error {
+func (repo *MockRepository) DeleteMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) error {
 	var menuUuid *uuid.UUID
 	newMenuItems := []MenuItem{}
 	for _, mi := range repo.menuItems {
-		if *mi.Uuid != menuItemUuid {
+		if *mi.Uuid != *menuItemUuid {
 			newMenuItems = append(newMenuItems, mi)
 		} else {
-			menuUuid = &mi.MenuUuid
+			menuUuid = mi.MenuUuid
 		}
 	}
 
@@ -118,10 +118,10 @@ func (repo *MockRepository) DeleteMenuItem(tx *gorm.DB, menuItemUuid uuid.UUID) 
 	return nil
 }
 
-func (repo *MockRepository) DeleteMenu(tx *gorm.DB, menuUuid uuid.UUID) error {
+func (repo *MockRepository) DeleteMenu(tx *gorm.DB, menuUuid *uuid.UUID) error {
 	newMenus := []Menu{}
 	for _, m := range repo.menus {
-		if *m.Uuid != menuUuid {
+		if *m.Uuid != *menuUuid {
 			newMenus = append(newMenus, m)
 		} else {
 		}
@@ -129,7 +129,7 @@ func (repo *MockRepository) DeleteMenu(tx *gorm.DB, menuUuid uuid.UUID) error {
 
 	newMenuItems := []MenuItem{}
 	for _, mi := range repo.menuItems {
-		if *mi.Uuid != menuUuid {
+		if *mi.Uuid != *menuUuid {
 			newMenuItems = append(newMenuItems, mi)
 		} else {
 		}
@@ -144,9 +144,9 @@ func (repo *MockRepository) GetAllOrders(tx *gorm.DB) ([]Order, error) {
 	return repo.orders, nil
 }
 
-func (repo *MockRepository) GetOrder(tx *gorm.DB, uuid uuid.UUID) (*Order, error) {
+func (repo *MockRepository) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error) {
 	for _, o := range repo.orders {
-		if *o.Uuid == uuid {
+		if o.Uuid == uuid {
 			return &o, nil
 		}
 	}
@@ -154,13 +154,13 @@ func (repo *MockRepository) GetOrder(tx *gorm.DB, uuid uuid.UUID) (*Order, error
 	return nil, errors.New("order not found")
 }
 
-func (repo *MockRepository) GetAllOrderItems(tx *gorm.DB, orderUuid uuid.UUID) ([]OrderItem, error) {
+func (repo *MockRepository) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) ([]OrderItem, error) {
 	return repo.orderItems, nil
 }
 
-func (repo *MockRepository) GetOrderItem(tx *gorm.DB, uuid uuid.UUID) (*OrderItem, error) {
+func (repo *MockRepository) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, error) {
 	for _, oi := range repo.orderItems {
-		if *oi.Uuid == uuid {
+		if oi.Uuid == uuid {
 			return &oi, nil
 		}
 	}
@@ -168,7 +168,7 @@ func (repo *MockRepository) GetOrderItem(tx *gorm.DB, uuid uuid.UUID) (*OrderIte
 	return nil, errors.New("order item not found")
 }
 
-func (repo *MockRepository) CreateOrderItem(tx *gorm.DB, orderUuid uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+func (repo *MockRepository) CreateOrderItem(tx *gorm.DB, orderUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (repo *MockRepository) CreateOrderItem(tx *gorm.DB, orderUuid uuid.UUID, or
 
 	foundIndex := -1
 	for i, o := range repo.orders {
-		if *o.Uuid == orderUuid {
+		if o.Uuid == orderUuid {
 			foundIndex = i
 		}
 	}
@@ -203,7 +203,7 @@ func (repo *MockRepository) CreateOrder(tx *gorm.DB, order *Order) (*Order, erro
 	return order, nil
 }
 
-func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid uuid.UUID, order *Order) (*Order, error) {
+func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order *Order) (*Order, error) {
 	if err := repo.DeleteOrder(tx, orderUuid); err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid uuid.UUID, order 
 	return order, nil
 }
 
-func (repo *MockRepository) UpdateOrderItem(tx *gorm.DB, orderItemUuid uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+func (repo *MockRepository) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
 	if err := repo.DeleteOrderItem(tx, orderItemUuid); err != nil {
 		return nil, err
 	}
@@ -223,19 +223,19 @@ func (repo *MockRepository) UpdateOrderItem(tx *gorm.DB, orderItemUuid uuid.UUID
 	return orderItem, nil
 }
 
-func (repo *MockRepository) DeleteOrderItem(tx *gorm.DB, orderItemUuid uuid.UUID) error {
+func (repo *MockRepository) DeleteOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID) error {
 	var orderUuid *uuid.UUID
 	newOrderItems := []OrderItem{}
 	for _, oi := range repo.orderItems {
-		if *oi.Uuid != orderItemUuid {
+		if oi.Uuid != orderItemUuid {
 			newOrderItems = append(newOrderItems, oi)
 		} else {
-			orderUuid = &oi.OrderUuid
+			orderUuid = oi.OrderUuid
 		}
 	}
 
 	for i, o := range repo.orders {
-		if *o.Uuid != *orderUuid {
+		if o.Uuid != orderUuid {
 			repo.orders[i].Items = newOrderItems
 		}
 	}
@@ -244,10 +244,10 @@ func (repo *MockRepository) DeleteOrderItem(tx *gorm.DB, orderItemUuid uuid.UUID
 	return nil
 }
 
-func (repo *MockRepository) DeleteOrder(tx *gorm.DB, orderUuid uuid.UUID) error {
+func (repo *MockRepository) DeleteOrder(tx *gorm.DB, orderUuid *uuid.UUID) error {
 	newOrders := []Order{}
 	for _, o := range repo.orders {
-		if *o.Uuid != orderUuid {
+		if o.Uuid != orderUuid {
 			newOrders = append(newOrders, o)
 		} else {
 		}
@@ -255,7 +255,7 @@ func (repo *MockRepository) DeleteOrder(tx *gorm.DB, orderUuid uuid.UUID) error 
 
 	newOrderItems := []OrderItem{}
 	for _, oi := range repo.orderItems {
-		if *oi.Uuid != orderUuid {
+		if oi.Uuid != orderUuid {
 			newOrderItems = append(newOrderItems, oi)
 		} else {
 		}
@@ -270,9 +270,9 @@ func (repo *MockRepository) GetAllUsers(tx *gorm.DB) ([]User, error) {
 	return repo.users, nil
 }
 
-func (repo *MockRepository) GetUser(tx *gorm.DB, userUuid uuid.UUID) (*User, error) {
+func (repo *MockRepository) GetUser(tx *gorm.DB, userUuid *uuid.UUID) (*User, error) {
 	for _, u := range repo.users {
-		if *u.Uuid == userUuid {
+		if u.Uuid == userUuid {
 			return &u, nil
 		}
 	}
@@ -291,7 +291,7 @@ func (repo *MockRepository) CreateUser(tx *gorm.DB, user *User) (*User, error) {
 	return user, nil
 }
 
-func (repo *MockRepository) UpdateUser(tx *gorm.DB, userUuid uuid.UUID, user *User) (*User, error) {
+func (repo *MockRepository) UpdateUser(tx *gorm.DB, userUuid *uuid.UUID, user *User) (*User, error) {
 	if err := repo.DeleteUser(tx, userUuid); err != nil {
 		return nil, err
 	}
@@ -301,10 +301,10 @@ func (repo *MockRepository) UpdateUser(tx *gorm.DB, userUuid uuid.UUID, user *Us
 	return user, nil
 }
 
-func (repo *MockRepository) DeleteUser(tx *gorm.DB, userUuid uuid.UUID) error {
+func (repo *MockRepository) DeleteUser(tx *gorm.DB, userUuid *uuid.UUID) error {
 	newUsers := []User{}
 	for _, u := range repo.users {
-		if *u.Uuid != userUuid {
+		if u.Uuid != userUuid {
 			newUsers = append(newUsers, u)
 		} else {
 		}
@@ -318,9 +318,9 @@ func (repo *MockRepository) GetAllMatrixUsers(tx *gorm.DB) ([]MatrixUser, error)
 	return repo.matrixUsers, nil
 }
 
-func (repo *MockRepository) GetMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID) (*MatrixUser, error) {
+func (repo *MockRepository) GetMatrixUser(tx *gorm.DB, matrixUserUuid *uuid.UUID) (*MatrixUser, error) {
 	for _, u := range repo.matrixUsers {
-		if *u.Uuid == matrixUserUuid {
+		if u.Uuid == matrixUserUuid {
 			return &u, nil
 		}
 	}
@@ -339,7 +339,7 @@ func (repo *MockRepository) CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser
 	return matrixUser, nil
 }
 
-func (repo *MockRepository) UpdateMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UUID, matrixUser *MatrixUser) (*MatrixUser, error) {
+func (repo *MockRepository) UpdateMatrixUser(tx *gorm.DB, matrixUserUuid *uuid.UUID, matrixUser *MatrixUser) (*MatrixUser, error) {
 	if err := repo.DeleteMatrixUser(tx, matrixUserUuid); err != nil {
 		return nil, err
 	}
@@ -349,7 +349,7 @@ func (repo *MockRepository) UpdateMatrixUser(tx *gorm.DB, matrixUserUuid uuid.UU
 	return matrixUser, nil
 }
 
-func (repo *MockRepository) DeleteMatrixUser(tx *gorm.DB, userUuid uuid.UUID) error {
+func (repo *MockRepository) DeleteMatrixUser(tx *gorm.DB, userUuid *uuid.UUID) error {
 	newMatrixUsers := []MatrixUser{}
 	for _, u := range repo.matrixUsers {
 		if u.UserUuid != userUuid {
@@ -375,9 +375,9 @@ func (repo *MockRepository) FindPasswordUser(tx *gorm.DB, username string) (*Pas
 	return nil, errors.New("password user not found")
 }
 
-func (repo *MockRepository) GetPasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID) (*PasswordUser, error) {
+func (repo *MockRepository) GetPasswordUser(tx *gorm.DB, passwordUserUuid *uuid.UUID) (*PasswordUser, error) {
 	for _, u := range repo.passwordUsers {
-		if *u.Uuid == passwordUserUuid {
+		if u.Uuid == passwordUserUuid {
 			return &u, nil
 		}
 	}
@@ -396,7 +396,7 @@ func (repo *MockRepository) CreatePasswordUser(tx *gorm.DB, passwordUser *Passwo
 	return passwordUser, nil
 }
 
-func (repo *MockRepository) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid uuid.UUID, passwordUser *PasswordUser) (*PasswordUser, error) {
+func (repo *MockRepository) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid *uuid.UUID, passwordUser *PasswordUser) (*PasswordUser, error) {
 	if err := repo.DeletePasswordUser(tx, passwordUserUuid); err != nil {
 		return nil, err
 	}
@@ -406,7 +406,7 @@ func (repo *MockRepository) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid uui
 	return passwordUser, nil
 }
 
-func (repo *MockRepository) DeletePasswordUser(tx *gorm.DB, userUuid uuid.UUID) error {
+func (repo *MockRepository) DeletePasswordUser(tx *gorm.DB, userUuid *uuid.UUID) error {
 	newPasswordUsers := []PasswordUser{}
 	for _, u := range repo.passwordUsers {
 		if u.UserUuid != userUuid {

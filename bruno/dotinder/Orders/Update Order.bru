@@ -1,0 +1,22 @@
+meta {
+  name: Update Order
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "initiator": "65d746ec-d829-49a0-afb5-2b5a4e930df7",
+    "sugar_person": null,
+    "state": "",
+    "order_deadline": null,
+    "eta": null,
+    "menu_uuid": "f5ad5f7f-3c62-421b-a24e-4cdf543b72f9"
+  }
+}

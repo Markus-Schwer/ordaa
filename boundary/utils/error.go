@@ -1,5 +1,4 @@
-package error
-
+package utils
 
 import (
 	"fmt"

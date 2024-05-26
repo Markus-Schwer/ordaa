@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/utils"
 	"gorm.io/gorm"
 )
 
@@ -15,22 +16,21 @@ type LoginResponse struct {
 
 func (server *RestBoundary) login(c echo.Context) error {
 	var creds auth.Credentials
-	err := c.Bind(&creds)
-	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+	if err := c.Bind(&creds); err != nil {
+		log.Ctx(server.ctx).Error().Err(err).Msg("login failed to bind request")
+		return utils.WrapBindError(err)
 	}
 
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		token, err := server.authService.Signin(tx, &creds)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			return echo.NewHTTPError(http.StatusInternalServerError, err)
+			log.Ctx(server.ctx).Error().Err(err).Msg("login error signing in")
+			return utils.NewInternalServerError(err)
 		}
 		rawToken, err := auth.SignToken(token)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg(err.Error())
-			return echo.NewHTTPError(http.StatusInternalServerError, err)
+			log.Ctx(server.ctx).Error().Err(err).Msg("login error signing token")
+			return utils.NewInternalServerError(err)
 		}
 
 		loginResponse := LoginResponse{Jwt: rawToken}
