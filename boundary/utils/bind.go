@@ -15,3 +15,13 @@ func UuidParam(c echo.Context, name string) (*uuid.UUID, error) {
 	}
 	return &uuid, nil
 }
+
+func BindAndValidate(ctx echo.Context, v interface{}) error {
+	if err := ctx.Bind(v); err != nil {
+		return err
+	}
+	if err := ctx.Validate(v); err != nil {
+		return err
+	}
+	return nil
+}

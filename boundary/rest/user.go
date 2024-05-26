@@ -16,8 +16,8 @@ func (server *RestBoundary) registerUser(c echo.Context) error {
 	var err error
 
 	// Bind request
-	if err = c.Bind(&user); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("registerUser failed to bind request")
+	if err = utils.BindAndValidate(c, &user); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("registerUser failed to bind request")
 		return utils.WrapBindError(err)
 	}
 
@@ -83,8 +83,8 @@ func (server *RestBoundary) updateUser(c echo.Context) error {
 	}
 
 	var user entity.User
-	if err = c.Bind(&user); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("updateUser error binding request")
+	if err = utils.BindAndValidate(c, &user); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("updateUser error binding request")
 		return utils.WrapBindError(err)
 	}
 

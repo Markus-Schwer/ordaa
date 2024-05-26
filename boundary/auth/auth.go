@@ -69,7 +69,6 @@ func (a *AuthService) Signin(tx *gorm.DB, creds *Credentials) (*jwt.Token, error
 
 	// Declare the token with the algorithm used for signing, and the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	log.Ctx(a.ctx).Info().Msgf("token %v", token)
 
 	// Finally, we set the client cookie for "token" as the JWT we just generated
 	// we also set an expiry time which is the same as the token itself

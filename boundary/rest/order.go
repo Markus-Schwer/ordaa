@@ -13,8 +13,8 @@ import (
 
 func (server *RestBoundary) newOrder(c echo.Context) error {
 	var order entity.Order
-	if err := c.Bind(&order); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("newOrder failed to bind request")
+	if err := utils.BindAndValidate(c, &order); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("newOrder failed to bind request")
 		return utils.WrapBindError(err)
 	}
 
@@ -67,8 +67,8 @@ func (server *RestBoundary) updateOrder(c echo.Context) error {
 	}
 
 	var order entity.Order
-	if err = c.Bind(&order); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("updateOrder error binding request")
+	if err = utils.BindAndValidate(c, &order); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("updateOrder error binding request")
 		return utils.WrapBindError(err)
 	}
 
@@ -110,8 +110,8 @@ func (server *RestBoundary) newOrderItem(c echo.Context) error {
 	}
 
 	var orderItem entity.OrderItem
-	if err = c.Bind(&orderItem); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("newOrderItem error binding request")
+	if err = utils.BindAndValidate(c, &orderItem); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("newOrderItem error binding request")
 		return utils.WrapBindError(err)
 	}
 
@@ -188,8 +188,8 @@ func (server *RestBoundary) updateOrderItem(c echo.Context) error {
 	}
 
 	var orderItem entity.OrderItem
-	if err = c.Bind(&orderItem); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("updateOrderItem error binding request")
+	if err = utils.BindAndValidate(c, &orderItem); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("updateOrderItem error binding request")
 		return utils.WrapBindError(err)
 	}
 

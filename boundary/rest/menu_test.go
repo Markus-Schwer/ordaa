@@ -1,109 +1,82 @@
 package rest
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
 
-func TestGetAllMenus(t *testing.T) {
-	// Setup
-	ctx := context.Background()
-	e := echo.New()
-
-	repo := entity.NewMockRepository()
-	authService := auth.NewAuthService(ctx, repo)
-	restBoundary := NewRestBoundary(ctx, repo, authService)
-
+func (s *Suite) TestGetAllMenus() {
 	createMenuItems := []entity.MenuItem{}
 	createMenu := &entity.Menu{Name: "testMenu", Url: "https://sangam-aalen.de", Items: createMenuItems}
-	_, err := repo.CreateMenu(nil, createMenu)
+	_, err := s.repo.CreateMenu(nil, createMenu)
 	if err != nil {
-		t.Fatal(err)
+		s.T().Fatal(err)
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/api/menus", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	c := s.e.NewContext(req, rec)
 
 	// Assertions
-	if assert.NoError(t, restBoundary.allMenus(c)) {
+	if assert.NoError(s.T(), s.restBoundary.allMenus(c)) {
 		menus := []entity.Menu{}
 		err := json.NewDecoder(rec.Body).Decode(&menus)
 		if err != nil {
-			t.Fatal(err)
+			s.T().Fatal(err)
 		}
 
-		assert.Equal(t, 1, len(menus))
+		assert.Equal(s.T(), 1, len(menus))
 	}
 }
 
-func TestGetAllMenusEmpty(t *testing.T) {
-	// Setup
-	ctx := context.Background()
-	e := echo.New()
-
-	repo := entity.NewMockRepository()
-	authService := auth.NewAuthService(ctx, repo)
-	restBoundary := NewRestBoundary(ctx, repo, authService)
-
+func (s *Suite) TestGetAllMenusEmpty() {
 	req := httptest.NewRequest(http.MethodPost, "/api/menus", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	c := s.e.NewContext(req, rec)
 
 	// Assertions
-	if assert.NoError(t, restBoundary.allMenus(c)) {
+	if assert.NoError(s.T(), s.restBoundary.allMenus(c)) {
 		menus := []entity.Menu{}
 		err := json.NewDecoder(rec.Body).Decode(&menus)
 		if err != nil {
-			t.Fatal(err)
+			s.T().Fatal(err)
 		}
 
-		assert.Equal(t, []entity.Menu{}, menus)
+		assert.Equal(s.T(), []entity.Menu{}, menus)
 	}
 }
 
-func TestGetMenu(t *testing.T) {
-	// Setup
-	ctx := context.Background()
-	e := echo.New()
-
-	repo := entity.NewMockRepository()
-	authService := auth.NewAuthService(ctx, repo)
-	restBoundary := NewRestBoundary(ctx, repo, authService)
-
-	createdMenu, err := repo.CreateMenu(nil, &entity.Menu{Name: "testMenu", Url: "https://sangam-aalen.de", Items: []entity.MenuItem{}})
+func (s *Suite) TestGetMenu() {
+	createdMenu, err := s.repo.CreateMenu(nil, &entity.Menu{Name: "testMenu", Url: "https://sangam-aalen.de", Items: []entity.MenuItem{}})
 	if err != nil {
-		t.Fatal(err)
+		s.T().Fatal(err)
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	c := s.e.NewContext(req, rec)
 	c.SetPath("/api/menus/:uuid")
 	c.SetParamNames("uuid")
 	c.SetParamValues(createdMenu.Uuid.String())
 
 	// Assertions
-	if assert.NoError(t, restBoundary.getMenu(c)) {
+	if assert.NoError(s.T(), s.restBoundary.getMenu(c)) {
 		var menu entity.Menu
 		err := json.NewDecoder(rec.Body).Decode(&menu)
 		if err != nil {
-			t.Fatal(err)
+			s.T().Fatal(err)
 		}
 
-		assert.Equal(t, "testMenu", menu.Name)
-		assert.Equal(t, "https://sangam-aalen.de", menu.Url)
-		assert.Equal(t, []entity.MenuItem{}, menu.Items)
+		assert.Equal(s.T(), "testMenu", menu.Name)
+		assert.Equal(s.T(), "https://sangam-aalen.de", menu.Url)
+		assert.Equal(s.T(), []entity.MenuItem{}, menu.Items)
 	}
 }

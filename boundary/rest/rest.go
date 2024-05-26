@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/utils"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
 
@@ -20,6 +21,8 @@ func NewRestBoundary(ctx context.Context, repo entity.Repository, authSerivce *a
 }
 
 func (server *RestBoundary) Start(router *echo.Echo) {
+	router.Validator = utils.NewValidator()
+
 	authRouter := router.Group("/api", auth.AuthMiddleware(server.authService, func(c echo.Context, err error) error {
 		server.authService.Logout(c)
 		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")

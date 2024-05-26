@@ -25,7 +25,7 @@ type OrderItem struct {
 	Paid         bool       `gorm:"column:paid" json:"paid"`
 	User         *uuid.UUID  `gorm:"column:order_user" json:"order_user"`
 	OrderUuid    *uuid.UUID  `gorm:"column:order_uuid" json:"order_uuid"`
-	MenuItemUuid *uuid.UUID  `gorm:"column:menu_item_uuid" json:"menu_item_uuid"`
+	MenuItemUuid *uuid.UUID  `gorm:"column:menu_item_uuid" json:"menu_item_uuid" validate:"required"`
 }
 
 func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
@@ -153,7 +153,7 @@ func (repo *RepositoryImpl) DeleteOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUI
 }
 
 func (repo *RepositoryImpl) DeleteOrder(tx *gorm.DB, orderUuid *uuid.UUID) error {
-	err := tx.Delete(&OrderItem{}, orderUuid).Error
+	err := tx.Delete(&Order{}, orderUuid).Error
 	if err != nil {
 		return fmt.Errorf("could not delete order %s: %w", orderUuid, err)
 	}

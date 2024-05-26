@@ -8,16 +8,16 @@ import (
 
 type Menu struct {
 	Uuid  *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	Name  string     `gorm:"column:name" json:"name"`
+	Name  string     `gorm:"column:name" json:"name" validate:"required"`
 	Url   string     `gorm:"column:url" json:"url"`
 	Items []MenuItem `gorm:"foreignKey:menu_uuid" json:"items"`
 }
 
 type MenuItem struct {
 	Uuid      *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	ShortName string     `gorm:"column:short_name" json:"short_name"`
-	Name      string     `gorm:"column:name" json:"name"`
-	Price     int        `gorm:"column:price" json:"price"`
+	ShortName string     `gorm:"column:short_name" json:"short_name" validate:"required"`
+	Name      string     `gorm:"column:name" json:"name" validate:"required"`
+	Price     int        `gorm:"column:price" json:"price" validate:"required"`
 	MenuUuid  *uuid.UUID  `gorm:"column:menu_uuid" json:"menu_uuid"`
 }
 

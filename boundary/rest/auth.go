@@ -16,8 +16,8 @@ type LoginResponse struct {
 
 func (server *RestBoundary) login(c echo.Context) error {
 	var creds auth.Credentials
-	if err := c.Bind(&creds); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("login failed to bind request")
+	if err := utils.BindAndValidate(c, &creds); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("login failed to bind request")
 		return utils.WrapBindError(err)
 	}
 

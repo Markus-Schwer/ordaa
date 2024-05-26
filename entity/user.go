@@ -21,8 +21,8 @@ type MatrixUser struct {
 type PasswordUser struct {
 	Uuid     *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
 	UserUuid *uuid.UUID  `gorm:"column:user_uuid" json:"user_uuid"`
-	Username string     `gorm:"column:username" json:"username"`
-	Password string     `gorm:"column:password" json:"password"`
+	Username string     `gorm:"column:username" json:"username" validate:"required"`
+	Password string     `gorm:"column:password" json:"password" validate:"required"`
 }
 
 func (user *User) BeforeCreate(tx *gorm.DB) (err error) {

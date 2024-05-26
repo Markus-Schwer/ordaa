@@ -12,8 +12,8 @@ import (
 
 func (server *RestBoundary) newMenu(c echo.Context) error {
 	var menu entity.Menu
-	if err := c.Bind(&menu); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("newMenu failed to bind request")
+	if err := utils.BindAndValidate(c, &menu); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("newMenu failed to bind request")
 		return utils.WrapBindError(err)
 	}
 
@@ -66,8 +66,8 @@ func (server *RestBoundary) updateMenu(c echo.Context) error {
 	}
 
 	var menu entity.Menu
-	if err = c.Bind(&menu); err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("updateMenu error binding request")
+	if err = utils.BindAndValidate(c, &menu); err != nil {
+		log.Ctx(server.ctx).Debug().Err(err).Msg("updateMenu error binding request")
 		return utils.WrapBindError(err)
 	}
 
