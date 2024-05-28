@@ -44,6 +44,11 @@ devenv up
 migrate -database ${DATABASE_URL} -path db/migrations up
 ```
 
+## TUI demo
+
+1. `go run .` in the tui directory
+2. `ssh -p 23234 localhost` to connect to the TUI via ssh
+
 ## TODO
 
 - implement status command in matrix

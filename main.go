@@ -16,6 +16,7 @@ import (
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/matrix"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/rest"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 
 	"github.com/joho/godotenv"
@@ -76,6 +77,9 @@ func main() {
 	go matrix.NewMatrixBoundary(ctx, repo).Start()
 
 	go boundary.StartHttpServer(ctx, router)
+
+	tuiServer := tui.NewSshTuiServer(ctx, repo)
+	go tuiServer.Start()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
