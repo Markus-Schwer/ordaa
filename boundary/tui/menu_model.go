@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -57,7 +58,7 @@ func (m *MenuModel) View() string {
 		}
 		menu := menus[0]
 		for _, item := range menu.Items {
-			rows = append(rows, []string{item.ShortName, item.Name, string(item.Price)})
+			rows = append(rows, []string{item.ShortName, item.Name, fmt.Sprintf("%4.2f€", float64(item.Price)/100.0)})
 		}
 		return nil
 	})
