@@ -116,18 +116,22 @@ func (m *LayoutModel) renderActiveBold(tab int) (rendered string) {
 }
 
 func (m *LayoutModel) View() (content string) {
-	content = m.txtStyle.Width(m.width).Align(lipgloss.Center).Render("DOTINDER") + "\n\n"
+	header := m.txtStyle.Width(m.width).Align(lipgloss.Center).Render("DOTINDER") + "\n\n"
 	for _, v := range NAVBAR {
-		content += m.renderActiveBold(v)
+		header += m.renderActiveBold(v)
 	}
-	content += "\n\n"
-	m.headerOffset = lipgloss.Height(content)
-	// log.Ctx(m.ctx).Info().Msgf("header: %v", content)
+	header += "\n\n"
+	m.headerOffset = lipgloss.Height(header)
+	content += header
 	switch m.activeTab {
 	case MENUS:
 		content += m.menuModel.View()
 	case ORDERS:
 		content += "I AM THE ORDERS DUMMY"
 	}
+	footer := "\n\n"
+	footer += m.quitStyle.Width(m.width).Align(lipgloss.Center).Render("press 'q' or 'ctrl+c' to quit")
+	m.footerOffset = lipgloss.Height(footer)
+	content += footer
 	return
 }
