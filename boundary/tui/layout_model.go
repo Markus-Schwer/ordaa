@@ -70,6 +70,7 @@ func NewLayoutModel(
 
 func (m *LayoutModel) Init() tea.Cmd {
 	m.activeTab = MENUS
+	m.menuModel.Init()
 	return nil
 }
 
