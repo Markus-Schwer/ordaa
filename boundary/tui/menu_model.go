@@ -24,7 +24,7 @@ type MenuModel struct {
 }
 
 func NewMenuModel(info *LayoutInfo) *MenuModel {
-	vp := viewport.New(info.width, info.height-info.headerOffset-info.footerOffset)
+	vp := viewport.New(info.width-2, info.height-info.headerOffset-info.footerOffset)
 	it := textinput.New()
 	it.Placeholder = "Search"
 	it.Width = 20
@@ -38,27 +38,39 @@ func NewMenuModel(info *LayoutInfo) *MenuModel {
 }
 
 func (m *MenuModel) Init() tea.Cmd {
-	m.repo.Transaction(func(tx *gorm.DB) error {
-		menus, err := m.repo.GetAllMenus(tx)
-		if err != nil {
-			log.Ctx(m.ctx).Error().Err(err).Msg("allMenus error getting menus")
-			return err
-		}
-		if len(menus) == 0 {
-			err := fmt.Errorf("there are no menus")
-			log.Ctx(m.ctx).Error().Err(err).Msg("there are no menus")
-			return err
-		}
-		m.menu = &menus[0]
-		return nil
-	})
-	m.ready = true
-	return nil
+	return func() tea.Msg {
+		var menu *entity.Menu
+		m.repo.Transaction(func(tx *gorm.DB) error {
+			menus, err := m.repo.GetAllMenus(tx)
+			if err != nil {
+				log.Ctx(m.ctx).Error().Err(err).Msg("allMenus error getting menus")
+				return err
+			}
+			if len(menus) == 0 {
+				err := fmt.Errorf("there are no menus")
+				log.Ctx(m.ctx).Error().Err(err).Msg("there are no menus")
+				return err
+			}
+			menu = &menus[0]
+			return nil
+		})
+		return menu
+	}
 }
 
 func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	// m.viewport, cmd = m.viewport.Update(msg)
+	log.Ctx(m.ctx).Debug().Msgf("menu model update: %v", msg)
+	switch msg := msg.(type) {
+	case *entity.Menu:
+		m.menu = msg
+		m.ready = true
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "down":
+			m.viewport, cmd = m.viewport.Update(msg)
+		}
+	}
 	m.it, cmd = m.it.Update(msg)
 	return m, cmd
 }
@@ -76,12 +88,12 @@ func (m *MenuModel) View() string {
 	}
 	table := table.New().
 		BorderStyle(m.txtStyle).
-		Width(m.width).
+		Width(m.width-2).
 		Headers("SHORT", "NAME", "PRICE").
 		Rows(rows...)
 	search := m.it.View() + "\n\n"
 	m.viewport.SetContent(m.s.Render(table.Render()))
-	m.viewport.Height = m.height - m.headerOffset - m.footerOffset - lipgloss.Height(search)
+	m.viewport.Height = m.height - m.headerOffset - m.footerOffset - lipgloss.Height(search) - 2
 	m.viewport.YPosition = m.headerOffset
 	m.it.Focus()
 	return search + m.viewport.View()

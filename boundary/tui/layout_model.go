@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
@@ -12,6 +13,9 @@ import (
 const (
 	MENUS = iota
 	ORDERS
+
+	TABS
+	BODY
 )
 
 var NAVBAR = []int{MENUS, ORDERS}
@@ -51,7 +55,9 @@ func NewLayoutInfo(
 type LayoutModel struct {
 	*LayoutInfo
 	activeTab int
+	activeBox int
 	menuModel tea.Model
+	helpModel tea.Model
 }
 
 func NewLayoutModel(
@@ -64,36 +70,56 @@ func NewLayoutModel(
 	return &LayoutModel{
 		LayoutInfo: info,
 		activeTab:  MENUS,
+		activeBox:  TABS,
 		menuModel:  NewMenuModel(info),
+		helpModel:  NewHelpModel(info),
 	}
 }
 
 func (m *LayoutModel) Init() tea.Cmd {
 	m.activeTab = MENUS
-	m.menuModel.Init()
+	var cmd tea.Cmd
+	cmd = m.menuModel.Init()
+	if cmd != nil {
+		msg := cmd()
+		m.menuModel, cmd = m.menuModel.Update(msg)
+	}
+	cmd = m.helpModel.Init()
+	if cmd != nil {
+		msg := cmd()
+		m.helpModel, cmd = m.helpModel.Update(msg)
+	}
 	return nil
 }
 
 func (m *LayoutModel) Update(msg tea.Msg) (mdl tea.Model, cmd tea.Cmd) {
-	switch m.activeTab {
-	case MENUS:
-		m.menuModel, cmd = m.menuModel.Update(msg)
-	}
+	m.helpModel.Update(msg)
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch {
+		case msg.String() == "ctrl+t":
+			m.activeBox = TABS
+		case msg.String() == "ctrl+b":
+			m.activeBox = BODY
+		case key.Matches(msg, DefaultKeyMap.Quit):
 			cmd = tea.Quit
-		case "tab":
-			if m.activeTab == ORDERS {
+		case msg.String() == "m":
+			if m.activeBox == TABS {
 				m.activeTab = MENUS
-				m.menuModel.Init()
-			} else {
-				m.activeTab = m.activeTab + 1
 			}
+		case msg.String() == "o":
+			if m.activeBox == TABS {
+				m.activeTab = ORDERS
+			}
+		}
+	}
+	if m.activeBox == BODY {
+		switch m.activeTab {
+		case MENUS:
+			m.menuModel, cmd = m.menuModel.Update(msg)
 		}
 	}
 	mdl = m
@@ -101,37 +127,38 @@ func (m *LayoutModel) Update(msg tea.Msg) (mdl tea.Model, cmd tea.Cmd) {
 }
 
 func (m *LayoutModel) renderActiveBold(tab int) (rendered string) {
-	spacedText := m.txtStyle.
-		PaddingLeft(2).
-		PaddingRight(2).
-		Bold(tab == m.activeTab)
+	s := m.txtStyle.Padding(0, 2).Foreground(lipgloss.Color("12")).Background(lipgloss.Color("0"))
+	if tab == m.activeTab {
+		s = s.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("12"))
+	}
 	switch tab {
 	case ORDERS:
-		rendered = spacedText.
-			Render("ORDERS")
+		rendered = s.Render("[O]RDERS")
 	case MENUS:
-		rendered = spacedText.
-			Render("MENUS")
+		rendered = s.Render("[M]ENUS")
 	}
 	return
 }
 
 func (m *LayoutModel) View() (content string) {
 	header := m.txtStyle.Width(m.width).Align(lipgloss.Center).Render("DOTINDER") + "\n\n"
-	for _, v := range NAVBAR {
-		header += m.renderActiveBold(v)
+	entries := make([]string, len(NAVBAR))
+	for i, v := range NAVBAR {
+		entries[i] = m.renderActiveBold(v)
 	}
+	borderStyle := WithBorderAndCorner(m.txtStyle, "t", m.activeBox == TABS)
+	header += borderStyle.Render(lipgloss.JoinHorizontal(lipgloss.Bottom, entries...))
 	header += "\n\n"
 	m.headerOffset = lipgloss.Height(header)
 	content += header
 	switch m.activeTab {
 	case MENUS:
-		content += m.menuModel.View()
+		m.menuModel.Init()
+		content += WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render(m.menuModel.View())
 	case ORDERS:
 		content += "I AM THE ORDERS DUMMY"
 	}
-	footer := "\n\n"
-	footer += m.quitStyle.Width(m.width).Align(lipgloss.Center).Render("press 'q' or 'ctrl+c' to quit")
+	footer := "\n\n" + m.helpModel.View()
 	m.footerOffset = lipgloss.Height(footer)
 	content += footer
 	return
