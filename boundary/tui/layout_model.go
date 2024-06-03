@@ -56,7 +56,7 @@ type LayoutModel struct {
 	*LayoutInfo
 	activeTab int
 	activeBox int
-	menuModel tea.Model
+	subModels map[int]tea.Model
 	helpModel tea.Model
 }
 
@@ -67,24 +67,24 @@ func NewLayoutModel(
 	repo entity.Repository,
 ) *LayoutModel {
 	info := NewLayoutInfo(ctx, renderer, pty, repo)
+	subModels := make(map[int]tea.Model)
+	subModels[MENUS] = NewMenuModel(info)
 	return &LayoutModel{
 		LayoutInfo: info,
 		activeTab:  MENUS,
 		activeBox:  TABS,
-		menuModel:  NewMenuModel(info),
+		subModels:  subModels,
 		helpModel:  NewHelpModel(info),
 	}
 }
 
 func (m *LayoutModel) Init() tea.Cmd {
 	m.activeTab = MENUS
-	var cmd tea.Cmd
-	cmd = m.menuModel.Init()
-	if cmd != nil {
-		msg := cmd()
-		m.menuModel, cmd = m.menuModel.Update(msg)
+	for subMdlIdx, subModel := range m.subModels {
+		cmd := subModel.Init()
+		m.updateSubmodel(subMdlIdx, cmd)
 	}
-	cmd = m.helpModel.Init()
+	cmd := m.helpModel.Init()
 	if cmd != nil {
 		msg := cmd()
 		m.helpModel, cmd = m.helpModel.Update(msg)
@@ -114,13 +114,11 @@ func (m *LayoutModel) Update(msg tea.Msg) (mdl tea.Model, cmd tea.Cmd) {
 			if m.activeBox == TABS {
 				m.activeTab = ORDERS
 			}
+		default:
+			m.subModels[m.activeBox], cmd = m.subModels[m.activeTab].Update(msg)
 		}
-	}
-	if m.activeBox == BODY {
-		switch m.activeTab {
-		case MENUS:
-			m.menuModel, cmd = m.menuModel.Update(msg)
-		}
+	default:
+		m.subModels[m.activeBox], cmd = m.subModels[m.activeTab].Update(msg)
 	}
 	mdl = m
 	return
@@ -151,15 +149,17 @@ func (m *LayoutModel) View() (content string) {
 	header += "\n\n"
 	m.headerOffset = lipgloss.Height(header)
 	content += header
-	switch m.activeTab {
-	case MENUS:
-		m.menuModel.Init()
-		content += WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render(m.menuModel.View())
-	case ORDERS:
-		content += "I AM THE ORDERS DUMMY"
-	}
+	content += WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render(m.subModels[m.activeTab].View())
 	footer := "\n\n" + m.helpModel.View()
 	m.footerOffset = lipgloss.Height(footer)
 	content += footer
 	return
+}
+
+func (m *LayoutModel) updateSubmodel(modelIdx int, cmd tea.Cmd) {
+	msg := cmd()
+	m.subModels[modelIdx], cmd = m.subModels[modelIdx].Update(msg)
+	if cmd != nil {
+		m.updateSubmodel(modelIdx, cmd)
+	}
 }

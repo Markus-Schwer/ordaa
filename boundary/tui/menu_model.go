@@ -60,7 +60,6 @@ func (m *MenuModel) Init() tea.Cmd {
 
 func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	log.Ctx(m.ctx).Debug().Msgf("menu model update: %v", msg)
 	switch msg := msg.(type) {
 	case *entity.Menu:
 		m.menu = msg
