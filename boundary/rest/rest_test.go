@@ -32,3 +32,9 @@ func (s *Suite) SetupSuite() {
 	s.authService = auth.NewAuthService(s.ctx, s.repo)
 	s.restBoundary = NewRestBoundary(s.ctx, s.repo, s.authService)
 }
+
+func (s *Suite) AfterTest(suiteName string, testName string) {
+	s.repo = entity.NewMockRepository()
+	s.authService = auth.NewAuthService(s.ctx, s.repo)
+	s.restBoundary = NewRestBoundary(s.ctx, s.repo, s.authService)
+}

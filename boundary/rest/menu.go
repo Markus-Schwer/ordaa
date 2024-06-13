@@ -24,7 +24,7 @@ func (server *RestBoundary) newMenu(c echo.Context) error {
 			return utils.NewInternalServerError(err)
 		}
 	
-		return c.JSON(http.StatusOK, createdMenu)
+		return c.JSON(http.StatusCreated, createdMenu)
 	})
 }
 

@@ -22,10 +22,10 @@ func (s *Suite) TestRegister() {
 	if assert.NoError(s.T(), s.restBoundary.registerUser(c)) {
 		assert.Equal(s.T(), http.StatusCreated, rec.Code)
 
-		var createdUser entity.PasswordUser
+		var createdUser entity.User
 		json.NewDecoder(rec.Body).Decode(&createdUser)
 
-		assert.Equal(s.T(), "test", createdUser.Username)
+		assert.Equal(s.T(), "test", createdUser.Name)
 	}
 }
 

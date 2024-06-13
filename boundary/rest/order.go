@@ -25,7 +25,7 @@ func (server *RestBoundary) newOrder(c echo.Context) error {
 			return utils.NewInternalServerError(err)
 		}
 	
-		return c.JSON(http.StatusOK, createdOrder)
+		return c.JSON(http.StatusCreated, createdOrder)
 	})
 }
 
@@ -122,7 +122,7 @@ func (server *RestBoundary) newOrderItem(c echo.Context) error {
 			return utils.NewInternalServerError(err)
 		}
 
-		return c.JSON(http.StatusOK, createdOrderItem)
+		return c.JSON(http.StatusCreated, createdOrderItem)
 	})
 }
 
