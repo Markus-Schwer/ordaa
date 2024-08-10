@@ -99,22 +99,24 @@ func (m *LayoutModel) Update(msg tea.Msg) (mdl tea.Model, cmd tea.Cmd) {
 		m.height = msg.Height
 		m.width = msg.Width
 	case tea.KeyMsg:
-		switch {
-		case msg.String() == "ctrl+t":
-			m.activeBox = TABS
-		case msg.String() == "ctrl+b":
-			m.activeBox = BODY
-		case key.Matches(msg, DefaultKeyMap.Quit):
-			cmd = tea.Quit
-		case msg.String() == "m":
-			if m.activeBox == TABS {
-				m.activeTab = MENUS
+		if m.activeBox == TABS {
+			switch {
+			case msg.String() == "ctrl+t":
+				m.activeBox = TABS
+			case msg.String() == "ctrl+b":
+				m.activeBox = BODY
+			case key.Matches(msg, DefaultKeyMap.Quit):
+				cmd = tea.Quit
+			case msg.String() == "m":
+				if m.activeBox == TABS {
+					m.activeTab = MENUS
+				}
+			case msg.String() == "o":
+				if m.activeBox == TABS {
+					m.activeTab = ORDERS
+				}
 			}
-		case msg.String() == "o":
-			if m.activeBox == TABS {
-				m.activeTab = ORDERS
-			}
-		default:
+		} else {
 			m.subModels[m.activeBox], cmd = m.subModels[m.activeTab].Update(msg)
 		}
 	default:
