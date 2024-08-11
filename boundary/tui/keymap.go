@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,6 +13,7 @@ type KeyMap struct {
 	Down       key.Binding
 	Left       key.Binding
 	Right      key.Binding
+	AlphaNum   key.Binding
 	Quit       key.Binding
 	ToggleHelp key.Binding
 }
@@ -31,6 +34,9 @@ var DefaultKeyMap = KeyMap{
 	Right: key.NewBinding(
 		key.WithKeys("l", "right"),
 		key.WithHelp("→/l", "Move right"),
+	),
+	AlphaNum: key.NewBinding(
+		key.WithKeys(strings.Split("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890", "")...),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "ctrl+c", "esc"),

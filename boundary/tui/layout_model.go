@@ -151,9 +151,9 @@ func (m *LayoutModel) View() (content string) {
 	header += "\n\n"
 	m.headerOffset = lipgloss.Height(header)
 	content += header
-	content += WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render(m.subModels[m.activeTab].View())
 	footer := "\n\n" + m.helpModel.View()
 	m.footerOffset = lipgloss.Height(footer)
+	content += WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render(m.subModels[m.activeTab].View())
 	content += footer
 	return
 }

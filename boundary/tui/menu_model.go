@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
@@ -15,13 +16,11 @@ import (
 
 type MenuModel struct {
 	*LayoutInfo
-	s            lipgloss.Style
-	it           textinput.Model
-	t            table.Model
-	menu         *entity.Menu
-	ready        bool
-	searching    bool
-	searchString string
+	s     lipgloss.Style
+	it    textinput.Model
+	t     table.Model
+	menu  *entity.Menu
+	ready bool
 }
 
 func NewMenuModel(info *LayoutInfo) *MenuModel {
@@ -32,9 +31,7 @@ func NewMenuModel(info *LayoutInfo) *MenuModel {
 	}
 	t := table.New(
 		table.WithColumns(columns),
-		// table.WithHeight(info.height-info.headerOffset-info.footerOffset),
-		table.WithHeight(20),
-		table.WithRows([]table.Row{table.Row{"42", "chicken tikka masala", "1590"}}),
+		table.WithRows([]table.Row{}),
 	)
 	s := table.DefaultStyles()
 	s.Header = s.Header.
@@ -51,13 +48,11 @@ func NewMenuModel(info *LayoutInfo) *MenuModel {
 	it.Placeholder = "Search"
 	it.Width = 20
 	return &MenuModel{
-		LayoutInfo:   info,
-		s:            info.quitStyle,
-		it:           it,
-		t:            t,
-		ready:        false,
-		searching:    true,
-		searchString: "",
+		LayoutInfo: info,
+		s:          info.quitStyle,
+		it:         it,
+		t:          t,
+		ready:      false,
 	}
 }
 
@@ -86,37 +81,17 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case *entity.Menu:
-		// m.menu = msg
-		m.ready = true
-		rows := make([]table.Row, 0)
-		for _, v := range msg.Items {
-			rows = append(rows, table.Row{v.ShortName, v.Name, fmt.Sprintf("%4.2f€", float64(v.Price)/100.0)})
+		m.menu = msg
+		if m.menu != nil {
+			m.ready = true
 		}
-		m.t.SetRows(rows)
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, DefaultKeyMap.Up):
-			if !m.searching {
-				if m.t.Cursor() == 0 {
-					m.searching = true
-				} else {
-					m.t, cmd = m.t.Update(msg)
-				}
-			}
-		case msg.String() == "down":
-			// default keymap down can't be used here because it would interpret
-			// typing a 'j' as moving downwards
-			if m.searching {
-				m.searching = false
-			} else {
-				m.t, cmd = m.t.Update(msg)
-			}
+		case key.Matches(msg, DefaultKeyMap.AlphaNum), msg.Type == tea.KeyBackspace, msg.Type == tea.KeySpace:
+			m.it, cmd = m.it.Update(msg)
+		case key.Matches(msg, DefaultKeyMap.Up), key.Matches(msg, DefaultKeyMap.Down):
+			m.t, cmd = m.t.Update(msg)
 		default:
-			if m.searching {
-				m.it, cmd = m.it.Update(msg)
-			} else {
-				m.t, cmd = m.t.Update(msg)
-			}
 		}
 	}
 	return m, cmd
@@ -126,31 +101,19 @@ func (m *MenuModel) View() string {
 	if !m.ready {
 		return "Loading..."
 	}
-	if m.searching {
-		m.it.Focus()
-	} else {
-		m.t.Focus()
+	m.it.Focus()
+	m.t.Focus()
+	rows := make([]table.Row, 0)
+	for _, v := range m.menu.Items {
+		s := strings.ToLower(m.it.Value())
+		if !(strings.Contains(strings.ToLower(v.ShortName), s) || strings.Contains(strings.ToLower(v.Name), s)) {
+			continue
+		}
+		rows = append(rows, table.Row{v.ShortName, v.Name, fmt.Sprintf("%4.2f€", float64(v.Price)/100.0)})
 	}
-	// rows := make([][]string, 0)
-	// for _, item := range m.menu.Items {
-	// 	if strings.Contains(strings.ToLower(item.Name), strings.ToLower(m.it.Value())) ||
-	// 		strings.Contains(strings.ToLower(item.ShortName), strings.ToLower(m.it.Value())) {
-	// 		rows = append(rows, []string{item.ShortName, item.Name, })
-	// 	}
-	// }
-	// table := table.New().
-	// 	BorderStyle(m.txtStyle).
-	// 	Width(m.width-2).
-	// 	Headers("SHORT", "NAME", "PRICE").
-	// 	Rows(rows...)
-	// search := m.it.View() + "\n\n"
-	// m.viewport.SetContent(m.s.Render(table.Render()))
-	// m.viewport.Height = m.height - m.headerOffset - m.footerOffset - lipgloss.Height(search) - 2
-	// m.viewport.YPosition = m.headerOffset
-	// m.it.Focus()
-	// return search + m.viewport.View()
+	m.t.SetRows(rows)
+	m.t.SetHeight(m.height-m.headerOffset-m.footerOffset-2-1)
 
 	// use different styles here
-	return fmt.Sprintf("%s\n%s", m.txtStyle.Render(m.it.View()), m.quitStyle.Render(m.t.View()) )
-	// return m.txtStyle.Render(m.t.View())
+	return fmt.Sprintf("%s\n%s", m.txtStyle.Render(m.it.View()), m.quitStyle.Render(m.t.View()))
 }
