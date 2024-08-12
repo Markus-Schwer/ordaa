@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,12 +14,13 @@ import (
 const (
 	MENUS = iota
 	ORDERS
+	HOME
 
 	TABS
 	BODY
 )
 
-var NAVBAR = []int{MENUS, ORDERS}
+var NAVBAR = []int{HOME, MENUS, ORDERS}
 
 type LayoutInfo struct {
 	ctx          context.Context
@@ -132,28 +134,41 @@ func (m *LayoutModel) renderActiveBold(tab int) (rendered string) {
 		s = s.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("12"))
 	}
 	switch tab {
+	case HOME:
+		rendered = s.Render(padToSizeCenter("DOTINDER", 12))
 	case ORDERS:
-		rendered = s.Render("[O]RDERS")
+		rendered = s.Render(padToSizeCenter("ORDERS", 12))
 	case MENUS:
-		rendered = s.Render("[M]ENUS")
+		rendered = s.Render(padToSizeCenter("MENUS", 12))
 	}
 	return
 }
 
+func padToSizeCenter(str string, total int) string {
+	pad := int((total - len(str)) / 2)
+	return strings.Repeat(" ", pad) + str + strings.Repeat(" ", total-len(str)-pad)
+}
+
 func (m *LayoutModel) View() (content string) {
-	header := m.txtStyle.Width(m.width).Align(lipgloss.Center).Render("DOTINDER") + "\n\n"
 	entries := make([]string, len(NAVBAR))
 	for i, v := range NAVBAR {
 		entries[i] = m.renderActiveBold(v)
 	}
-	borderStyle := WithBorderAndCorner(m.txtStyle, "t", m.activeBox == TABS)
-	header += borderStyle.Render(lipgloss.JoinHorizontal(lipgloss.Bottom, entries...))
-	header += "\n\n"
+	header := "\n" + m.txtStyle.
+		Width(m.width).
+		Align(lipgloss.Center).
+		Render(
+			lipgloss.JoinHorizontal(lipgloss.Center, entries...),
+		) + "\n\n"
 	m.headerOffset = lipgloss.Height(header)
 	content += header
 	footer := "\n\n" + m.helpModel.View()
 	m.footerOffset = lipgloss.Height(footer)
-	content += WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render(m.subModels[m.activeTab].View())
+	content += m.subModels[m.activeTab].View()
+	// Width(m.width).
+	// 	Align(lipgloss.Center).
+	// 	Render()
+	// WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render()
 	content += footer
 	return
 }

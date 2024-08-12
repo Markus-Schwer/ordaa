@@ -112,8 +112,18 @@ func (m *MenuModel) View() string {
 		rows = append(rows, table.Row{v.ShortName, v.Name, fmt.Sprintf("%4.2f€", float64(v.Price)/100.0)})
 	}
 	m.t.SetRows(rows)
-	m.t.SetHeight(m.height-m.headerOffset-m.footerOffset-2-1)
+	m.t.SetHeight(m.height - m.headerOffset - m.footerOffset - 2 - 1)
 
 	// use different styles here
-	return fmt.Sprintf("%s\n%s", m.txtStyle.Render(m.it.View()), m.quitStyle.Render(m.t.View()))
+	return fmt.Sprintf(
+		"%s\n%s",
+		m.txtStyle.
+			Width(m.width).
+			Align(lipgloss.Center).
+			Render(lipgloss.PlaceHorizontal(lipgloss.Width(m.t.View()), lipgloss.Left, m.it.View()) + "<"),
+		m.quitStyle.
+			Width(m.width).
+			Align(lipgloss.Center).
+			Render(m.t.View() + "\n"),
+	)
 }

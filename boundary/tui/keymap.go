@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type KeyMap struct {
@@ -91,5 +92,8 @@ func (m *HelpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 func (m *HelpModel) View() string {
-	return m.help.View(m.keyMap)
+	return m.txtStyle.
+		Width(m.width).
+		Align(lipgloss.Center).
+		Render(m.help.View(m.keyMap) + "\n")
 }
