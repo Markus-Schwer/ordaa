@@ -61,7 +61,6 @@ func (a *AuthService) Signin(tx *gorm.DB, creds *Credentials) (*jwt.Token, error
 		Username: creds.Username,
 		UserUuid: dbUser.Uuid.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject: creds.Username,
 			// In JWT, the expiry time is expressed as unix milliseconds
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},

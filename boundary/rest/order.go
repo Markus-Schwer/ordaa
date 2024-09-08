@@ -19,6 +19,13 @@ func (server *RestBoundary) newOrder(c echo.Context) error {
 	}
 
 	return server.repo.Transaction(func(tx *gorm.DB) error {
+		user, err := utils.CurrentUser(c, server.repo, tx)
+		if err != nil {
+			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error getting current user")
+			return utils.NewInternalServerError(err)
+		}
+		order.Initiator = user.Uuid
+
 		createdOrder, err := server.repo.CreateOrder(tx, &order)
 		if err != nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error creating order")

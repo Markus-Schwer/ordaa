@@ -16,6 +16,7 @@ func StartHttpServer(ctx context.Context, router *echo.Echo) {
 		Addr:    ctx.Value(AddressKey).(string),
 	}
 	go func() {
+		log.Ctx(ctx).Info().Msg("starting http server")
 		if err := srv.ListenAndServe(); err != nil {
 			log.Ctx(ctx).Fatal().Err(err).Msg("listen and serve crashed")
 		}

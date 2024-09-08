@@ -146,7 +146,7 @@ func (repo *MockRepository) GetAllOrders(tx *gorm.DB) ([]Order, error) {
 
 func (repo *MockRepository) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error) {
 	for _, o := range repo.orders {
-		if o.Uuid == uuid {
+		if *o.Uuid == *uuid {
 			return &o, nil
 		}
 	}
@@ -160,7 +160,7 @@ func (repo *MockRepository) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) 
 
 func (repo *MockRepository) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, error) {
 	for _, oi := range repo.orderItems {
-		if oi.Uuid == uuid {
+		if *oi.Uuid == *uuid {
 			return &oi, nil
 		}
 	}
@@ -179,7 +179,7 @@ func (repo *MockRepository) CreateOrderItem(tx *gorm.DB, orderUuid *uuid.UUID, o
 
 	foundIndex := -1
 	for i, o := range repo.orders {
-		if o.Uuid == orderUuid {
+		if *o.Uuid == *orderUuid {
 			foundIndex = i
 		}
 	}
@@ -272,7 +272,7 @@ func (repo *MockRepository) GetAllUsers(tx *gorm.DB) ([]User, error) {
 
 func (repo *MockRepository) GetUser(tx *gorm.DB, userUuid *uuid.UUID) (*User, error) {
 	for _, u := range repo.users {
-		if u.Uuid == userUuid {
+		if *u.Uuid == *userUuid {
 			return &u, nil
 		}
 	}
@@ -320,7 +320,7 @@ func (repo *MockRepository) GetAllMatrixUsers(tx *gorm.DB) ([]MatrixUser, error)
 
 func (repo *MockRepository) GetMatrixUser(tx *gorm.DB, matrixUserUuid *uuid.UUID) (*MatrixUser, error) {
 	for _, u := range repo.matrixUsers {
-		if u.Uuid == matrixUserUuid {
+		if *u.Uuid == *matrixUserUuid {
 			return &u, nil
 		}
 	}
@@ -377,7 +377,7 @@ func (repo *MockRepository) FindPasswordUser(tx *gorm.DB, username string) (*Pas
 
 func (repo *MockRepository) GetPasswordUser(tx *gorm.DB, passwordUserUuid *uuid.UUID) (*PasswordUser, error) {
 	for _, u := range repo.passwordUsers {
-		if u.Uuid == passwordUserUuid {
+		if *u.Uuid == *passwordUserUuid {
 			return &u, nil
 		}
 	}
