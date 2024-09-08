@@ -59,7 +59,7 @@ func (a *AuthService) Signin(tx *gorm.DB, creds *Credentials) (*jwt.Token, error
 	// Create the JWT claims, which includes the username and expiry time
 	claims := &Claims{
 		Username: creds.Username,
-		UserUuid: dbUser.Uuid.String(),
+		UserUuid: dbUser.UserUuid.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			// In JWT, the expiry time is expressed as unix milliseconds
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -160,6 +160,11 @@ func (a *AuthService) Refresh(c echo.Context) error {
 		return errors.New("not authenticated")
 	}
 
+	oldClaims, ok := token.Claims.(*Claims)
+	if !ok {
+		return errors.New("could not cast claims")
+	}
+
 	expiresAt, err := token.Claims.GetExpirationTime()
 	if err != nil {
 		return err
@@ -175,7 +180,7 @@ func (a *AuthService) Refresh(c echo.Context) error {
 	// Now, create a new token for the current use, with a renewed expiration time
 	expirationTime := time.Now().Add(5 * time.Minute)
 	// Initialize a new instance of `Claims`
-	claims := &Claims{}
+	claims := &Claims{Username: oldClaims.Username, UserUuid: oldClaims.UserUuid}
 	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
 	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -198,6 +203,9 @@ func AuthMiddleware(auth *AuthService, unauthorizedHandler func(echo.Context, er
 	return echojwt.WithConfig(echojwt.Config{
 		SigningKey:  jwtKey,
 		ErrorHandler: unauthorizedHandler,
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(Claims)
+		},
 		//SigningMethod: jwt.SigningMethodRS256.Name,
 	})
 }

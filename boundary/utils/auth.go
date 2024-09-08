@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,7 +14,10 @@ import (
 )
 
 func CurrentUser(c echo.Context, repo entity.Repository, tx *gorm.DB) (*entity.User, error) {
-	jwt := c.Get("user").(*jwt.Token)
+	jwt, ok := c.Get("user").(*jwt.Token)
+	if !ok {
+		return nil, errors.New("could not get user from context")
+	}
 	claims := jwt.Claims.(*auth.Claims)
 	userUuid, err := uuid.FromString(claims.UserUuid)
 	if err != nil {
