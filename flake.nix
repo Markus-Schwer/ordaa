@@ -39,7 +39,7 @@
             };
 
             scripts.dev-server.exec = ''
-              reflex -R '_templ.go$' -s -- sh -c 'templ generate && go run main.go'
+              reflex -R '_templ.go$' -r '\.go$' -s -- sh -c 'templ generate && go run main.go'
             '';
           }
         ];
