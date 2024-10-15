@@ -51,9 +51,9 @@
         default = pkgs.buildGoModule {
           pname = "dotinder";
           version = "1.0.0";
-          # run with fake sha first and then copy actual sha from error message
-          #vendorSha256 = nixpkgs.lib.fakeSha256;
-          vendorSha256 = "sha256-N1jG2uB6K6/T0+jzx6qQw/1S36EgmktV7aBXCKTaKhM=";
+          # run with fake hash first and then copy actual hash from error message
+          #vendorHash = nixpkgs.lib.fakeHash;
+          vendorHash = "sha256-EEF+WoyClJjLTCeLwpRKX1GJ+wLSW/ShvzhXShRhBNs=";
           src = ./.;
 
           preBuild = ''
