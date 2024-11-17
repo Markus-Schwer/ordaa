@@ -40,6 +40,7 @@ type SshTuiServer struct {
 }
 
 func (serv *SshTuiServer) Start() error {
+	zlog := log.Ctx(serv.ctx).With().Str("component", "ssh-server").Logger()
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(serv.host, serv.port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
@@ -57,7 +58,7 @@ func (serv *SshTuiServer) Start() error {
 		wish.WithMiddleware(
 			bubbletea.Middleware(serv.teaHandler),
 			activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
-			logging.Middleware(),
+			logging.MiddlewareWithLogger(&zlog),
 		),
 	)
 	if err != nil {
