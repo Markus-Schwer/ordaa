@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,6 +14,38 @@ import (
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 	"gorm.io/gorm"
 )
+
+type listItem struct {
+	title string
+	id    string
+	price string
+}
+
+func (l listItem) Title() string       { return fmt.Sprintf("[%s] %s", l.id, l.title) }
+func (l listItem) Description() string { return l.price }
+func (l listItem) FilterValue() string { return strings.Join([]string{l.title, l.id}, " ") }
+
+type listKeyMap struct {
+	Up   key.Binding
+	Down key.Binding
+}
+
+func newListKeyMap() *listKeyMap {
+	return &listKeyMap{
+		Up: key.NewBinding(
+			key.WithKeys("k", "up"),
+			key.WithHelp("↑/k", "Move up"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("j", "down"),
+			key.WithHelp("↓/j", "Move down"),
+		),
+	}
+}
+
+type model struct {
+	list list.Model
+}
 
 type MenuModel struct {
 	*LayoutInfo
@@ -46,7 +79,7 @@ func NewMenuModel(info *LayoutInfo) *MenuModel {
 	t.SetStyles(s)
 	it := textinput.New()
 	it.Placeholder = "Search"
-	it.Width = 20
+	it.Width = 40
 	return &MenuModel{
 		LayoutInfo: info,
 		s:          info.quitStyle,
@@ -120,10 +153,10 @@ func (m *MenuModel) View() string {
 		m.txtStyle.
 			Width(m.width).
 			Align(lipgloss.Center).
-			Render(lipgloss.PlaceHorizontal(lipgloss.Width(m.t.View()), lipgloss.Left, m.it.View()) + "<"),
+			Render(lipgloss.PlaceHorizontal(lipgloss.Width(m.t.View()), lipgloss.Left, m.it.View())+"<"),
 		m.quitStyle.
 			Width(m.width).
 			Align(lipgloss.Center).
-			Render(m.t.View() + "\n"),
+			Render(m.t.View()+"\n"),
 	)
 }

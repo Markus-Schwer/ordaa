@@ -2,12 +2,16 @@ package tui
 
 import (
 	"context"
+	"math"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
+	"github.com/rs/zerolog/log"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components/menu"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components/orders"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 )
 
@@ -20,7 +24,7 @@ const (
 	BODY
 )
 
-var NAVBAR = []int{HOME, MENUS, ORDERS}
+var NAVBAR = []int{HOME, ORDERS, MENUS}
 
 type LayoutInfo struct {
 	ctx          context.Context
@@ -34,6 +38,22 @@ type LayoutInfo struct {
 	headerOffset int
 	footerOffset int
 	repo         entity.Repository
+}
+
+func (l *LayoutInfo) BoxStyle() lipgloss.Style {
+	return l.txtStyle
+}
+
+func (l *LayoutInfo) ContentWidth() int {
+	return int(math.Min(float64(l.width), 60))
+}
+
+func (l *LayoutInfo) ContentHeight() int {
+	return l.height - l.headerOffset - l.footerOffset - 10
+}
+
+func (l *LayoutInfo) Repository() entity.Repository {
+	return l.repo
 }
 
 func NewLayoutInfo(
@@ -56,10 +76,11 @@ func NewLayoutInfo(
 
 type LayoutModel struct {
 	*LayoutInfo
-	activeTab int
-	activeBox int
-	subModels map[int]tea.Model
-	helpModel tea.Model
+	activeTab   components.ComponentKey
+	activeBox   int
+	activeModel tea.Model
+	// subModels   map[components.ComponentKey]tea.Model
+	helpModel   tea.Model
 }
 
 func NewLayoutModel(
@@ -69,29 +90,25 @@ func NewLayoutModel(
 	repo entity.Repository,
 ) *LayoutModel {
 	info := NewLayoutInfo(ctx, renderer, pty, repo)
-	subModels := make(map[int]tea.Model)
-	subModels[MENUS] = NewMenuModel(info)
+	// subModels := make(map[components.ComponentKey]tea.Model)
+	// subModels[menu.MenuSelectorComponent] = menu.NewMenuItemSelectorModel(ctx, repo, info)
+	// subModels[orders.OrderSelectorComponent] = orders.NewOrderSelectorModel(ctx, repo, info)
 	return &LayoutModel{
 		LayoutInfo: info,
-		activeTab:  MENUS,
-		activeBox:  TABS,
-		subModels:  subModels,
+		activeTab:  orders.OrderSelectorComponent,
+		activeBox:  BODY,
+		// subModels:  subModels,
 		helpModel:  NewHelpModel(info),
 	}
 }
 
 func (m *LayoutModel) Init() tea.Cmd {
-	m.activeTab = MENUS
-	for subMdlIdx, subModel := range m.subModels {
-		cmd := subModel.Init()
-		m.updateSubmodel(subMdlIdx, cmd)
-	}
-	cmd := m.helpModel.Init()
-	if cmd != nil {
-		msg := cmd()
-		m.helpModel, cmd = m.helpModel.Update(msg)
-	}
-	return nil
+	var cmds []tea.Cmd
+	m.activeTab = orders.OrderSelectorComponent
+	m.activeModel = orders.NewOrderSelectorModel(m.ctx, m.repo, m)
+	cmds = append(cmds, m.activeModel.Init())	
+	cmds = append(cmds, m.helpModel.Init())
+	return tea.Batch(cmds...)
 }
 
 func (m *LayoutModel) Update(msg tea.Msg) (mdl tea.Model, cmd tea.Cmd) {
@@ -100,49 +117,36 @@ func (m *LayoutModel) Update(msg tea.Msg) (mdl tea.Model, cmd tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
-	case tea.KeyMsg:
-		if m.activeBox == TABS {
-			switch {
-			case msg.String() == "ctrl+t":
-				m.activeBox = TABS
-			case msg.String() == "ctrl+b":
-				m.activeBox = BODY
-			case key.Matches(msg, DefaultKeyMap.Quit):
-				cmd = tea.Quit
-			case msg.String() == "m":
-				if m.activeBox == TABS {
-					m.activeTab = MENUS
-				}
-			case msg.String() == "o":
-				if m.activeBox == TABS {
-					m.activeTab = ORDERS
-				}
-			}
-		} else {
-			m.subModels[m.activeBox], cmd = m.subModels[m.activeTab].Update(msg)
+	case components.LayoutEvent:
+		log.Ctx(m.ctx).Info().Msgf("LayoutEvent: %v", msg)
+		m.activeTab = msg.Component
+		if msg.Component == menu.MenuSelectorComponent {
+			m.ctx = components.SetMenuUuidToContext(m.ctx, msg.Uuid)
+			m.activeModel = menu.NewMenuItemSelectorModel(m.ctx, m.repo, m)
+			cmd = m.activeModel.Init()
 		}
 	default:
-		m.subModels[m.activeBox], cmd = m.subModels[m.activeTab].Update(msg)
+		m.activeModel, cmd = m.activeModel.Update(msg)
 	}
 	mdl = m
 	return
 }
 
-func (m *LayoutModel) renderActiveBold(tab int) (rendered string) {
-	s := m.txtStyle.Padding(0, 2).Foreground(lipgloss.Color("12")).Background(lipgloss.Color("0"))
-	if tab == m.activeTab {
-		s = s.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("12"))
-	}
-	switch tab {
-	case HOME:
-		rendered = s.Render(padToSizeCenter("DOTINDER", 12))
-	case ORDERS:
-		rendered = s.Render(padToSizeCenter("ORDERS", 12))
-	case MENUS:
-		rendered = s.Render(padToSizeCenter("MENUS", 12))
-	}
-	return
-}
+// func (m *LayoutModel) renderActiveBold(tab int) (rendered string) {
+// 	s := m.txtStyle.Padding(0, 2).Foreground(lipgloss.Color("12")).Background(lipgloss.Color("0"))
+// 	if tab == m.activeTab {
+// 		s = s.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("12"))
+// 	}
+// 	switch tab {
+// 	case HOME:
+// 		rendered = s.Render(padToSizeCenter("DOTINDER", 12))
+// 	case ORDERS:
+// 		rendered = s.Render(padToSizeCenter("ORDERS", 12))
+// 	case MENUS:
+// 		rendered = s.Render(padToSizeCenter("MENUS", 12))
+// 	}
+// 	return
+// }
 
 func padToSizeCenter(str string, total int) string {
 	pad := int((total - len(str)) / 2)
@@ -151,9 +155,9 @@ func padToSizeCenter(str string, total int) string {
 
 func (m *LayoutModel) View() (content string) {
 	entries := make([]string, len(NAVBAR))
-	for i, v := range NAVBAR {
-		entries[i] = m.renderActiveBold(v)
-	}
+	// for i, v := range NAVBAR {
+	// 	entries[i] = m.renderActiveBold(v)
+	// }
 	header := "\n" + m.txtStyle.
 		Width(m.width).
 		Align(lipgloss.Center).
@@ -164,19 +168,18 @@ func (m *LayoutModel) View() (content string) {
 	content += header
 	footer := "\n\n" + m.helpModel.View()
 	m.footerOffset = lipgloss.Height(footer)
-	content += m.subModels[m.activeTab].View()
-	// Width(m.width).
-	// 	Align(lipgloss.Center).
-	// 	Render()
-	// WithBorderAndCorner(m.txtStyle, "b", m.activeBox == BODY).Render()
+	content += m.txtStyle.
+		Width(m.width).
+		Align(lipgloss.Center).
+		Render(m.activeModel.View())
 	content += footer
 	return
 }
 
-func (m *LayoutModel) updateSubmodel(modelIdx int, cmd tea.Cmd) {
-	msg := cmd()
-	m.subModels[modelIdx], cmd = m.subModels[modelIdx].Update(msg)
-	if cmd != nil {
-		m.updateSubmodel(modelIdx, cmd)
-	}
-}
+// func (m *LayoutModel) updateSubmodel(modelIdx components.ComponentKey, cmd tea.Cmd) {
+// 	msg := cmd()
+// 	m.subModels[modelIdx], cmd = m.subModels[modelIdx].Update(msg)
+// 	if cmd != nil {
+// 		m.updateSubmodel(modelIdx, cmd)
+// 	}
+// }

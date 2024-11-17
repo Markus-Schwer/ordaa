@@ -59,6 +59,8 @@ func main() {
 	ctx = context.WithValue(ctx, matrix.MatrixUsernameKey, matrixUsername)
 	ctx = context.WithValue(ctx, matrix.MatrixPasswordKey, matrixPassword)
 	ctx = context.WithValue(ctx, matrix.MatrixRoomsKey, matrixRooms)
+	
+	log.Ctx(ctx).Info().Msg("starting dotinder")
 
 	if err := entity.Migrate(ctx, databaseUrl); err != nil {
 		log.Ctx(ctx).Fatal().Err(err).Msg("database migration failed")

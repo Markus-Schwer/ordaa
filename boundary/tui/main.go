@@ -20,7 +20,7 @@ import (
 )
 
 var users = map[string]string{
-	"jgero": "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIMBLpHh+RUu03kr8U6t/kTtWpmOBbq9Lx+yd7OKEJH6gAAAABHNzaDo=",
+	"jgero": "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIKgKBq4N0toosQ6nV/IQTRx/8OudkB7DwnrIDX0HrUw7AAAABHNzaDo=",
 }
 
 func NewSshTuiServer(ctx context.Context, repo entity.Repository) *SshTuiServer {
