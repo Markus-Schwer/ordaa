@@ -16,6 +16,7 @@ var handlers = map[string]CommandHandler{
 	"help":           handleHelp,
 	"register":       handleRegister,
 	"set_public_key": handleSetPublicKey,
+	"new_order":      handleNewOrder,
 }
 
 func handleUnrecognizedCommand(m *MatrixBoundary, _ *gorm.DB, evt *event.Event, message string) error {
@@ -57,14 +58,9 @@ func handleSetPublicKey(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 		return errors.New("public key must not be empty")
 	}
 
-	matrixUser, err := m.repo.GetMatrixUserByUsername(tx, username)
+	user, err := m.getUserByUsername(tx, username)
 	if err != nil {
-		return fmt.Errorf("could not get matrix user of sender '%s' for message '%s': %w", username, message, err)
-	}
-
-	user, err := m.repo.GetUser(tx, matrixUser.UserUuid)
-	if err != nil {
-		return fmt.Errorf("could not get user of sender '%s' for message '%s': %w", username, message, err)
+		return err
 	}
 
 	user.PublicKey = publicKey
@@ -74,5 +70,28 @@ func handleSetPublicKey(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	}
 
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully set ssh public key for user: %s", username), false)
+	return nil
+}
+
+func handleNewOrder(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
+	username := evt.Sender.String()
+
+	initiator, err := m.getUserByUsername(tx, username)
+	if err != nil {
+		return err
+	}
+
+	menuName := strings.TrimPrefix(message, "new_order ")
+	menu, err := m.repo.GetMenuByName(tx, menuName)
+	if err != nil {
+		return fmt.Errorf("could not get menu '%s': %w", menuName, err)
+	}
+
+	_, err = m.repo.CreateOrder(tx, &entity.Order{Initiator: initiator.Uuid, MenuUuid: menu.Uuid})
+	if err != nil {
+		return fmt.Errorf("could not create order: %w", err)
+	}
+
+	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("started new order for %s", menuName), false)
 	return nil
 }

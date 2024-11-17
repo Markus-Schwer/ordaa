@@ -21,6 +21,7 @@ type Repository interface {
 	GetOrderItem(*gorm.DB, *uuid.UUID) (*OrderItem, error)
 	CreateOrderItem(*gorm.DB, *uuid.UUID, *OrderItem) (*OrderItem, error)
 	GetMenu(*gorm.DB, *uuid.UUID) (*Menu, error)
+	GetMenuByName(*gorm.DB, string) (*Menu, error)
 	GetMenuItem(*gorm.DB, *uuid.UUID) (*MenuItem, error)
 	CreateMenu(*gorm.DB, *Menu) (*Menu, error)
 	UpdateMenu(*gorm.DB, *uuid.UUID, *Menu) (*Menu, error)

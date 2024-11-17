@@ -47,6 +47,16 @@ func (repo *MockRepository) GetMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Menu, er
 	return nil, errors.New("menu not found")
 }
 
+func (repo *MockRepository) GetMenuByName(tx *gorm.DB, name string) (*Menu, error) {
+	for _, m := range repo.menus {
+		if m.Name == name {
+			return &m, nil
+		}
+	}
+
+	return nil, errors.New("menu not found")
+}
+
 func (repo *MockRepository) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*MenuItem, error) {
 	for _, mi := range repo.menuItems {
 		if *mi.Uuid == *menuItemUuid {

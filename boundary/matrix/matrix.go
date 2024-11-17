@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	HomeserverUrlKey = "MATRIX_HOMESERVER"
+	HomeserverUrlKey  = "MATRIX_HOMESERVER"
 	MatrixUsernameKey = "MATRIX_USERNAME"
 	MatrixPasswordKey = "MATRIX_PASSWORD"
-	MatrixRoomsKey = "MATRIX_ROOMS"
+	MatrixRoomsKey    = "MATRIX_ROOMS"
 )
 
 type MatrixBoundary struct {
@@ -146,4 +146,18 @@ func (m *MatrixBoundary) reply(room id.RoomID, evt id.EventID, content string, a
 		log.Ctx(m.ctx).Error().Err(err).Msgf("could not respond to event '%s'", content)
 	}
 	return ev.EventID
+}
+
+func (m *MatrixBoundary) getUserByUsername(tx *gorm.DB, username string) (*entity.User, error) {
+	matrixUser, err := m.repo.GetMatrixUserByUsername(tx, username)
+	if err != nil {
+		return nil, fmt.Errorf("could not get matrix user of sender '%s': %w", username, err)
+	}
+
+	user, err := m.repo.GetUser(tx, matrixUser.UserUuid)
+	if err != nil {
+		return nil, fmt.Errorf("could not get user of sender '%s' for message: %w", username, err)
+	}
+
+	return user, nil
 }

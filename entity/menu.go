@@ -18,7 +18,7 @@ type MenuItem struct {
 	ShortName string     `gorm:"column:short_name" json:"short_name" validate:"required"`
 	Name      string     `gorm:"column:name" json:"name" validate:"required"`
 	Price     int        `gorm:"column:price" json:"price" validate:"required"`
-	MenuUuid  *uuid.UUID  `gorm:"column:menu_uuid" json:"menu_uuid"`
+	MenuUuid  *uuid.UUID  `gorm:"column:menu_uuid" json:"menu_uuid" validate:"required"`
 }
 
 func (menu *Menu) BeforeCreate(tx *gorm.DB) (err error) {
@@ -55,6 +55,15 @@ func (repo *RepositoryImpl) GetMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Menu, er
 	var menu Menu
 	if err := tx.Model(&Menu{}).Preload("Items").First(&menu, menuUuid).Error; err != nil {
 		return nil, fmt.Errorf("failed to get menu %s: %w", menuUuid, err)
+	}
+
+	return &menu, nil
+}
+
+func (repo *RepositoryImpl) GetMenuByName(tx *gorm.DB, name string) (*Menu, error) {
+	var menu Menu
+	if err := tx.Model(&Menu{}).Preload("Items").Where(&Menu{Name: name}).First(&menu).Error; err != nil {
+		return nil, fmt.Errorf("failed to get menu %s: %w", name, err)
 	}
 
 	return &menu, nil
