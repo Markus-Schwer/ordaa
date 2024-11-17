@@ -13,9 +13,9 @@ import (
 type CommandHandler = func(*MatrixBoundary, *gorm.DB, *event.Event, string) error
 
 var handlers = map[string]CommandHandler{
-	"help":                   handleHelp,
-	"register":               handleRegister,
-	"set_public_key":         handleSetPublicKey,
+	"help":           handleHelp,
+	"register":       handleRegister,
+	"set_public_key": handleSetPublicKey,
 }
 
 func handleUnrecognizedCommand(m *MatrixBoundary, _ *gorm.DB, evt *event.Event, message string) error {
@@ -70,7 +70,7 @@ func handleSetPublicKey(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	user.PublicKey = publicKey
 	_, err = m.repo.UpdateUser(tx, user.Uuid, user)
 	if err != nil {
-		return fmt.Errorf("could not set public key for user '%s': %w", username, err)
+		return fmt.Errorf("could not set public key for user '%s': %w", user.Name, err)
 	}
 
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully set ssh public key for user: %s", username), false)
