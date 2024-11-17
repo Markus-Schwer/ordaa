@@ -328,6 +328,16 @@ func (repo *MockRepository) GetMatrixUser(tx *gorm.DB, matrixUserUuid *uuid.UUID
 	return nil, errors.New("matrix user not found")
 }
 
+func (repo *MockRepository) GetMatrixUserByUsername(tx *gorm.DB, username string) (*MatrixUser, error) {
+	for _, u := range repo.matrixUsers {
+		if u.Username == username {
+			return &u, nil
+		}
+	}
+
+	return nil, errors.New("matrix user not found")
+}
+
 func (repo *MockRepository) CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser) (*MatrixUser, error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {

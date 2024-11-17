@@ -1,0 +1,22 @@
+meta {
+  name: Update User
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/users/{{uuid}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "test",
+    "password": "test"
+  }
+}
+
+vars:pre-request {
+  uuid: 
+}

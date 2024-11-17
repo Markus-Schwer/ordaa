@@ -37,6 +37,7 @@ type Repository interface {
 	UpdateUser(*gorm.DB, *uuid.UUID, *User) (*User, error)
 	DeleteUser(*gorm.DB, *uuid.UUID) error
 	GetMatrixUser(*gorm.DB, *uuid.UUID) (*MatrixUser, error)
+	GetMatrixUserByUsername(*gorm.DB, string) (*MatrixUser, error)
 	CreateMatrixUser(*gorm.DB, *MatrixUser) (*MatrixUser, error)
 	UpdateMatrixUser(*gorm.DB, *uuid.UUID, *MatrixUser) (*MatrixUser, error)
 	DeleteMatrixUser(*gorm.DB, *uuid.UUID) error

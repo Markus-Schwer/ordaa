@@ -8,19 +8,20 @@ import (
 )
 
 type User struct {
-	Uuid *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	Name string     `gorm:"column:name" json:"name"`
+	Uuid      *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
+	Name      string     `gorm:"column:name" json:"name"`
+	PublicKey string     `gorm:"column:public_key" json:"public_key"`
 }
 
 type MatrixUser struct {
 	Uuid     *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	UserUuid *uuid.UUID  `gorm:"column:user_uuid" json:"user_uuid"`
+	UserUuid *uuid.UUID `gorm:"column:user_uuid" json:"user_uuid"`
 	Username string     `gorm:"column:username" json:"username"`
 }
 
 type PasswordUser struct {
 	Uuid     *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	UserUuid *uuid.UUID  `gorm:"column:user_uuid" json:"user_uuid"`
+	UserUuid *uuid.UUID `gorm:"column:user_uuid" json:"user_uuid"`
 	Username string     `gorm:"column:username" json:"username" validate:"required"`
 	Password string     `gorm:"column:password" json:"password" validate:"required"`
 }
@@ -88,6 +89,7 @@ func (repo *RepositoryImpl) UpdateUser(tx *gorm.DB, userUuid *uuid.UUID, user *U
 		return nil, fmt.Errorf("could not update user %s: %w", userUuid, err)
 	}
 	foundUser.Name = user.Name
+	foundUser.PublicKey = user.PublicKey
 	err = tx.Save(&foundUser).Error
 	if err != nil {
 		return nil, fmt.Errorf("could not update user %s: %w", userUuid, err)
@@ -123,6 +125,15 @@ func (repo *RepositoryImpl) GetMatrixUser(tx *gorm.DB, matrixUserUuid *uuid.UUID
 	var matrixUser MatrixUser
 	if err := tx.Where(&MatrixUser{Uuid: matrixUserUuid}).First(&matrixUser).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user %s: %w", matrixUserUuid, err)
+	}
+
+	return &matrixUser, nil
+}
+
+func (repo *RepositoryImpl) GetMatrixUserByUsername(tx *gorm.DB, username string) (*MatrixUser, error) {
+	var matrixUser MatrixUser
+	if err := tx.Where(&MatrixUser{Username: username}).First(&matrixUser).Error; err != nil {
+		return nil, fmt.Errorf("failed to get user %s: %w", username, err)
 	}
 
 	return &matrixUser, nil
