@@ -75,6 +75,15 @@ func (repo *RepositoryImpl) GetUser(tx *gorm.DB, userUuid *uuid.UUID) (*User, er
 	return &user, nil
 }
 
+func (repo *RepositoryImpl) GetUserByPublicKey(tx *gorm.DB, pk string) (*User, error) {
+	var user User
+	if err := tx.Where(&User{PublicKey: pk}).First(&user).Error; err != nil {
+		return nil, fmt.Errorf("failed to get user with public key %s: %w", pk, err)
+	}
+
+	return &user, nil
+}
+
 func (repo *RepositoryImpl) CreateUser(tx *gorm.DB, user *User) (*User, error) {
 	err := tx.Create(&user).Error
 	if err != nil {

@@ -34,6 +34,7 @@ type Repository interface {
 	DeleteOrderItem(*gorm.DB, *uuid.UUID) error
 	DeleteOrder(*gorm.DB, *uuid.UUID) error
 	GetUser(*gorm.DB, *uuid.UUID) (*User, error)
+	GetUserByPublicKey(*gorm.DB, string) (*User, error)
 	CreateUser(*gorm.DB, *User) (*User, error)
 	UpdateUser(*gorm.DB, *uuid.UUID, *User) (*User, error)
 	DeleteUser(*gorm.DB, *uuid.UUID) error

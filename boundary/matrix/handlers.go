@@ -1,10 +1,12 @@
 package matrix
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/ssh"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 	"gorm.io/gorm"
 	"maunium.net/go/mautrix/event"
@@ -18,6 +20,9 @@ var handlers = map[string]CommandHandler{
 	"set_public_key": handleSetPublicKey,
 	"new_order":      handleNewOrder,
 }
+var (
+	ErrCannotParsePublicKey = errors.New("cannot parse public key")
+)
 
 func handleUnrecognizedCommand(m *MatrixBoundary, _ *gorm.DB, evt *event.Event, message string) error {
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("Command not recognized: %s", message), false)
@@ -56,6 +61,18 @@ func handleSetPublicKey(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	publicKey := strings.TrimPrefix(message, "set_public_key ")
 	if publicKey == "" {
 		return errors.New("public key must not be empty")
+	}
+	publicKeySegments := strings.Split(publicKey, " ")
+	if len(publicKeySegments) != 2 {
+		return errors.New("public key must be in the format 'key_type base64_encoded_key'")
+	}
+	publicKeyBytes, err := base64.StdEncoding.DecodeString(publicKeySegments[1])
+	if err != nil {
+		return fmt.Errorf("%w: %s", ErrCannotParsePublicKey, err)
+	}
+	_, err = ssh.ParsePublicKey(publicKeyBytes)
+	if err != nil {
+		return fmt.Errorf("%w: %s", ErrCannotParsePublicKey, err)
 	}
 
 	user, err := m.getUserByUsername(tx, username)

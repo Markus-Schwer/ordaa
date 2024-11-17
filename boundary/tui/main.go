@@ -2,7 +2,9 @@ package tui
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -17,11 +19,10 @@ import (
 	"github.com/charmbracelet/wish/logging"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gorm.io/gorm"
 )
 
-var users = map[string]string{
-	"jgero": "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIKgKBq4N0toosQ6nV/IQTRx/8OudkB7DwnrIDX0HrUw7AAAABHNzaDo=",
-}
+const UserContextKey = "user-struct-context-key"
 
 func NewSshTuiServer(ctx context.Context, repo entity.Repository) *SshTuiServer {
 	return &SshTuiServer{
@@ -44,21 +45,22 @@ func (serv *SshTuiServer) Start() error {
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(serv.host, serv.port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
-		wish.WithPublicKeyAuth(func(_ ssh.Context, key ssh.PublicKey) bool {
-			for _, pubkey := range users {
-				parsed, _, _, _, _ := ssh.ParseAuthorizedKey(
-					[]byte(pubkey),
-				)
-				if ssh.KeysEqual(key, parsed) {
-					return true
-				}
-			}
-			return false
-		}),
+		wish.WithPublicKeyAuth(func(_ ssh.Context, _ ssh.PublicKey) bool { return true }),
 		wish.WithMiddleware(
 			bubbletea.Middleware(serv.teaHandler),
 			activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
 			logging.MiddlewareWithLogger(&zlog),
+			func(next ssh.Handler) ssh.Handler {
+				return func(s ssh.Session) {
+					user, err := serv.getUserForKey(s)
+					if err != nil {
+						log.Ctx(serv.ctx).Error().Err(err).Msg("could not get user for key")
+						return
+					}
+					s.Context().SetValue(UserContextKey, user)
+					next(s)
+				}
+			},
 		),
 	)
 	if err != nil {
@@ -94,4 +96,23 @@ func (serv *SshTuiServer) teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOpt
 	m := NewLayoutModel(serv.ctx, renderer, pty, serv.repo)
 
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
+}
+
+func (serv *SshTuiServer) getUserForKey(sess ssh.Session) (user *entity.User, err error) {
+	err = serv.repo.Transaction(func(tx *gorm.DB) error {
+		var innerErr error
+		if sess.PublicKey() == nil {
+			return fmt.Errorf("could not get public key from session: %w", err)
+		}
+		pubKey := fmt.Sprintf("%s %s",sess.PublicKey().Type(), base64.StdEncoding.EncodeToString(sess.PublicKey().Marshal()))
+		user, innerErr = serv.repo.GetUserByPublicKey(tx, pubKey)
+		if innerErr != nil {
+			return innerErr
+		}
+		return nil
+	})
+	if err != nil {
+		return
+	}
+	return
 }
