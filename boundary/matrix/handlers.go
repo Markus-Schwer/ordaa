@@ -18,7 +18,7 @@ var handlers = map[string]CommandHandler{
 	"help":           handleHelp,
 	"register":       handleRegister,
 	"set_public_key": handleSetPublicKey,
-	"new_order":      handleNewOrder,
+	"start":          handleNewOrder,
 }
 var (
 	ErrCannotParsePublicKey = errors.New("cannot parse public key")
@@ -98,7 +98,7 @@ func handleNewOrder(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 		return err
 	}
 
-	menuName := strings.TrimPrefix(message, "new_order ")
+	menuName := strings.TrimPrefix(message, "start ")
 	menu, err := m.repo.GetMenuByName(tx, menuName)
 	if err != nil {
 		return fmt.Errorf("could not get menu '%s': %w", menuName, err)
