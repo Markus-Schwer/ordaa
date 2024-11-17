@@ -18,7 +18,7 @@ var handlers = map[string]CommandHandler{
 	"set_public_key":         handleSetPublicKey,
 }
 
-func handleUnrecognizedCommand(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
+func handleUnrecognizedCommand(m *MatrixBoundary, _ *gorm.DB, evt *event.Event, message string) error {
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("Command not recognized: %s", message), false)
 	return nil
 }
@@ -36,7 +36,7 @@ func handleRegister(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 			return fmt.Errorf("could not create matrix user for sender '%s': %w", username, err)
 		}
 
-		m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully registered user: %s", username), false)
+		m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully registered user: %s", user.Name), false)
 		return nil
 	} else if matrixUser != nil {
 		return errors.New(fmt.Sprintf("user '%s' is already registered", username))

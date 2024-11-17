@@ -100,12 +100,11 @@ func (m *MatrixBoundary) handleMessageEvent(evt *event.Event) {
 		command := commands[0]
 
 		handler := handlers[command]
-		trimedMsg := strings.Join(commands[1:], " ")
 		if handler == nil {
-			return handleUnrecognizedCommand(m, tx, evt, trimedMsg)
+			return handleUnrecognizedCommand(m, tx, evt, message)
 		}
 
-		return handler(m, tx, evt, trimedMsg)
+		return handler(m, tx, evt, message)
 	})
 	if err != nil {
 		log.Ctx(m.ctx).Error().Err(err).Msgf("error occured while handling matrix message: %s", message)
