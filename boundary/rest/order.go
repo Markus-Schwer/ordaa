@@ -2,6 +2,7 @@ package rest
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -24,6 +25,17 @@ func (server *RestBoundary) newOrder(c echo.Context) error {
 			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error getting current user")
 			return utils.NewInternalServerError(err)
 		}
+
+		_, err = server.repo.GetActiveOrderByMenu(tx, order.MenuUuid)
+		if err == nil {
+			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder there is already an active order the specified menu")
+			return utils.NewError(http.StatusBadRequest, "there is already an active order the specified menu")
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			err = fmt.Errorf("error occured while fetching active order by menu: %w", err)
+			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error occured while fetching active order by menu")
+			return utils.NewInternalServerError(err)
+		}
+
 		order.Initiator = user.Uuid
 
 		createdOrder, err := server.repo.CreateOrder(tx, &order)

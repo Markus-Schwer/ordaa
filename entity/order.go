@@ -67,6 +67,15 @@ func (*RepositoryImpl) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error) {
 	return &order, nil
 }
 
+func (*RepositoryImpl) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Order, error) {
+	var order Order
+	if err := tx.Model(&Order{}).Preload("Items").Where(&Order{MenuUuid: menuUuid}).First(&order).Error; err != nil {
+		return nil, fmt.Errorf("error getting order by menu %s: %w", menuUuid, err)
+	}
+
+	return &order, nil
+}
+
 func (*RepositoryImpl) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) ([]OrderItem, error) {
 	orderItems := []OrderItem{}
 	err := tx.Find(&orderItems).Error

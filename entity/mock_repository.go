@@ -164,6 +164,16 @@ func (repo *MockRepository) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, erro
 	return nil, errors.New("order not found")
 }
 
+func (repo *MockRepository) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Order, error) {
+	for _, o := range repo.orders {
+		if *o.MenuUuid == *menuUuid {
+			return &o, nil
+		}
+	}
+
+	return nil, errors.New("order not found")
+}
+
 func (repo *MockRepository) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) ([]OrderItem, error) {
 	return repo.orderItems, nil
 }

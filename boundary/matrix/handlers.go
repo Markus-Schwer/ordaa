@@ -104,6 +104,13 @@ func handleNewOrder(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 		return fmt.Errorf("could not get menu '%s': %w", menuName, err)
 	}
 
+	_, err = m.repo.GetActiveOrderByMenu(tx, menu.Uuid)
+	if err == nil {
+		return errors.New(fmt.Sprintf("there is already an active order for menu '%s'", menuName))
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return fmt.Errorf("error occured while fetching active order by menu: %w", err)
+	}
+
 	_, err = m.repo.CreateOrder(tx, &entity.Order{Initiator: initiator.Uuid, MenuUuid: menu.Uuid})
 	if err != nil {
 		return fmt.Errorf("could not create order: %w", err)

@@ -17,6 +17,7 @@ type Repository interface {
 	GetAllPasswordUsers(*gorm.DB) ([]PasswordUser, error)
 	GetAllOrders(*gorm.DB) ([]Order, error)
 	GetOrder(*gorm.DB, *uuid.UUID) (*Order, error)
+	GetActiveOrderByMenu(*gorm.DB, *uuid.UUID) (*Order, error)
 	GetAllOrderItems(*gorm.DB, *uuid.UUID) ([]OrderItem, error)
 	GetOrderItem(*gorm.DB, *uuid.UUID) (*OrderItem, error)
 	CreateOrderItem(*gorm.DB, *uuid.UUID, *OrderItem) (*OrderItem, error)
