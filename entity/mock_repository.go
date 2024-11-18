@@ -67,6 +67,16 @@ func (repo *MockRepository) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*
 	return nil, errors.New("menu item not found")
 }
 
+func (repo *MockRepository) GetMenuItemByShortName(tx *gorm.DB, menuUuid *uuid.UUID, shortName string) (*MenuItem, error) {
+	for _, mi := range repo.menuItems {
+		if *mi.MenuUuid == *menuUuid && mi.ShortName == shortName {
+			return &mi, nil
+		}
+	}
+
+	return nil, errors.New("menu item not found")
+}
+
 func (repo *MockRepository) CreateMenu(tx *gorm.DB, menu *Menu) (*Menu, error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {
@@ -167,6 +177,21 @@ func (repo *MockRepository) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, erro
 func (repo *MockRepository) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Order, error) {
 	for _, o := range repo.orders {
 		if *o.MenuUuid == *menuUuid {
+			return &o, nil
+		}
+	}
+
+	return nil, errors.New("order not found")
+}
+
+func (repo *MockRepository) GetActiveOrderByMenuName(tx *gorm.DB, menuName string) (*Order, error) {
+	menu, err := repo.GetMenuByName(tx, menuName)
+	if err != nil {
+		return nil, errors.New("order not found")
+	}
+
+	for _, o := range repo.orders {
+		if *o.MenuUuid == *menu.Uuid {
 			return &o, nil
 		}
 	}

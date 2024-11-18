@@ -19,6 +19,7 @@ var handlers = map[string]CommandHandler{
 	"register":       handleRegister,
 	"set_public_key": handleSetPublicKey,
 	"start":          handleNewOrder,
+	"add":            handleNewOrderItem,
 }
 var (
 	ErrCannotParsePublicKey = errors.New("cannot parse public key")
@@ -117,5 +118,41 @@ func handleNewOrder(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 	}
 
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("started new order for %s", menuName), false)
+	return nil
+}
+
+func handleNewOrderItem(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
+	username := evt.Sender.String()
+
+	user, err := m.getUserByUsername(tx, username)
+	if err != nil {
+		return err
+	}
+
+	message = strings.TrimPrefix(message, "add ")
+	args := strings.Split(message, " ")
+	if len(args) != 2 {
+		return errors.New("message must be in the format 'add [menu_name] [short_name]'")
+	}
+	menuName := args[0]
+
+	order, err := m.repo.GetActiveOrderByMenuName(tx, menuName)
+	if err != nil {
+		return fmt.Errorf("could not get active order for menu '%s': %w", menuName, err)
+	}
+
+	shortName := args[1]
+	menuItem, err := m.repo.GetMenuItemByShortName(tx, order.MenuUuid, shortName)
+	if err != nil {
+		return fmt.Errorf("could not get menu item '%s': %w", shortName, err)
+	}
+
+	_, err = m.repo.CreateOrderItem(tx, order.Uuid, &entity.OrderItem{OrderUuid: order.Uuid, User: user.Uuid, MenuItemUuid: menuItem.Uuid, Price: menuItem.Price})
+	if err != nil {
+		return fmt.Errorf("could not create order item: %w", err)
+	}
+
+	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("added '%s' to order '%s'", shortName, menuName), false)
+
 	return nil
 }

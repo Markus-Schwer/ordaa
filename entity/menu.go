@@ -78,6 +78,15 @@ func (repo *RepositoryImpl) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*
 	return &menuItem, nil
 }
 
+func (repo *RepositoryImpl) GetMenuItemByShortName(tx *gorm.DB, menuUuid *uuid.UUID, shortName string) (*MenuItem, error) {
+	var menuItem MenuItem
+	if err := tx.First(&menuItem, MenuItem{MenuUuid: menuUuid, ShortName: shortName}).Error; err != nil {
+		return nil, fmt.Errorf("failed to get menu item %s: %w", shortName, err)
+	}
+
+	return &menuItem, nil
+}
+
 func (repo *RepositoryImpl) CreateMenu(tx *gorm.DB, menu *Menu) (*Menu, error) {
 	err := tx.Create(&menu).Error
 	if err != nil {
