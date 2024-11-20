@@ -26,6 +26,12 @@ type PasswordUser struct {
 	Password string     `gorm:"column:password" json:"password" validate:"required"`
 }
 
+type SshUser struct {
+	Uuid      *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
+	UserUuid  *uuid.UUID `gorm:"column:user_uuid" json:"user_uuid"`
+	PublicKey string     `gorm:"column:public_key" json:"public_key"`
+}
+
 func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {
@@ -70,15 +76,6 @@ func (repo *RepositoryImpl) GetUser(tx *gorm.DB, userUuid *uuid.UUID) (*User, er
 	var user User
 	if err := tx.First(&user, userUuid).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user %s: %w", userUuid, err)
-	}
-
-	return &user, nil
-}
-
-func (repo *RepositoryImpl) GetUserByPublicKey(tx *gorm.DB, pk string) (*User, error) {
-	var user User
-	if err := tx.Where(&User{PublicKey: pk}).First(&user).Error; err != nil {
-		return nil, fmt.Errorf("failed to get user with public key %s: %w", pk, err)
 	}
 
 	return &user, nil
@@ -235,6 +232,66 @@ func (repo *RepositoryImpl) UpdatePasswordUser(tx *gorm.DB, passwordUserUuid *uu
 
 func (repo *RepositoryImpl) DeletePasswordUser(tx *gorm.DB, userUuid *uuid.UUID) error {
 	err := tx.Where(&PasswordUser{UserUuid: userUuid}).Delete(&PasswordUser{}).Error
+	if err != nil {
+		return fmt.Errorf("could not delete user %s: %w", userUuid, err)
+	}
+
+	return nil
+}
+
+func (*RepositoryImpl) GetAllSshUsers(tx *gorm.DB) ([]SshUser, error) {
+	sshUsers := []SshUser{}
+	err := tx.Find(&sshUsers).Error
+	if err != nil {
+		return nil, fmt.Errorf("could not get all users from db: %w", err)
+	}
+
+	return sshUsers, nil
+}
+
+func (repo *RepositoryImpl) GetSshUser(tx *gorm.DB, sshUserUuid *uuid.UUID) (*SshUser, error) {
+	var sshUser SshUser
+	if err := tx.Where(&SshUser{Uuid: sshUserUuid}).First(&sshUser).Error; err != nil {
+		return nil, fmt.Errorf("failed to get user %s: %w", sshUserUuid, err)
+	}
+
+	return &sshUser, nil
+}
+
+func (repo *RepositoryImpl) GetSshUserByPublicKey(tx *gorm.DB, publicKey string) (*SshUser, error) {
+	var sshUser SshUser
+	if err := tx.Where(&SshUser{PublicKey: publicKey}).First(&sshUser).Error; err != nil {
+		return nil, fmt.Errorf("failed to get user %s: %w", publicKey, err)
+	}
+
+	return &sshUser, nil
+}
+
+func (repo *RepositoryImpl) CreateSshUser(tx *gorm.DB, sshUser *SshUser) (*SshUser, error) {
+	err := tx.Create(&sshUser).Error
+	if err != nil {
+		return nil, fmt.Errorf("could not create ssh user %s: %w", sshUser.PublicKey, err)
+	}
+	return sshUser, nil
+}
+
+func (repo *RepositoryImpl) UpdateSshUser(tx *gorm.DB, sshUserUuid *uuid.UUID, sshUser *SshUser) (*SshUser, error) {
+	existingSshUser, err := repo.GetSshUser(tx, sshUserUuid)
+	if err != nil {
+		return nil, fmt.Errorf("could not update user %s: %w", sshUserUuid, err)
+	}
+	existingSshUser.PublicKey = sshUser.PublicKey
+	existingSshUser.UserUuid = sshUser.UserUuid
+	err = tx.Save(&existingSshUser).Error
+	if err != nil {
+		return nil, fmt.Errorf("could not update user %s: %w", sshUserUuid, err)
+	}
+
+	return existingSshUser, nil
+}
+
+func (repo *RepositoryImpl) DeleteSshUser(tx *gorm.DB, userUuid *uuid.UUID) error {
+	err := tx.Where(&SshUser{UserUuid: userUuid}).Delete(&SshUser{}).Error
 	if err != nil {
 		return fmt.Errorf("could not delete user %s: %w", userUuid, err)
 	}
