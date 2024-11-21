@@ -15,11 +15,11 @@ func Migrate(ctx context.Context, databaseUrl string) error {
 
 	m, err := migrate.New("file://db/migrations", databaseUrl)
 	if err != nil {
-		return fmt.Errorf("database migration preparation failed: %w", err)
+		return fmt.Errorf("%w: %w", ErrMigrationPreparationFailed, err)
 	}
 	if err := m.Up(); err != nil {
 		if err != migrate.ErrNoChange {
-			return fmt.Errorf("database migration execution failed: %w", err)
+			return fmt.Errorf("%w: %w", ErrMigrationFailed, err)
 		} else {
 			log.Ctx(ctx).Info().Msg("executed database migrations: no change")
 		}

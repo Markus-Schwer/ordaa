@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,7 +32,7 @@ type OrderItem struct {
 func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {
-		return fmt.Errorf("could not create uuid: %w", err)
+		return fmt.Errorf("%w: %w", ErrCannotCreatUuid, err)
 	}
 
 	order.Uuid = &newUuid
@@ -41,7 +42,7 @@ func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
 func (orderItem *OrderItem) BeforeCreate(tx *gorm.DB) (err error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {
-		return fmt.Errorf("could not create uuid: %w", err)
+		return fmt.Errorf("%w: %w", ErrCannotCreatUuid, err)
 	}
 
 	orderItem.Uuid = &newUuid
@@ -52,7 +53,7 @@ func (*RepositoryImpl) GetAllOrders(tx *gorm.DB) ([]Order, error) {
 	orders := []Order{}
 	err := tx.Model(&Order{}).Preload("Items").Find(&orders).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not get all orders from db: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrCannotGetAllOrder, err)
 	}
 
 	return orders, nil
@@ -60,8 +61,11 @@ func (*RepositoryImpl) GetAllOrders(tx *gorm.DB) ([]Order, error) {
 
 func (*RepositoryImpl) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error) {
 	var order Order
-	if err := tx.Model(&Order{}).Preload("Items").First(&order, uuid).Error; err != nil {
-		return nil, fmt.Errorf("error getting order %s: %w", uuid, err)
+	err := tx.Model(&Order{}).Preload("Items").First(&order, uuid).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingOrder, err)
 	}
 
 	return &order, nil
@@ -69,8 +73,11 @@ func (*RepositoryImpl) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error) {
 
 func (*RepositoryImpl) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Order, error) {
 	var order Order
-	if err := tx.Model(&Order{}).Preload("Items").Where(&Order{MenuUuid: menuUuid}).First(&order).Error; err != nil {
-		return nil, fmt.Errorf("error getting order by menu %s: %w", menuUuid, err)
+	err := tx.Model(&Order{}).Preload("Items").Where(&Order{MenuUuid: menuUuid}).First(&order).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingOrder, err)
 	}
 
 	return &order, nil
@@ -78,8 +85,11 @@ func (*RepositoryImpl) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*
 
 func (*RepositoryImpl) GetActiveOrderByMenuName(tx *gorm.DB, menuName string) (*Order, error) {
 	var order Order
-	if err := tx.Model(&Order{}).Preload("Items").Joins("JOIN menus ON menus.uuid = orders.menu_uuid").Where("menus.name = ?", menuName).First(&order).Error; err != nil {
-		return nil, fmt.Errorf("error getting order by menu %s: %w", menuName, err)
+	err := tx.Model(&Order{}).Preload("Items").Joins("JOIN menus ON menus.uuid = orders.menu_uuid").Where("menus.name = ?", menuName).First(&order).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingOrder, err)
 	}
 
 	return &order, nil
@@ -89,7 +99,7 @@ func (*RepositoryImpl) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) ([]Or
 	orderItems := []OrderItem{}
 	err := tx.Find(&orderItems).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not get all order items from db: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrCannotGetAllOrders, err)
 	}
 
 	return orderItems, nil
@@ -97,8 +107,11 @@ func (*RepositoryImpl) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) ([]Or
 
 func (*RepositoryImpl) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, error) {
 	orderItem := OrderItem{}
-	if err := tx.First(&orderItem, uuid).Error; err != nil {
-		return nil, fmt.Errorf("error getting order item %s: %w", uuid, err)
+	err := tx.First(&orderItem, uuid).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrOrderItemNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingOrderItem, err)
 	}
 
 	return &orderItem, nil
@@ -107,7 +120,7 @@ func (*RepositoryImpl) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, e
 func (*RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
 	err := tx.Create(&orderItem).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not create order item: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, err)
 	}
 
 	return orderItem, nil
@@ -116,7 +129,7 @@ func (*RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, order
 func (repo *RepositoryImpl) CreateOrder(tx *gorm.DB, order *Order) (*Order, error) {
 	err := tx.Create(&order).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not create order: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrder, err)
 	}
 
 	return order, nil
@@ -125,7 +138,7 @@ func (repo *RepositoryImpl) CreateOrder(tx *gorm.DB, order *Order) (*Order, erro
 func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order *Order) (*Order, error) {
 	existingOrder, err := repo.GetOrder(tx, orderUuid)
 	if err != nil {
-		return nil, fmt.Errorf("could not update order %s: %w", orderUuid, err)
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
 	}
 
 	existingOrder.Initiator = order.Initiator
@@ -136,7 +149,7 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order
 
 	err = tx.Save(existingOrder).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not update order %s: %w", orderUuid, err)
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
 	}
 
 	return existingOrder, nil
@@ -145,7 +158,7 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order
 func (repo *RepositoryImpl) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
 	existingOrderItem, err := repo.GetOrderItem(tx, orderItemUuid)
 	if err != nil {
-		return nil, fmt.Errorf("could not update order item %s: %w", orderItemUuid, err)
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
 	}
 
 	existingOrderItem.User = orderItem.User
@@ -155,7 +168,7 @@ func (repo *RepositoryImpl) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUI
 
 	err = tx.Save(existingOrderItem).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not update order item %s: %w", orderItemUuid, err)
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
 	}
 
 	return existingOrderItem, nil
@@ -164,7 +177,7 @@ func (repo *RepositoryImpl) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUI
 func (repo *RepositoryImpl) DeleteOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID) error {
 	err := tx.Delete(&OrderItem{}, orderItemUuid).Error
 	if err != nil {
-		return fmt.Errorf("could not delete order item %s: %w", orderItemUuid, err)
+		return fmt.Errorf("%w: %w", ErrDeletingOrderItem, err)
 	}
 
 	return nil
@@ -173,7 +186,7 @@ func (repo *RepositoryImpl) DeleteOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUI
 func (repo *RepositoryImpl) DeleteOrder(tx *gorm.DB, orderUuid *uuid.UUID) error {
 	err := tx.Delete(&Order{}, orderUuid).Error
 	if err != nil {
-		return fmt.Errorf("could not delete order %s: %w", orderUuid, err)
+		return fmt.Errorf("%: %w", ErrDeletingOrderItem, err)
 	}
 
 	return nil

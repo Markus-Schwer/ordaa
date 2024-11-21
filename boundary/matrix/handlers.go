@@ -33,7 +33,7 @@ func handleUnrecognizedCommand(m *MatrixBoundary, _ *gorm.DB, evt *event.Event, 
 func handleRegister(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
 	username := evt.Sender.String()
 	matrixUser, err := m.repo.GetMatrixUserByUsername(tx, username)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, entity.ErrOrderNotFound) {
 		user, err := m.repo.CreateUser(tx, &entity.User{Name: username})
 		if err != nil {
 			return fmt.Errorf("could not create user for sender '%s': %w", username, err)
@@ -108,7 +108,7 @@ func handleNewOrder(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 	_, err = m.repo.GetActiveOrderByMenu(tx, menu.Uuid)
 	if err == nil {
 		return errors.New(fmt.Sprintf("there is already an active order for menu '%s'", menuName))
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if !errors.Is(err, entity.ErrOrderNotFound) {
 		return fmt.Errorf("error occured while fetching active order by menu: %w", err)
 	}
 

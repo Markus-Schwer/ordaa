@@ -1,7 +1,9 @@
 package entity
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/gofrs/uuid"
 	"gorm.io/gorm"
 )
@@ -24,7 +26,7 @@ type MenuItem struct {
 func (menu *Menu) BeforeCreate(tx *gorm.DB) (err error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {
-		return fmt.Errorf("could not create uuid: %w", err)
+		return fmt.Errorf("%w: %w", ErrCannotCreatUuid, err)
 	}
 
 	menu.Uuid = &newUuid
@@ -34,7 +36,7 @@ func (menu *Menu) BeforeCreate(tx *gorm.DB) (err error) {
 func (menuItem *MenuItem) BeforeCreate(tx *gorm.DB) (err error) {
 	newUuid, err := uuid.NewV4()
 	if err != nil {
-		return fmt.Errorf("could not create uuid: %w", err)
+		return fmt.Errorf("%w: %w", ErrCannotCreatUuid, err)
 	}
 
 	menuItem.Uuid = &newUuid
@@ -45,7 +47,7 @@ func (*RepositoryImpl) GetAllMenus(tx *gorm.DB) ([]Menu, error) {
 	menus := []Menu{}
 	err := tx.Model(&Menu{}).Preload("Items").Find(&menus).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not get all menus from db: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrCannotGetAllMenus, err)
 	}
 
 	return menus, nil
@@ -53,8 +55,11 @@ func (*RepositoryImpl) GetAllMenus(tx *gorm.DB) ([]Menu, error) {
 
 func (repo *RepositoryImpl) GetMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Menu, error) {
 	var menu Menu
-	if err := tx.Model(&Menu{}).Preload("Items").First(&menu, menuUuid).Error; err != nil {
-		return nil, fmt.Errorf("failed to get menu %s: %w", menuUuid, err)
+	err := tx.Model(&Menu{}).Preload("Items").First(&menu, menuUuid).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrMenuItemNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingMenu, err)
 	}
 
 	return &menu, nil
@@ -62,8 +67,11 @@ func (repo *RepositoryImpl) GetMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Menu, er
 
 func (repo *RepositoryImpl) GetMenuByName(tx *gorm.DB, name string) (*Menu, error) {
 	var menu Menu
-	if err := tx.Model(&Menu{}).Preload("Items").Where(&Menu{Name: name}).First(&menu).Error; err != nil {
-		return nil, fmt.Errorf("failed to get menu %s: %w", name, err)
+	err := tx.Model(&Menu{}).Preload("Items").Where(&Menu{Name: name}).First(&menu).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrMenuNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingMenu, err)
 	}
 
 	return &menu, nil
@@ -71,8 +79,11 @@ func (repo *RepositoryImpl) GetMenuByName(tx *gorm.DB, name string) (*Menu, erro
 
 func (repo *RepositoryImpl) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*MenuItem, error) {
 	var menuItem MenuItem
-	if err := tx.First(&MenuItem{}, menuItemUuid).Error; err != nil {
-		return nil, fmt.Errorf("failed to get menu item %s: %w", menuItemUuid, err)
+	err := tx.First(&MenuItem{}, menuItemUuid).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrMenuItemNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingMenuItem, err)
 	}
 
 	return &menuItem, nil
@@ -80,8 +91,11 @@ func (repo *RepositoryImpl) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*
 
 func (repo *RepositoryImpl) GetMenuItemByShortName(tx *gorm.DB, menuUuid *uuid.UUID, shortName string) (*MenuItem, error) {
 	var menuItem MenuItem
-	if err := tx.First(&menuItem, MenuItem{MenuUuid: menuUuid, ShortName: shortName}).Error; err != nil {
-		return nil, fmt.Errorf("failed to get menu item %s: %w", shortName, err)
+	err := tx.First(&menuItem, MenuItem{MenuUuid: menuUuid, ShortName: shortName}).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrMenuItemNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingMenuItem, err)
 	}
 
 	return &menuItem, nil
@@ -90,7 +104,7 @@ func (repo *RepositoryImpl) GetMenuItemByShortName(tx *gorm.DB, menuUuid *uuid.U
 func (repo *RepositoryImpl) CreateMenu(tx *gorm.DB, menu *Menu) (*Menu, error) {
 	err := tx.Create(&menu).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not create menu %s: %w", menu.Name, err)
+		return nil, fmt.Errorf("%w: %w", ErrCreatingMenu, err)
 	}
 
 	return menu, nil
@@ -107,7 +121,7 @@ func (repo *RepositoryImpl) UpdateMenu(tx *gorm.DB, menuUuid *uuid.UUID, menu *M
 	existingMenu.Items = menu.Items
 	err = tx.Save(existingMenu).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not update menu %s: %w", menuUuid, err)
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingMenu, err)
 	}
 
 	return existingMenu, nil
@@ -116,7 +130,7 @@ func (repo *RepositoryImpl) UpdateMenu(tx *gorm.DB, menuUuid *uuid.UUID, menu *M
 func (repo *RepositoryImpl) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem, menuUuid *uuid.UUID) (*MenuItem, error) {
 	err := tx.Create(&menuItem).Error
 	if err != nil {
-		return nil, fmt.Errorf("could not create menu item %s: %w", menuItem.ShortName, err)
+		return nil, fmt.Errorf("%w: %w", ErrCreatingMenuItem, err)
 	}
 
 	return menuItem, nil
@@ -125,7 +139,7 @@ func (repo *RepositoryImpl) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem, menu
 func (repo *RepositoryImpl) DeleteMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) error {
 	err := tx.Delete(&MenuItem{}, menuItemUuid).Error
 	if err != nil {
-		return fmt.Errorf("could not delete menu item %s: %w", menuItemUuid, err)
+		return fmt.Errorf("%w: %w", ErrDeletingMenuItem, err)
 	}
 
 	return nil
@@ -134,7 +148,7 @@ func (repo *RepositoryImpl) DeleteMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID)
 func (repo *RepositoryImpl) DeleteMenu(tx *gorm.DB, menuUuid *uuid.UUID) error {
 	err := tx.Delete(&Menu{}, menuUuid).Error
 	if err != nil {
-		return fmt.Errorf("could not delete menu %s: %w", menuUuid, err)
+		return fmt.Errorf("%w: %w", ErrDeletingMenu, err)
 	}
 
 	return nil

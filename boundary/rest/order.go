@@ -30,7 +30,7 @@ func (server *RestBoundary) newOrder(c echo.Context) error {
 		if err == nil {
 			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder there is already an active order the specified menu")
 			return utils.NewError(http.StatusBadRequest, "there is already an active order the specified menu")
-		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		} else if !errors.Is(err, entity.ErrOrderNotFound) {
 			err = fmt.Errorf("error occured while fetching active order by menu: %w", err)
 			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error occured while fetching active order by menu")
 			return utils.NewInternalServerError(err)

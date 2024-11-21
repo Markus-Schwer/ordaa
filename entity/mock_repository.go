@@ -46,7 +46,7 @@ func (repo *MockRepository) GetMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Menu, er
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrMenuNotFound
 }
 
 func (repo *MockRepository) GetMenuByName(tx *gorm.DB, name string) (*Menu, error) {
@@ -56,7 +56,7 @@ func (repo *MockRepository) GetMenuByName(tx *gorm.DB, name string) (*Menu, erro
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrMenuNotFound
 }
 
 func (repo *MockRepository) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*MenuItem, error) {
@@ -66,7 +66,7 @@ func (repo *MockRepository) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrMenuItemNotFound
 }
 
 func (repo *MockRepository) GetMenuItemByShortName(tx *gorm.DB, menuUuid *uuid.UUID, shortName string) (*MenuItem, error) {
@@ -76,7 +76,7 @@ func (repo *MockRepository) GetMenuItemByShortName(tx *gorm.DB, menuUuid *uuid.U
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrMenuItemNotFound
 }
 
 func (repo *MockRepository) CreateMenu(tx *gorm.DB, menu *Menu) (*Menu, error) {
@@ -173,7 +173,7 @@ func (repo *MockRepository) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, erro
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrOrderNotFound
 }
 
 func (repo *MockRepository) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Order, error) {
@@ -183,13 +183,13 @@ func (repo *MockRepository) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUI
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrOrderNotFound
 }
 
 func (repo *MockRepository) GetActiveOrderByMenuName(tx *gorm.DB, menuName string) (*Order, error) {
 	menu, err := repo.GetMenuByName(tx, menuName)
 	if err != nil {
-		return nil, gorm.ErrRecordNotFound
+		return nil, ErrOrderNotFound
 	}
 
 	for _, o := range repo.orders {
@@ -198,7 +198,7 @@ func (repo *MockRepository) GetActiveOrderByMenuName(tx *gorm.DB, menuName strin
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrOrderNotFound
 }
 
 func (repo *MockRepository) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) ([]OrderItem, error) {
@@ -212,7 +212,7 @@ func (repo *MockRepository) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderIt
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrOrderItemNotFound
 }
 
 func (repo *MockRepository) CreateOrderItem(tx *gorm.DB, orderUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
@@ -324,7 +324,7 @@ func (repo *MockRepository) GetUser(tx *gorm.DB, userUuid *uuid.UUID) (*User, er
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrUserNotFound
 }
 
 func (repo *MockRepository) CreateUser(tx *gorm.DB, user *User) (*User, error) {
@@ -372,7 +372,7 @@ func (repo *MockRepository) GetMatrixUser(tx *gorm.DB, matrixUserUuid *uuid.UUID
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrUserNotFound
 }
 
 func (repo *MockRepository) GetMatrixUserByUsername(tx *gorm.DB, username string) (*MatrixUser, error) {
@@ -382,7 +382,7 @@ func (repo *MockRepository) GetMatrixUserByUsername(tx *gorm.DB, username string
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrUserNotFound
 }
 
 func (repo *MockRepository) CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser) (*MatrixUser, error) {
@@ -439,7 +439,7 @@ func (repo *MockRepository) GetPasswordUser(tx *gorm.DB, passwordUserUuid *uuid.
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrUserNotFound
 }
 
 func (repo *MockRepository) CreatePasswordUser(tx *gorm.DB, passwordUser *PasswordUser) (*PasswordUser, error) {
@@ -486,7 +486,7 @@ func (repo *MockRepository) GetSshUser(tx *gorm.DB, sshUserUuid *uuid.UUID) (*Ss
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrUserNotFound
 }
 
 func (repo *MockRepository) GetSshUserByPublicKey(tx *gorm.DB, publicKey string) (*SshUser, error) {
@@ -496,7 +496,7 @@ func (repo *MockRepository) GetSshUserByPublicKey(tx *gorm.DB, publicKey string)
 		}
 	}
 
-	return nil, gorm.ErrRecordNotFound
+	return nil, ErrUserNotFound
 }
 
 func (repo *MockRepository) CreateSshUser(tx *gorm.DB, sshUser *SshUser) (*SshUser, error) {
