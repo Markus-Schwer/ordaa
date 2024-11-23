@@ -117,8 +117,21 @@ func (*RepositoryImpl) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, e
 	return &orderItem, nil
 }
 
-func (*RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
-	err := tx.Create(&orderItem).Error
+func (r *RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+	menuItemUuid := orderItem.MenuItemUuid
+	if menuItemUuid == nil {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, ErrMenuItemUuidMissing)
+	}
+
+	menuItem, err := r.GetMenuItem(tx, menuItemUuid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, err)
+	}
+
+	orderItem.Paid = false
+	orderItem.Price = menuItem.Price
+
+	err = tx.Create(&orderItem).Error
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, err)
 	}

@@ -11,6 +11,7 @@ var (
 	ErrGettingOrderItem = errors.New("error getting order item")
 	ErrOrderItemNotFound = errors.New("order item not found")
 	ErrCreatingOrderItem = errors.New("could not create order item")
+	ErrMenuItemUuidMissing = errors.New("menu item uuid missing")
 	ErrCreatingOrder = errors.New("could not create order")
 	ErrUpdatingOrder = errors.New("could not update order")
 	ErrUpdatingOrderItem = errors.New("could not update order item")

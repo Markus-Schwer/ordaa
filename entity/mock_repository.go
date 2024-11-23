@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gofrs/uuid"
 	"gorm.io/gorm"
@@ -216,9 +217,22 @@ func (repo *MockRepository) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderIt
 }
 
 func (repo *MockRepository) CreateOrderItem(tx *gorm.DB, orderUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+	menuItemUuid := orderItem.MenuItemUuid
+	if menuItemUuid == nil {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, ErrMenuItemUuidMissing)
+	}
+
+	menuItem, err := repo.GetMenuItem(tx, menuItemUuid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, err)
+	}
+
+	orderItem.Paid = false
+	orderItem.Price = menuItem.Price
+
 	newUuid, err := uuid.NewV4()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, err)
 	}
 	orderItem.Uuid = &newUuid
 

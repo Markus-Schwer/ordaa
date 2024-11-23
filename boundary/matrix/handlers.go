@@ -173,7 +173,7 @@ func handleNewOrderItem(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 		return errors.New(msg)
 	}
 
-	_, err = m.repo.CreateOrderItem(tx, order.Uuid, &entity.OrderItem{OrderUuid: order.Uuid, User: user.Uuid, MenuItemUuid: menuItem.Uuid, Price: menuItem.Price})
+	_, err = m.repo.CreateOrderItem(tx, order.Uuid, &entity.OrderItem{OrderUuid: order.Uuid, User: user.Uuid, MenuItemUuid: menuItem.Uuid})
 	if err != nil {
 		msg := "could not create order item"
 		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
