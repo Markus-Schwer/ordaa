@@ -24,12 +24,12 @@ func (server *RestBoundary) login(c echo.Context) error {
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		token, err := server.authService.Signin(tx, &creds)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("login error signing in")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("login error signing in")
 			return utils.NewInternalServerError(err)
 		}
 		rawToken, err := auth.SignToken(token)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("login error signing token")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("login error signing token")
 			return utils.NewInternalServerError(err)
 		}
 

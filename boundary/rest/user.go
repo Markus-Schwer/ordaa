@@ -23,21 +23,21 @@ func (server *RestBoundary) registerUser(c echo.Context) error {
 
 	user.Password, err = crypto.GeneratePasswordHash(user.Password)
 	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("registerUser error generating password hash")
+		log.Ctx(server.ctx).Warn().Err(err).Msg("registerUser error generating password hash")
 		return utils.NewInternalServerError(err)
 	}
 
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		createdUser, err := server.repo.CreateUser(tx, &entity.User{Name: user.Username})
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("registerUser error creating user")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("registerUser error creating user")
 			return utils.NewInternalServerError(err)
 		}
 		user.UserUuid = createdUser.Uuid
 
 		_, err = server.repo.CreatePasswordUser(tx, &user)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("registerUser error creating password user")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("registerUser error creating password user")
 			return utils.NewInternalServerError(err)
 		}
 
@@ -49,7 +49,7 @@ func (server *RestBoundary) allUsers(c echo.Context) error {
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		users, err := server.repo.GetAllUsers(tx)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("allUsers error getting users")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("allUsers error getting users")
 			return utils.NewInternalServerError(err)
 		}
 
@@ -60,14 +60,14 @@ func (server *RestBoundary) allUsers(c echo.Context) error {
 func (server *RestBoundary) getUser(c echo.Context) error {
 	uuid, err := utils.UuidParam(c, "uuid")
 	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("getUser error parsing uuid")
+		log.Ctx(server.ctx).Warn().Err(err).Msg("getUser error parsing uuid")
 		return utils.NewStatusUnprocessableEntity(err.Error())
 	}
 
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		users, err := server.repo.GetUser(tx, uuid)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("getUser error getting user")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("getUser error getting user")
 			return utils.NewInternalServerError(err)
 		}
 
@@ -78,7 +78,7 @@ func (server *RestBoundary) getUser(c echo.Context) error {
 func (server *RestBoundary) updateUser(c echo.Context) error {
 	uuid, err := utils.UuidParam(c, "uuid")
 	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("updateUser error parsing uuid")
+		log.Ctx(server.ctx).Warn().Err(err).Msg("updateUser error parsing uuid")
 		return utils.NewStatusUnprocessableEntity(err.Error())
 	}
 
@@ -91,7 +91,7 @@ func (server *RestBoundary) updateUser(c echo.Context) error {
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		createdUser, err := server.repo.UpdateUser(tx, uuid, &user)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("updateUser error updating user")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("updateUser error updating user")
 			return utils.NewInternalServerError(err)
 		}
 
@@ -102,14 +102,14 @@ func (server *RestBoundary) updateUser(c echo.Context) error {
 func (server *RestBoundary) deleteUser(c echo.Context) error {
 	uuid, err := utils.UuidParam(c, "uuid")
 	if err != nil {
-		log.Ctx(server.ctx).Error().Err(err).Msg("deleteUser error parsing uuid")
+		log.Ctx(server.ctx).Warn().Err(err).Msg("deleteUser error parsing uuid")
 		return utils.NewStatusUnprocessableEntity(err.Error())
 	}
 
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		err = server.repo.DeleteUser(tx, uuid)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("deleteUser error deleting user")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("deleteUser error deleting user")
 			return utils.NewInternalServerError(err)
 		}
 
