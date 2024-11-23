@@ -92,8 +92,15 @@ func handleSetPublicKey(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 		return err
 	}
 
-	user.PublicKey = publicKey
-	_, err = m.repo.UpdateUser(tx, user.Uuid, user)
+	sshUser, err := m.repo.GetSshUser(tx, user.Uuid)
+	if err != nil {
+		msg := fmt.Sprintf("could not get ssh user for username '%s'", username)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	}
+
+	sshUser.PublicKey = publicKey
+	_, err = m.repo.UpdateSshUser(tx, user.Uuid, sshUser)
 	if err != nil {
 		msg := fmt.Sprintf("could not set public key for user '%s'", user.Name)
 		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)

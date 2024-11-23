@@ -11,7 +11,6 @@ import (
 type User struct {
 	Uuid      *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
 	Name      string     `gorm:"column:name" json:"name"`
-	PublicKey string     `gorm:"column:public_key" json:"public_key"`
 }
 
 type MatrixUser struct {
@@ -99,7 +98,6 @@ func (repo *RepositoryImpl) UpdateUser(tx *gorm.DB, userUuid *uuid.UUID, user *U
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingUser, err)
 	}
 	foundUser.Name = user.Name
-	foundUser.PublicKey = user.PublicKey
 	err = tx.Save(&foundUser).Error
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingUser, err)
