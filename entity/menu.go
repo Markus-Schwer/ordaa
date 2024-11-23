@@ -79,7 +79,7 @@ func (repo *RepositoryImpl) GetMenuByName(tx *gorm.DB, name string) (*Menu, erro
 
 func (repo *RepositoryImpl) GetMenuItem(tx *gorm.DB, menuItemUuid *uuid.UUID) (*MenuItem, error) {
 	var menuItem MenuItem
-	err := tx.First(&MenuItem{}, menuItemUuid).Error
+	err := tx.First(&menuItem, menuItemUuid).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("%w: %w", ErrMenuItemNotFound, err)
 	} else if err != nil {
