@@ -26,7 +26,6 @@ type Order struct {
 	OrderDeadline *time.Time  `gorm:"column:order_deadline" json:"order_deadline"`
 	Eta           *time.Time  `gorm:"column:eta" json:"eta"`
 	MenuUuid      *uuid.UUID  `gorm:"column:menu_uuid" json:"menu_uuid"`
-	Items         []OrderItem `gorm:"foreignKey:order_uuid" json:"items"`
 }
 
 type OrderItem struct {
@@ -60,7 +59,7 @@ func (orderItem *OrderItem) BeforeCreate(tx *gorm.DB) (err error) {
 
 func (*RepositoryImpl) GetAllOrders(tx *gorm.DB) ([]Order, error) {
 	orders := []Order{}
-	err := tx.Model(&Order{}).Preload("Items").Find(&orders).Error
+	err := tx.Model(&Order{}).Find(&orders).Error
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrCannotGetAllOrder, err)
 	}
@@ -70,7 +69,7 @@ func (*RepositoryImpl) GetAllOrders(tx *gorm.DB) ([]Order, error) {
 
 func (*RepositoryImpl) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error) {
 	var order Order
-	err := tx.Model(&Order{}).Preload("Items").First(&order, uuid).Error
+	err := tx.Model(&Order{}).First(&order, uuid).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
 	} else if err != nil {
@@ -82,7 +81,7 @@ func (*RepositoryImpl) GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error) {
 
 func (*RepositoryImpl) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*Order, error) {
 	var order Order
-	err := tx.Model(&Order{}).Preload("Items").Where(&Order{MenuUuid: menuUuid}).First(&order).Error
+	err := tx.Model(&Order{}).Where("menu_uuid = ? AND state != ?", menuUuid, Delivered).First(&order).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
 	} else if err != nil {
@@ -94,7 +93,7 @@ func (*RepositoryImpl) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*
 
 func (*RepositoryImpl) GetActiveOrderByMenuName(tx *gorm.DB, menuName string) (*Order, error) {
 	var order Order
-	err := tx.Model(&Order{}).Preload("Items").Joins("JOIN menus ON menus.uuid = orders.menu_uuid").Where("menus.name = ?", menuName).First(&order).Error
+	err := tx.Model(&Order{}).Joins("JOIN menus ON menus.uuid = orders.menu_uuid").Where("menus.name = ?", menuName).First(&order).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
 	} else if err != nil {

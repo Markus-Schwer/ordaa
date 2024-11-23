@@ -249,7 +249,6 @@ func (repo *MockRepository) CreateOrderItem(tx *gorm.DB, orderUuid *uuid.UUID, o
 		return nil, errors.New("order not found")
 	}
 
-	repo.orders[foundIndex].Items = append(repo.orders[foundIndex].Items, *orderItem)
 	return orderItem, nil
 }
 
@@ -312,19 +311,10 @@ func (repo *MockRepository) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUI
 }
 
 func (repo *MockRepository) DeleteOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID) error {
-	var orderUuid *uuid.UUID
 	newOrderItems := []OrderItem{}
 	for _, oi := range repo.orderItems {
 		if oi.Uuid != orderItemUuid {
 			newOrderItems = append(newOrderItems, oi)
-		} else {
-			orderUuid = oi.OrderUuid
-		}
-	}
-
-	for i, o := range repo.orders {
-		if o.Uuid != orderUuid {
-			repo.orders[i].Items = newOrderItems
 		}
 	}
 
