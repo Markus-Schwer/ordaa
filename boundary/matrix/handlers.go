@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/ssh"
+	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 	"gorm.io/gorm"
 	"maunium.net/go/mautrix/event"
@@ -22,7 +23,7 @@ var handlers = map[string]CommandHandler{
 	"add":            handleNewOrderItem,
 }
 var (
-	ErrCannotParsePublicKey = errors.New("cannot parse public key")
+	ErrParsingPublicKey = errors.New("cannot parse public key")
 )
 
 func handleUnrecognizedCommand(m *MatrixBoundary, _ *gorm.DB, evt *event.Event, message string) error {
@@ -36,19 +37,27 @@ func handleRegister(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 	if errors.Is(err, entity.ErrOrderNotFound) {
 		user, err := m.repo.CreateUser(tx, &entity.User{Name: username})
 		if err != nil {
-			return fmt.Errorf("could not create user for sender '%s': %w", username, err)
+			msg := fmt.Sprintf("could not create user for sender '%s'", username)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
 		}
 		matrixUser, err = m.repo.CreateMatrixUser(tx, &entity.MatrixUser{UserUuid: user.Uuid, Username: username})
 		if err != nil {
-			return fmt.Errorf("could not create matrix user for sender '%s': %w", username, err)
+			msg := fmt.Sprintf("could not create matrix user for sender '%s'", username)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
 		}
 
 		m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully registered user: %s", user.Name), false)
 		return nil
 	} else if matrixUser != nil {
-		return errors.New(fmt.Sprintf("user '%s' is already registered", username))
+		msg := fmt.Sprintf("user '%s' is already registered", username)
+		log.Ctx(m.ctx).Warn().Msg(msg)
+		return errors.New(msg)
 	} else {
-		return fmt.Errorf("error occured while registering user '%s': %w", username, err)
+		msg := fmt.Sprintf("error occured while registering user '%s'", username)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 }
 
@@ -69,11 +78,13 @@ func handleSetPublicKey(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	}
 	publicKeyBytes, err := base64.StdEncoding.DecodeString(publicKeySegments[1])
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrCannotParsePublicKey, err)
+		log.Ctx(m.ctx).Warn().Err(err).Msg("could not parse public key")
+		return ErrParsingPublicKey
 	}
 	_, err = ssh.ParsePublicKey(publicKeyBytes)
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrCannotParsePublicKey, err)
+		log.Ctx(m.ctx).Warn().Err(err).Msg("could not parse public key")
+		return ErrParsingPublicKey
 	}
 
 	user, err := m.getUserByUsername(tx, username)
@@ -84,7 +95,9 @@ func handleSetPublicKey(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	user.PublicKey = publicKey
 	_, err = m.repo.UpdateUser(tx, user.Uuid, user)
 	if err != nil {
-		return fmt.Errorf("could not set public key for user '%s': %w", user.Name, err)
+		msg := fmt.Sprintf("could not set public key for user '%s'", user.Name)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully set ssh public key for user: %s", username), false)
@@ -102,19 +115,27 @@ func handleNewOrder(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 	menuName := strings.TrimPrefix(message, "start ")
 	menu, err := m.repo.GetMenuByName(tx, menuName)
 	if err != nil {
-		return fmt.Errorf("could not get menu '%s': %w", menuName, err)
+		msg := fmt.Sprintf("could not get menu '%s'", menuName)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 
 	_, err = m.repo.GetActiveOrderByMenu(tx, menu.Uuid)
 	if err == nil {
-		return errors.New(fmt.Sprintf("there is already an active order for menu '%s'", menuName))
+		msg := fmt.Sprintf("there is already an active order for menu '%s'", menuName)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	} else if !errors.Is(err, entity.ErrOrderNotFound) {
-		return fmt.Errorf("error occured while fetching active order by menu: %w", err)
+		msg := "error occured while fetching active order by menu"
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 
 	_, err = m.repo.CreateOrder(tx, &entity.Order{Initiator: initiator.Uuid, MenuUuid: menu.Uuid})
 	if err != nil {
-		return fmt.Errorf("could not create order: %w", err)
+		msg := "could not create order"
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("started new order for %s", menuName), false)
@@ -132,27 +153,34 @@ func handleNewOrderItem(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	message = strings.TrimPrefix(message, "add ")
 	args := strings.Split(message, " ")
 	if len(args) != 2 {
+		log.Ctx(m.ctx).Warn().Msgf("message '%s' wasn't formatted correctly", message)
 		return errors.New("message must be in the format 'add [menu_name] [short_name]'")
 	}
 	menuName := args[0]
 
 	order, err := m.repo.GetActiveOrderByMenuName(tx, menuName)
 	if err != nil {
-		return fmt.Errorf("could not get active order for menu '%s': %w", menuName, err)
+		msg := fmt.Sprintf("could not get active order for menu '%s'", menuName)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 
 	shortName := args[1]
 	menuItem, err := m.repo.GetMenuItemByShortName(tx, order.MenuUuid, shortName)
 	if err != nil {
-		return fmt.Errorf("could not get menu item '%s': %w", shortName, err)
+		msg := fmt.Sprintf("could not get menu item '%s'", shortName)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 
 	_, err = m.repo.CreateOrderItem(tx, order.Uuid, &entity.OrderItem{OrderUuid: order.Uuid, User: user.Uuid, MenuItemUuid: menuItem.Uuid, Price: menuItem.Price})
 	if err != nil {
-		return fmt.Errorf("could not create order item: %w", err)
+		msg := "could not create order item"
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
 	}
 
-	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("added '%s' to order '%s'", shortName, menuName), false)
+	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("added '%s' to order '%s'", menuItem.Name, menuName), false)
 
 	return nil
 }

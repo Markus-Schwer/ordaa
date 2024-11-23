@@ -2,6 +2,7 @@ package matrix
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -107,8 +108,7 @@ func (m *MatrixBoundary) handleMessageEvent(evt *event.Event) {
 		return handler(m, tx, evt, message)
 	})
 	if err != nil {
-		log.Ctx(m.ctx).Error().Err(err).Msgf("error occured while handling matrix message: %s", message)
-		m.reply(evt.RoomID, evt.ID, fmt.Sprintf("error occured while handling matrix: %s", err), false)
+		m.reply(evt.RoomID, evt.ID, err.Error(), false)
 	}
 }
 
@@ -151,12 +151,16 @@ func (m *MatrixBoundary) reply(room id.RoomID, evt id.EventID, content string, a
 func (m *MatrixBoundary) getUserByUsername(tx *gorm.DB, username string) (*entity.User, error) {
 	matrixUser, err := m.repo.GetMatrixUserByUsername(tx, username)
 	if err != nil {
-		return nil, fmt.Errorf("could not get matrix user of sender '%s': %w", username, err)
+		msg := fmt.Sprintf("could not get matrix user for username '%s'", username)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return nil, errors.New(msg)
 	}
 
 	user, err := m.repo.GetUser(tx, matrixUser.UserUuid)
 	if err != nil {
-		return nil, fmt.Errorf("could not get user of sender '%s' for message: %w", username, err)
+		msg := fmt.Sprintf("could not get user for matrix user '%s'", matrixUser.Username)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return nil, errors.New(msg)
 	}
 
 	return user, nil
