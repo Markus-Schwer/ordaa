@@ -160,7 +160,7 @@ func handleNewOrderItem(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 
 	order, err := m.repo.GetActiveOrderByMenuName(tx, menuName)
 	if err != nil {
-		msg := fmt.Sprintf("could not get active order for menu '%s'", menuName)
+		msg := fmt.Sprintf("there is no active order for menu '%s'", menuName)
 		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
 		return errors.New(msg)
 	}
@@ -174,7 +174,11 @@ func handleNewOrderItem(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	}
 
 	_, err = m.repo.CreateOrderItem(tx, order.Uuid, &entity.OrderItem{OrderUuid: order.Uuid, User: user.Uuid, MenuItemUuid: menuItem.Uuid})
-	if err != nil {
+	if errors.Is(err, entity.ErrOrderNotOpen) {
+		msg := "order is not open"
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	} else if err != nil {
 		msg := "could not create order item"
 		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
 		return errors.New(msg)

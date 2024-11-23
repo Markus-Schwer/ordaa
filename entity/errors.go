@@ -11,6 +11,7 @@ var (
 	ErrGettingOrderItem = errors.New("error getting order item")
 	ErrOrderItemNotFound = errors.New("order item not found")
 	ErrCreatingOrderItem = errors.New("could not create order item")
+	ErrOrderNotOpen = errors.New("order is not in state open")
 	ErrMenuItemUuidMissing = errors.New("menu item uuid missing")
 	ErrCreatingOrder = errors.New("could not create order")
 	ErrActiveOrderForMenuAlreadyExists = errors.New("there is already an active order the specified menu")

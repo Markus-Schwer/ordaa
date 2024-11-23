@@ -93,7 +93,7 @@ func (*RepositoryImpl) GetActiveOrderByMenu(tx *gorm.DB, menuUuid *uuid.UUID) (*
 
 func (*RepositoryImpl) GetActiveOrderByMenuName(tx *gorm.DB, menuName string) (*Order, error) {
 	var order Order
-	err := tx.Model(&Order{}).Joins("JOIN menus ON menus.uuid = orders.menu_uuid").Where("menus.name = ?", menuName).First(&order).Error
+	err := tx.Model(&Order{}).Joins("JOIN menus ON menus.uuid = orders.menu_uuid").Where("menus.name = ? AND state != ?", menuName, Delivered).First(&order).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
 	} else if err != nil {
@@ -129,6 +129,15 @@ func (r *RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, ord
 	menuItemUuid := orderItem.MenuItemUuid
 	if menuItemUuid == nil {
 		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, ErrMenuItemUuidMissing)
+	}
+
+	order, err := r.GetOrder(tx, order_uuid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, err)
+	}
+
+	if order.State != Open {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrderItem, ErrOrderNotOpen)
 	}
 
 	menuItem, err := r.GetMenuItem(tx, menuItemUuid)
