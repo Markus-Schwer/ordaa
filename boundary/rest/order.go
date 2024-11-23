@@ -84,7 +84,19 @@ func (server *RestBoundary) updateOrder(c echo.Context) error {
 	}
 
 	return server.repo.Transaction(func(tx *gorm.DB) error {
-		createdOrder, err := server.repo.UpdateOrder(tx, uuid, &order)
+		_, err := server.repo.GetOrder(tx, uuid)
+		if err != nil {
+			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrder error getting order")
+			return utils.NewInternalServerError(err)
+		}
+
+		user, err := utils.CurrentUser(c, server.repo, tx)
+		if err != nil {
+			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrder error getting current user")
+			return utils.NewInternalServerError(err)
+		}
+
+		createdOrder, err := server.repo.UpdateOrder(tx, uuid, user.Uuid, &order)
 		if err != nil {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrder error updating order")
 			return utils.NewInternalServerError(err)

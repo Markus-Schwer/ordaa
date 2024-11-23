@@ -33,7 +33,7 @@ type Repository interface {
 	DeleteMenuItem(tx *gorm.DB, uuid *uuid.UUID) error
 	DeleteMenu(tx *gorm.DB, uuid *uuid.UUID) error
 	CreateOrder(tx *gorm.DB, order *Order) (*Order, error)
-	UpdateOrder(tx *gorm.DB, uuid *uuid.UUID, order *Order) (*Order, error)
+	UpdateOrder(tx *gorm.DB, uuid *uuid.UUID, currentUser *uuid.UUID, order *Order) (*Order, error)
 	UpdateOrderItem(tx *gorm.DB, uuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error)
 	DeleteOrderItem(tx *gorm.DB, uuid *uuid.UUID) error
 	DeleteOrder(tx *gorm.DB, uuid *uuid.UUID) error

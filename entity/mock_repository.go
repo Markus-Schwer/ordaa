@@ -263,7 +263,7 @@ func (repo *MockRepository) CreateOrder(tx *gorm.DB, order *Order) (*Order, erro
 	return order, nil
 }
 
-func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order *Order) (*Order, error) {
+func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, currentUser *uuid.UUID, order *Order) (*Order, error) {
 	existingOrder, err := repo.GetOrder(tx, orderUuid)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
@@ -279,6 +279,11 @@ func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order
 		}
 		break
 	case Finalized:
+		if order.State == Open && currentUser != existingOrder.Initiator {
+			err := errors.New("only the initiator can reopen the order")
+			return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
+		}
+
 		if order.State == Ordered {
 			existingOrder.State = Ordered
 		} else if order.State != existingOrder.State {

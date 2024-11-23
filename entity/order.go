@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -166,7 +165,7 @@ func (repo *RepositoryImpl) CreateOrder(tx *gorm.DB, order *Order) (*Order, erro
 	return order, nil
 }
 
-func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order *Order) (*Order, error) {
+func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, currentUser *uuid.UUID, order *Order) (*Order, error) {
 	existingOrder, err := repo.GetOrder(tx, orderUuid)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
@@ -182,6 +181,11 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order
 		}
 		break
 	case Finalized:
+		if order.State == Open && currentUser != existingOrder.Initiator {
+			err := errors.New("only the initiator can reopen the order")
+			return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
+		}
+
 		if order.State == Ordered || order.State == Open {
 			existingOrder.State = order.State
 		} else if order.State != existingOrder.State {
