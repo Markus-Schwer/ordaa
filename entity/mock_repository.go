@@ -101,13 +101,13 @@ func (repo *MockRepository) UpdateMenu(tx *gorm.DB, menuUuid *uuid.UUID, menu *M
 	return menu, nil
 }
 
-func (repo *MockRepository) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem, menuUuid *uuid.UUID) (*MenuItem, error) {
+func (repo *MockRepository) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem) (*MenuItem, error) {
 	*menuItem.Uuid, _ = uuid.NewV4()
 	repo.menuItems = append(repo.menuItems, *menuItem)
 
 	foundIndex := -1
 	for i, m := range repo.menus {
-		if *m.Uuid == *menuUuid {
+		if *m.Uuid == *menuItem.MenuUuid {
 			foundIndex = i
 		}
 	}

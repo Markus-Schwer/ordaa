@@ -127,7 +127,7 @@ func (repo *RepositoryImpl) UpdateMenu(tx *gorm.DB, menuUuid *uuid.UUID, menu *M
 	return existingMenu, nil
 }
 
-func (repo *RepositoryImpl) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem, menuUuid *uuid.UUID) (*MenuItem, error) {
+func (repo *RepositoryImpl) CreateMenuItem(tx *gorm.DB, menuItem *MenuItem) (*MenuItem, error) {
 	err := tx.Create(&menuItem).Error
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrCreatingMenuItem, err)

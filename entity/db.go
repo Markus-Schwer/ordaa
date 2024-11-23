@@ -12,51 +12,51 @@ import (
 const DatabaseUrlKey = "DATABASE_URL"
 
 type Repository interface {
-	GetAllMenus(*gorm.DB) ([]Menu, error)
-	GetAllUsers(*gorm.DB) ([]User, error)
-	GetAllMatrixUsers(*gorm.DB) ([]MatrixUser, error)
-	GetAllPasswordUsers(*gorm.DB) ([]PasswordUser, error)
-	GetAllOrders(*gorm.DB) ([]Order, error)
-	GetOrder(*gorm.DB, *uuid.UUID) (*Order, error)
-	GetActiveOrderByMenu(*gorm.DB, *uuid.UUID) (*Order, error)
-	GetActiveOrderByMenuName(*gorm.DB, string) (*Order, error)
-	GetAllOrderItems(*gorm.DB, *uuid.UUID) ([]OrderItem, error)
-	GetOrderItem(*gorm.DB, *uuid.UUID) (*OrderItem, error)
-	CreateOrderItem(*gorm.DB, *uuid.UUID, *OrderItem) (*OrderItem, error)
-	GetMenu(*gorm.DB, *uuid.UUID) (*Menu, error)
-	GetMenuByName(*gorm.DB, string) (*Menu, error)
-	GetMenuItem(*gorm.DB, *uuid.UUID) (*MenuItem, error)
-	GetMenuItemByShortName(*gorm.DB, *uuid.UUID, string) (*MenuItem, error)
-	CreateMenu(*gorm.DB, *Menu) (*Menu, error)
-	UpdateMenu(*gorm.DB, *uuid.UUID, *Menu) (*Menu, error)
-	CreateMenuItem(*gorm.DB, *MenuItem, *uuid.UUID) (*MenuItem, error)
-	DeleteMenuItem(*gorm.DB, *uuid.UUID) error
-	DeleteMenu(*gorm.DB, *uuid.UUID) error
-	CreateOrder(*gorm.DB, *Order) (*Order, error)
-	UpdateOrder(*gorm.DB, *uuid.UUID, *Order) (*Order, error)
-	UpdateOrderItem(*gorm.DB, *uuid.UUID, *OrderItem) (*OrderItem, error)
-	DeleteOrderItem(*gorm.DB, *uuid.UUID) error
-	DeleteOrder(*gorm.DB, *uuid.UUID) error
-	GetUser(*gorm.DB, *uuid.UUID) (*User, error)
-	CreateUser(*gorm.DB, *User) (*User, error)
-	UpdateUser(*gorm.DB, *uuid.UUID, *User) (*User, error)
-	DeleteUser(*gorm.DB, *uuid.UUID) error
-	GetMatrixUser(*gorm.DB, *uuid.UUID) (*MatrixUser, error)
-	GetMatrixUserByUsername(*gorm.DB, string) (*MatrixUser, error)
-	CreateMatrixUser(*gorm.DB, *MatrixUser) (*MatrixUser, error)
-	UpdateMatrixUser(*gorm.DB, *uuid.UUID, *MatrixUser) (*MatrixUser, error)
-	DeleteMatrixUser(*gorm.DB, *uuid.UUID) error
-	FindPasswordUser(*gorm.DB, string) (*PasswordUser, error)
-	GetPasswordUser(*gorm.DB, *uuid.UUID) (*PasswordUser, error)
-	CreatePasswordUser(*gorm.DB, *PasswordUser) (*PasswordUser, error)
-	UpdatePasswordUser(*gorm.DB, *uuid.UUID, *PasswordUser) (*PasswordUser, error)
-	DeletePasswordUser(*gorm.DB, *uuid.UUID) error
-	GetAllSshUsers(*gorm.DB) ([]SshUser, error)
-	GetSshUser(*gorm.DB, *uuid.UUID) (*SshUser, error)
-	GetSshUserByPublicKey(*gorm.DB, string) (*SshUser, error)
-	CreateSshUser(*gorm.DB, *SshUser) (*SshUser, error)
-	UpdateSshUser(*gorm.DB, *uuid.UUID, *SshUser) (*SshUser, error)
-	DeleteSshUser(*gorm.DB, *uuid.UUID) error
+	GetAllMenus(tx *gorm.DB) ([]Menu, error)
+	GetAllUsers(tx *gorm.DB) ([]User, error)
+	GetAllMatrixUsers(tx *gorm.DB) ([]MatrixUser, error)
+	GetAllPasswordUsers(tx *gorm.DB) ([]PasswordUser, error)
+	GetAllOrders(tx *gorm.DB) ([]Order, error)
+	GetOrder(tx *gorm.DB, uuid *uuid.UUID) (*Order, error)
+	GetActiveOrderByMenu(tx *gorm.DB, uuid *uuid.UUID) (*Order, error)
+	GetActiveOrderByMenuName(tx *gorm.DB, name string) (*Order, error)
+	GetAllOrderItems(tx *gorm.DB, uuid *uuid.UUID) ([]OrderItem, error)
+	GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, error)
+	CreateOrderItem(tx *gorm.DB, uuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error)
+	GetMenu(tx *gorm.DB, uuid *uuid.UUID) (*Menu, error)
+	GetMenuByName(tx *gorm.DB, name string) (*Menu, error)
+	GetMenuItem(tx *gorm.DB, uuid *uuid.UUID) (*MenuItem, error)
+	GetMenuItemByShortName(tx *gorm.DB, menuUuid *uuid.UUID, shortName string) (*MenuItem, error)
+	CreateMenu(tx *gorm.DB, menu *Menu) (*Menu, error)
+	UpdateMenu(tx *gorm.DB, uuid *uuid.UUID, menu *Menu) (*Menu, error)
+	CreateMenuItem(tx *gorm.DB, menuItem *MenuItem) (*MenuItem, error)
+	DeleteMenuItem(tx *gorm.DB, uuid *uuid.UUID) error
+	DeleteMenu(tx *gorm.DB, uuid *uuid.UUID) error
+	CreateOrder(tx *gorm.DB, order *Order) (*Order, error)
+	UpdateOrder(tx *gorm.DB, uuid *uuid.UUID, order *Order) (*Order, error)
+	UpdateOrderItem(tx *gorm.DB, uuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error)
+	DeleteOrderItem(tx *gorm.DB, uuid *uuid.UUID) error
+	DeleteOrder(tx *gorm.DB, uuid *uuid.UUID) error
+	GetUser(tx *gorm.DB, uuid *uuid.UUID) (*User, error)
+	CreateUser(tx *gorm.DB, user *User) (*User, error)
+	UpdateUser(tx *gorm.DB, uuid *uuid.UUID, user *User) (*User, error)
+	DeleteUser(tx *gorm.DB, uuid *uuid.UUID) error
+	GetMatrixUser(tx *gorm.DB, uuid *uuid.UUID) (*MatrixUser, error)
+	GetMatrixUserByUsername(tx *gorm.DB, username string) (*MatrixUser, error)
+	CreateMatrixUser(tx *gorm.DB, matrixUser *MatrixUser) (*MatrixUser, error)
+	UpdateMatrixUser(tx *gorm.DB, uuid *uuid.UUID, matrixUser *MatrixUser) (*MatrixUser, error)
+	DeleteMatrixUser(tx *gorm.DB, uuid *uuid.UUID) error
+	FindPasswordUser(tx *gorm.DB, username string) (*PasswordUser, error)
+	GetPasswordUser(tx *gorm.DB, uuid *uuid.UUID) (*PasswordUser, error)
+	CreatePasswordUser(tx *gorm.DB, passwordUser *PasswordUser) (*PasswordUser, error)
+	UpdatePasswordUser(tx *gorm.DB, uuid *uuid.UUID, passwordUser *PasswordUser) (*PasswordUser, error)
+	DeletePasswordUser(tx *gorm.DB, uuid *uuid.UUID) error
+	GetAllSshUsers(tx *gorm.DB) ([]SshUser, error)
+	GetSshUser(tx *gorm.DB, uuid *uuid.UUID) (*SshUser, error)
+	GetSshUserByPublicKey(tx *gorm.DB, publicKey string) (*SshUser, error)
+	CreateSshUser(tx *gorm.DB, sshUser *SshUser) (*SshUser, error)
+	UpdateSshUser(tx *gorm.DB, uuid *uuid.UUID, sshUser *SshUser) (*SshUser, error)
+	DeleteSshUser(tx *gorm.DB, uuid *uuid.UUID) error
 	Transaction(func(tx *gorm.DB) error) error
 }
 
