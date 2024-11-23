@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -150,7 +151,14 @@ func (r *RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, ord
 func (repo *RepositoryImpl) CreateOrder(tx *gorm.DB, order *Order) (*Order, error) {
 	order.State = Open
 
-	err := tx.Create(&order).Error
+	order, err := repo.GetActiveOrderByMenu(tx, order.MenuUuid)
+	if err == nil {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrder, ErrActiveOrderForMenuAlreadyExists)
+	} else if !errors.Is(err, ErrOrderNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrCreatingOrder, err)
+	}
+
+	err = tx.Create(&order).Error
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrCreatingOrder, err)
 	}
@@ -174,8 +182,8 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order
 		}
 		break
 	case Finalized:
-		if order.State == Ordered {
-			existingOrder.State = Ordered
+		if order.State == Ordered || order.State == Open {
+			existingOrder.State = order.State
 		} else if order.State != existingOrder.State {
 			return nil, fmt.Errorf("%w: %w: from %s to %s", ErrUpdatingOrder, ErrOrderStateTransitionInvalid, existingOrder.State, order.State)
 		}

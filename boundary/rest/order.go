@@ -2,7 +2,6 @@ package rest
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -22,25 +21,18 @@ func (server *RestBoundary) newOrder(c echo.Context) error {
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		user, err := utils.CurrentUser(c, server.repo, tx)
 		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error getting current user")
-			return utils.NewInternalServerError(err)
-		}
-
-		_, err = server.repo.GetActiveOrderByMenu(tx, order.MenuUuid)
-		if err == nil {
-			err = fmt.Errorf("there is already an active order the specified menu: %w", err)
-			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder there is already an active order the specified menu")
-			return utils.NewError(http.StatusBadRequest, err.Error())
-		} else if !errors.Is(err, entity.ErrOrderNotFound) {
-			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error occured while fetching active order by menu")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("newOrder error getting current user")
 			return utils.NewInternalServerError(err)
 		}
 
 		order.Initiator = user.Uuid
 
 		createdOrder, err := server.repo.CreateOrder(tx, &order)
-		if err != nil {
-			log.Ctx(server.ctx).Error().Err(err).Msg("newOrder error creating order")
+		if errors.Is(err, entity.ErrActiveOrderForMenuAlreadyExists) {
+			log.Ctx(server.ctx).Warn().Err(err).Msg("newOrder error creating order")
+			return utils.NewError(http.StatusBadRequest, err.Error())
+		} else if err != nil {
+			log.Ctx(server.ctx).Warn().Err(err).Msg("newOrder error creating order")
 			return utils.NewInternalServerError(err)
 		}
 	

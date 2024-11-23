@@ -13,6 +13,7 @@ var (
 	ErrCreatingOrderItem = errors.New("could not create order item")
 	ErrMenuItemUuidMissing = errors.New("menu item uuid missing")
 	ErrCreatingOrder = errors.New("could not create order")
+	ErrActiveOrderForMenuAlreadyExists = errors.New("there is already an active order the specified menu")
 	ErrUpdatingOrder = errors.New("could not update order")
 	ErrOrderStateTransitionInvalid = errors.New("invalid order state transition")
 	ErrUpdatingOrderItem = errors.New("could not update order item")
