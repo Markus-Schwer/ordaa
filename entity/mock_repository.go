@@ -265,13 +265,40 @@ func (repo *MockRepository) CreateOrder(tx *gorm.DB, order *Order) (*Order, erro
 }
 
 func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order *Order) (*Order, error) {
-	if err := repo.DeleteOrder(tx, orderUuid); err != nil {
-		return nil, err
+	existingOrder, err := repo.GetOrder(tx, orderUuid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
 	}
-	if _, err := repo.CreateOrder(tx, order); err != nil {
-		return nil, err
+
+	switch existingOrder.State {
+	case Open:
+		existingOrder.OrderDeadline = order.OrderDeadline
+		if order.State == Finalized {
+			existingOrder.State = Finalized
+		} else if order.State != existingOrder.State {
+			return nil, fmt.Errorf("%w: %w: from %s to %s", ErrUpdatingOrder, ErrOrderStateTransitionInvalid, existingOrder.State, order.State)
+		}
+		break
+	case Finalized:
+		if order.State == Ordered {
+			existingOrder.State = Ordered
+		} else if order.State != existingOrder.State {
+			return nil, fmt.Errorf("%w: %w: from %s to %s", ErrUpdatingOrder, ErrOrderStateTransitionInvalid, existingOrder.State, order.State)
+		}
+		break
+	case Ordered:
+		existingOrder.Eta = order.Eta
+		if order.State == Delivered {
+			existingOrder.State = Delivered
+		} else if order.State != existingOrder.State {
+			return nil, fmt.Errorf("%w: %w: from %s to %s", ErrUpdatingOrder, ErrOrderStateTransitionInvalid, existingOrder.State, order.State)
+		}
+		break
 	}
-	return order, nil
+
+	existingOrder.SugarPerson = order.SugarPerson
+
+	return existingOrder, nil
 }
 
 func (repo *MockRepository) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {

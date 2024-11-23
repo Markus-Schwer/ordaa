@@ -9,14 +9,23 @@ import (
 	"gorm.io/gorm"
 )
 
+type OrderState = string
+
+const (
+	Open      = OrderState("open")
+	Finalized = OrderState("finalized")
+	Ordered   = OrderState("ordered")
+	Delivered = OrderState("delivered")
+)
+
 type Order struct {
 	Uuid          *uuid.UUID  `gorm:"column:uuid;primaryKey" json:"uuid"`
-	Initiator     *uuid.UUID   `gorm:"column:initiator" json:"initiator"`
+	Initiator     *uuid.UUID  `gorm:"column:initiator" json:"initiator"`
 	SugarPerson   *uuid.UUID  `gorm:"column:sugar_person" json:"sugar_person"`
-	State         string      `gorm:"column:state" json:"state"`
+	State         OrderState  `gorm:"column:state" json:"state" validate:"omitempty,oneof=open finalized ordered delivered"`
 	OrderDeadline *time.Time  `gorm:"column:order_deadline" json:"order_deadline"`
 	Eta           *time.Time  `gorm:"column:eta" json:"eta"`
-	MenuUuid      *uuid.UUID   `gorm:"column:menu_uuid" json:"menu_uuid"`
+	MenuUuid      *uuid.UUID  `gorm:"column:menu_uuid" json:"menu_uuid"`
 	Items         []OrderItem `gorm:"foreignKey:order_uuid" json:"items"`
 }
 
@@ -24,9 +33,9 @@ type OrderItem struct {
 	Uuid         *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
 	Price        int        `gorm:"column:price" json:"price"`
 	Paid         bool       `gorm:"column:paid" json:"paid"`
-	User         *uuid.UUID  `gorm:"column:order_user" json:"order_user"`
-	OrderUuid    *uuid.UUID  `gorm:"column:order_uuid" json:"order_uuid"`
-	MenuItemUuid *uuid.UUID  `gorm:"column:menu_item_uuid" json:"menu_item_uuid" validate:"required"`
+	User         *uuid.UUID `gorm:"column:order_user" json:"order_user"`
+	OrderUuid    *uuid.UUID `gorm:"column:order_uuid" json:"order_uuid"`
+	MenuItemUuid *uuid.UUID `gorm:"column:menu_item_uuid" json:"menu_item_uuid" validate:"required"`
 }
 
 func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
@@ -140,6 +149,8 @@ func (r *RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, ord
 }
 
 func (repo *RepositoryImpl) CreateOrder(tx *gorm.DB, order *Order) (*Order, error) {
+	order.State = Open
+
 	err := tx.Create(&order).Error
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrCreatingOrder, err)
@@ -154,11 +165,36 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, order
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
 	}
 
-	existingOrder.Initiator = order.Initiator
+	switch existingOrder.State {
+	case Open:
+		existingOrder.OrderDeadline = order.OrderDeadline
+		if order.State == Finalized {
+			existingOrder.State = Finalized
+		} else if order.State != existingOrder.State {
+			return nil, fmt.Errorf("%w: %w: from %s to %s", ErrUpdatingOrder, ErrOrderStateTransitionInvalid, existingOrder.State, order.State)
+		}
+		break
+	case Finalized:
+		if order.State == Ordered {
+			existingOrder.State = Ordered
+		} else if order.State != existingOrder.State {
+			return nil, fmt.Errorf("%w: %w: from %s to %s", ErrUpdatingOrder, ErrOrderStateTransitionInvalid, existingOrder.State, order.State)
+		}
+		break
+	case Ordered:
+		existingOrder.Eta = order.Eta
+		if order.State == Delivered {
+			existingOrder.State = Delivered
+		} else if order.State != existingOrder.State {
+			return nil, fmt.Errorf("%w: %w: from %s to %s", ErrUpdatingOrder, ErrOrderStateTransitionInvalid, existingOrder.State, order.State)
+		}
+		break
+	}
+
 	existingOrder.SugarPerson = order.SugarPerson
-	existingOrder.State = order.State
-	existingOrder.OrderDeadline = order.OrderDeadline
-	existingOrder.Eta = order.Eta
+	//if admin {
+	//	existingOrder.State = order.State
+	//}
 
 	err = tx.Save(existingOrder).Error
 	if err != nil {

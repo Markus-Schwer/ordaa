@@ -14,6 +14,7 @@ var (
 	ErrMenuItemUuidMissing = errors.New("menu item uuid missing")
 	ErrCreatingOrder = errors.New("could not create order")
 	ErrUpdatingOrder = errors.New("could not update order")
+	ErrOrderStateTransitionInvalid = errors.New("invalid order state transition")
 	ErrUpdatingOrderItem = errors.New("could not update order item")
 	ErrDeletingOrderItem = errors.New("could not delete order item")
 	ErrCannotGetAllUsers = errors.New("could not get all users from db")
