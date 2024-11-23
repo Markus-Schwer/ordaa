@@ -6,6 +6,7 @@ import (
 	"github.com/gofrs/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const DatabaseUrlKey = "DATABASE_URL"
@@ -65,7 +66,9 @@ type RepositoryImpl struct {
 }
 
 func NewRepository(ctx context.Context, databaseUrl string) (*RepositoryImpl, error) {
-	db, err := gorm.Open(postgres.Open(databaseUrl), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(databaseUrl), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, err
 	}
