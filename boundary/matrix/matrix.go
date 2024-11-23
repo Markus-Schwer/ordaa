@@ -133,8 +133,7 @@ func (m *MatrixBoundary) reply(room id.RoomID, evt id.EventID, content string, a
 				"event_id": evt,
 			},
 		},
-		// notice is a message from a bot, it avoids feedback loops
-		"msgtype": "m.notice",
+		"msgtype": "m.text",
 		"body":    content,
 	}
 	if asHtml {
