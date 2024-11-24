@@ -138,6 +138,8 @@ func (server *RestBoundary) newOrderItem(c echo.Context) error {
 		return utils.WrapBindError(err)
 	}
 
+	orderItem.OrderUuid = orderUuid
+
 	return server.repo.Transaction(func(tx *gorm.DB) error {
 		createdOrderItem, err := server.repo.CreateOrderItem(tx, orderUuid, &orderItem)
 		if err != nil {
@@ -223,19 +225,37 @@ func (server *RestBoundary) updateOrderItem(c echo.Context) error {
 			return utils.NewInternalServerError(err)
 		}
 
-		createdOrderItem, err := server.repo.UpdateOrderItem(tx, orderItemUuid, user.Uuid, &orderItem)
+		existingOrderItem, err := server.repo.GetOrderItem(tx, orderItemUuid)
+		if err != nil {
+			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrderItem error getting order item")
+			return utils.NewInternalServerError(err)
+		}
+
+		if orderItem.OrderUuid == nil {
+			orderItem.OrderUuid = orderUuid
+		}
+
+		if orderItem.MenuItemUuid == nil {
+			orderItem.MenuItemUuid = existingOrderItem.MenuItemUuid
+		}
+
+		if orderItem.User == nil {
+			orderItem.User = existingOrderItem.User
+		}
+
+		updatedOrderItem, err := server.repo.UpdateOrderItem(tx, orderItemUuid, user.Uuid, &orderItem)
 		if err != nil {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrderItem error updating order item")
 			return utils.NewInternalServerError(err)
 		}
-	
-		if createdOrderItem.OrderUuid != orderUuid {
+
+		if *updatedOrderItem.OrderUuid != *orderUuid {
 			err = errors.New("order item not found")
-			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrderItem error order item not found")
+			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrderItem error order item not found. The order item uuid is correct, but the order uuid is not")
 			return utils.NewInternalServerError(err)
 		}
-
-		return c.JSON(http.StatusOK, createdOrderItem)
+	
+		return c.JSON(http.StatusOK, updatedOrderItem)
 	})
 }
 

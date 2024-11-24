@@ -242,6 +242,18 @@ func (repo *RepositoryImpl) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUI
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
 	}
 
+	if *existingOrderItem.OrderUuid != *orderItem.OrderUuid {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, ErrOrderUuidChangeForbidden)
+	}
+
+	if *existingOrderItem.MenuItemUuid != *orderItem.MenuItemUuid {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, ErrMenuItemUuidChangeForbidden)
+	}
+
+	if *existingOrderItem.User != *orderItem.User {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, ErrUserChangeForbidden)
+	}
+
 	order, err := repo.GetOrder(tx, existingOrderItem.OrderUuid)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
