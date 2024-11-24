@@ -206,6 +206,17 @@ func (repo *MockRepository) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) 
 	return repo.orderItems, nil
 }
 
+func (repo *MockRepository) GetAllOrderItemsForOrderAndUser(tx *gorm.DB, orderUuid *uuid.UUID, userUuid *uuid.UUID) ([]OrderItem, error) {
+	filteredOrderItems := []OrderItem{}
+	for _, oi := range repo.orderItems {
+		if *oi.OrderUuid == *orderUuid && *oi.User == *userUuid {
+			filteredOrderItems = append(filteredOrderItems, oi)
+		}
+	}
+
+	return filteredOrderItems, nil
+}
+
 func (repo *MockRepository) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, error) {
 	for _, oi := range repo.orderItems {
 		if *oi.Uuid == *uuid {
@@ -305,14 +316,23 @@ func (repo *MockRepository) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, curre
 	return existingOrder, nil
 }
 
-func (repo *MockRepository) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
-	if err := repo.DeleteOrderItem(tx, orderItemUuid); err != nil {
-		return nil, err
+func (repo *MockRepository) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, userUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+	existingOrderItem, err := repo.GetOrderItem(tx, orderItemUuid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
 	}
-	if _, err := repo.CreateOrderItem(tx, orderItem.OrderUuid, orderItem); err != nil {
-		return nil, err
+
+	order, err := repo.GetOrder(tx, orderItem.OrderUuid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
 	}
-	return orderItem, nil
+
+	if existingOrderItem.Paid != orderItem.Paid && *userUuid != *order.SugarPerson {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, ErrPaidChangeForbidden)
+	}
+	existingOrderItem.Paid = orderItem.Paid
+
+	return existingOrderItem, nil
 }
 
 func (repo *MockRepository) DeleteOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID) error {
@@ -356,6 +376,16 @@ func (repo *MockRepository) GetAllUsers(tx *gorm.DB) ([]User, error) {
 func (repo *MockRepository) GetUser(tx *gorm.DB, userUuid *uuid.UUID) (*User, error) {
 	for _, u := range repo.users {
 		if *u.Uuid == *userUuid {
+			return &u, nil
+		}
+	}
+
+	return nil, ErrUserNotFound
+}
+
+func (repo *MockRepository) GetUserByName(tx *gorm.DB, name string) (*User, error) {
+	for _, u := range repo.users {
+		if u.Name == name {
 			return &u, nil
 		}
 	}

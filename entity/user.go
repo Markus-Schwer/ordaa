@@ -84,6 +84,18 @@ func (repo *RepositoryImpl) GetUser(tx *gorm.DB, userUuid *uuid.UUID) (*User, er
 	return &user, nil
 }
 
+func (repo *RepositoryImpl) GetUserByName(tx *gorm.DB, name string) (*User, error) {
+	var user User
+	err := tx.Where(&User{Name: name}).First(&user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("%w: %w", ErrUserNotFound, err)
+	} else if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingUser, err)
+	}
+
+	return &user, nil
+}
+
 func (repo *RepositoryImpl) CreateUser(tx *gorm.DB, user *User) (*User, error) {
 	err := tx.Create(&user).Error
 	if err != nil {

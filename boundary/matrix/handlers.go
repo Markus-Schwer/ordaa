@@ -22,6 +22,7 @@ var handlers = map[string]CommandHandler{
 	"start":          handleNewOrder,
 	"add":            handleNewOrderItem,
 	"paid":           handlePaid,
+	"toggle_paid":      handleMarkPaid,
 }
 var (
 	ErrParsingPublicKey = errors.New("cannot parse public key")
@@ -227,6 +228,76 @@ func handlePaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string
 	}
 
 	m.reply(evt.RoomID, evt.ID, "You are now the sugar person. This cannot be undone!", false)
+
+	return nil
+}
+
+func handleMarkPaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
+	currentUsername := evt.Sender.String()
+
+	currentUser, err := m.getUserByUsername(tx, currentUsername)
+	if err != nil {
+		return err
+	}
+
+	message = strings.TrimPrefix(message, "toggle_paid ")
+	args := strings.Split(message, " ")
+	if len(args) != 2 {
+		log.Ctx(m.ctx).Warn().Msgf("message '%s' wasn't formatted correctly", message)
+		return errors.New("message must be in the format 'toggle_paid [menu_name] [username]'")
+	}
+	menuName := args[0]
+
+	order, err := m.repo.GetActiveOrderByMenuName(tx, menuName)
+	if err != nil {
+		msg := fmt.Sprintf("there is no active order for menu '%s'", menuName)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	}
+
+	usernameParam := args[1]
+	user, err := m.repo.GetUserByName(tx, usernameParam)
+	if err != nil {
+		msg := fmt.Sprintf("could not get user '%s'", usernameParam)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	}
+
+	orderItems, err := m.repo.GetAllOrderItemsForOrderAndUser(tx, order.Uuid, user.Uuid)
+	if err != nil {
+		msg := "could not get order items for user"
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	}
+
+	log.Ctx(m.ctx).Info().Msgf("found %d order items for user '%s' in order '%s'", len(orderItems), user.Name, menuName)
+
+
+	allPaid := true
+	for _, oi := range orderItems {
+		if !oi.Paid {
+			allPaid = false
+		}
+	}
+
+	var paidStatusStr string
+	if !allPaid {
+		paidStatusStr = "paid"
+	} else {
+		paidStatusStr = "not paid"
+	}
+
+	for _, existingOrderItem := range orderItems {
+		existingOrderItem.Paid = !allPaid
+		_, err = m.repo.UpdateOrderItem(tx, existingOrderItem.Uuid, currentUser.Uuid, &existingOrderItem)
+		if err != nil {
+			msg := fmt.Sprintf("could not mark order items as %s", paidStatusStr)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
+		}
+	}
+
+	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully marked all items of user '%s' in order '%s' as %s", user.Name, menuName, paidStatusStr), false)
 
 	return nil
 }

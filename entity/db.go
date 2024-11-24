@@ -34,10 +34,12 @@ type Repository interface {
 	DeleteMenu(tx *gorm.DB, uuid *uuid.UUID) error
 	CreateOrder(tx *gorm.DB, order *Order) (*Order, error)
 	UpdateOrder(tx *gorm.DB, uuid *uuid.UUID, currentUser *uuid.UUID, order *Order) (*Order, error)
-	UpdateOrderItem(tx *gorm.DB, uuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error)
+	UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, userUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error)
 	DeleteOrderItem(tx *gorm.DB, uuid *uuid.UUID) error
+	GetAllOrderItemsForOrderAndUser(tx *gorm.DB, orderUuid *uuid.UUID, userUuid *uuid.UUID) ([]OrderItem, error)
 	DeleteOrder(tx *gorm.DB, uuid *uuid.UUID) error
 	GetUser(tx *gorm.DB, uuid *uuid.UUID) (*User, error)
+	GetUserByName(tx *gorm.DB, name string) (*User, error)
 	CreateUser(tx *gorm.DB, user *User) (*User, error)
 	UpdateUser(tx *gorm.DB, uuid *uuid.UUID, user *User) (*User, error)
 	DeleteUser(tx *gorm.DB, uuid *uuid.UUID) error

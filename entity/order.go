@@ -107,11 +107,22 @@ func (*RepositoryImpl) GetAllOrderItems(tx *gorm.DB, orderUuid *uuid.UUID) ([]Or
 	orderItems := []OrderItem{}
 	err := tx.Find(&orderItems).Error
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrCannotGetAllOrders, err)
+		return nil, fmt.Errorf("%w: %w", ErrCannotGetAllOrderItems, err)
 	}
 
 	return orderItems, nil
 }
+
+func (r *RepositoryImpl) GetAllOrderItemsForOrderAndUser(tx *gorm.DB, orderUuid *uuid.UUID, userUuid *uuid.UUID) ([]OrderItem, error) {
+	orderItems := []OrderItem{}
+	err := tx.Where(&OrderItem{OrderUuid: orderUuid, User: userUuid}).Find(&orderItems).Error
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrGettingOrderItemsOrderAndUser, err)
+	}
+
+	return orderItems, nil
+}
+
 
 func (*RepositoryImpl) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, error) {
 	orderItem := OrderItem{}
@@ -225,16 +236,21 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, curre
 	return existingOrder, nil
 }
 
-func (repo *RepositoryImpl) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
+func (repo *RepositoryImpl) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUID, userUuid *uuid.UUID, orderItem *OrderItem) (*OrderItem, error) {
 	existingOrderItem, err := repo.GetOrderItem(tx, orderItemUuid)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
 	}
 
-	existingOrderItem.User = orderItem.User
-	existingOrderItem.Price = orderItem.Price
+	order, err := repo.GetOrder(tx, existingOrderItem.OrderUuid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
+	}
+
+	if existingOrderItem.Paid != orderItem.Paid && *userUuid != *order.SugarPerson {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, ErrPaidChangeForbidden)
+	}
 	existingOrderItem.Paid = orderItem.Paid
-	existingOrderItem.MenuItemUuid = orderItem.MenuItemUuid
 
 	err = tx.Save(existingOrderItem).Error
 	if err != nil {
