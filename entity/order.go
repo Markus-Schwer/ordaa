@@ -200,7 +200,7 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, curre
 		}
 		break
 	case Finalized:
-		if order.State == Open && currentUser != existingOrder.Initiator {
+		if order.State == Open && *currentUser != *existingOrder.Initiator {
 			err := errors.New("only the initiator can reopen the order")
 			return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, err)
 		}
