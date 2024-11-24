@@ -75,7 +75,6 @@ func main() {
 	authService := auth.NewAuthService(ctx, repo)
 
 	rest.NewRestBoundary(ctx, repo, authService).Start(router)
-	//frontend.NewFrontendBoundary(ctx, repo, authService).Start(router)
 	go matrix.NewMatrixBoundary(ctx, repo).Start()
 
 	go boundary.StartHttpServer(ctx, router)
