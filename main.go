@@ -36,9 +36,9 @@ func main() {
 
 	ctx = log.With().Str("service", "dotinder").Logger().WithContext(ctx)
 	if verbose {
-		log.Ctx(ctx).Level(zerolog.DebugLevel)
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
-		log.Ctx(ctx).Level(zerolog.InfoLevel)
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	err := godotenv.Load()
