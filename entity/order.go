@@ -211,10 +211,11 @@ func (repo *RepositoryImpl) UpdateOrder(tx *gorm.DB, orderUuid *uuid.UUID, curre
 		break
 	}
 
+	if existingOrder.SugarPerson != nil && *existingOrder.SugarPerson != *order.SugarPerson {
+		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrder, ErrSugarPersonChangeForbidden)
+	}
+
 	existingOrder.SugarPerson = order.SugarPerson
-	//if admin {
-	//	existingOrder.State = order.State
-	//}
 
 	err = tx.Save(existingOrder).Error
 	if err != nil {

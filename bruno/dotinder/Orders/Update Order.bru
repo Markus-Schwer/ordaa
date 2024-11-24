@@ -5,18 +5,23 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/api/orders
+  url: {{baseUrl}}/api/orders/{{uuid}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "uuid": "c50b16cc-b8c5-4907-85ca-f36e8367c886",
     "initiator": "65d746ec-d829-49a0-afb5-2b5a4e930df7",
-    "sugar_person": null,
-    "state": "",
+    "sugar_person": "65d746ec-d829-49a0-afb5-2b5a4e930df7",
+    "state": "open",
     "order_deadline": null,
     "eta": null,
     "menu_uuid": "f5ad5f7f-3c62-421b-a24e-4cdf543b72f9"
   }
+}
+
+vars:pre-request {
+  uuid: 
 }

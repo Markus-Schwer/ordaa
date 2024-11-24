@@ -21,6 +21,7 @@ var handlers = map[string]CommandHandler{
 	"set_public_key": handleSetPublicKey,
 	"start":          handleNewOrder,
 	"add":            handleNewOrderItem,
+	"paid":           handlePaid,
 }
 var (
 	ErrParsingPublicKey = errors.New("cannot parse public key")
@@ -185,6 +186,47 @@ func handleNewOrderItem(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, messag
 	}
 
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("added '%s' to order '%s'", menuItem.Name, menuName), false)
+
+	return nil
+}
+
+func handlePaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
+	username := evt.Sender.String()
+
+	user, err := m.getUserByUsername(tx, username)
+	if err != nil {
+		return err
+	}
+
+	message = strings.TrimPrefix(message, "paid ")
+	args := strings.Split(message, " ")
+	if len(args) != 1 {
+		log.Ctx(m.ctx).Warn().Msgf("message '%s' wasn't formatted correctly", message)
+		return errors.New("message must be in the format 'paid [menu_name]'")
+	}
+	menuName := args[0]
+
+	order, err := m.repo.GetActiveOrderByMenuName(tx, menuName)
+	if err != nil {
+		msg := fmt.Sprintf("there is no active order for menu '%s'", menuName)
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	}
+
+	order.SugarPerson = user.Uuid
+
+	_, err = m.repo.UpdateOrder(tx, order.Uuid, user.Uuid, order)
+	if errors.Is(err, entity.ErrSugarPersonChangeForbidden) {
+		msg := "The sugar person cannot be changed after it has been set"
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	} else if err != nil {
+		msg := "could not update order"
+		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+		return errors.New(msg)
+	}
+
+	m.reply(evt.RoomID, evt.ID, "You are now the sugar person. This cannot be undone!", false)
 
 	return nil
 }
