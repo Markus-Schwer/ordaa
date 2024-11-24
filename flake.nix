@@ -8,15 +8,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     devenv.url = "github:cachix/devenv";
-    templ.url = "github:a-h/templ";
   };
 
-  outputs = { self, nixpkgs, treefmt-nix, devenv, templ, ... } @ inputs:
+  outputs = { self, nixpkgs, treefmt-nix, devenv, ... } @ inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-      templ = system: inputs.templ.packages.${system}.templ;
     in
     {
       devShells.${system}.default = devenv.lib.mkShell {
@@ -26,7 +24,7 @@
             dotenv.disableHint = true;
             languages.go.enable = true;
             languages.javascript.enable = true;
-            packages = with pkgs; [ go-migrate (templ system) reflex gcc nodePackages.svelte-language-server delve ];
+            packages = with pkgs; [ go-migrate reflex gcc nodePackages.svelte-language-server delve ];
 
             env.DATABASE_URL = "postgresql:///dotinder";
             env.ADDRESS = "localhost:8080";
@@ -39,7 +37,7 @@
             };
 
             scripts.dev-server.exec = ''
-              reflex -R '_templ.go$' -r '\.go$' -s -- sh -c 'templ generate && go run main.go'
+              reflex -r '\.go$' -s go run main.go
             '';
           }
         ];
@@ -55,10 +53,6 @@
           #vendorHash = nixpkgs.lib.fakeHash;
           vendorHash = "sha256-EEF+WoyClJjLTCeLwpRKX1GJ+wLSW/ShvzhXShRhBNs=";
           src = ./.;
-
-          preBuild = ''
-            ${templ system}/bin/templ generate
-          '';
         };
         html = pkgs.buildNpmPackage {
           pname = "fontend";
