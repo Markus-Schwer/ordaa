@@ -35,7 +35,7 @@ func (server *RestBoundary) newOrder(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("newOrder error creating order")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusCreated, createdOrder)
 	})
 }
@@ -47,7 +47,7 @@ func (server *RestBoundary) allOrders(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("allOrders error getting orders")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, orders)
 	})
 }
@@ -65,7 +65,7 @@ func (server *RestBoundary) getOrder(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("getOrder error getting order")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, orders)
 	})
 }
@@ -101,7 +101,7 @@ func (server *RestBoundary) updateOrder(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrder error updating order")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, createdOrder)
 	})
 }
@@ -119,11 +119,10 @@ func (server *RestBoundary) deleteOrder(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("deleteOrder error deleting order")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.NoContent(http.StatusOK)
 	})
 }
-
 
 func (server *RestBoundary) newOrderItem(c echo.Context) error {
 	orderUuid, err := utils.UuidParam(c, "order_uuid")
@@ -194,7 +193,7 @@ func (server *RestBoundary) getOrderItem(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("getOrderItem error order item not found")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, orderItems)
 	})
 }
@@ -254,7 +253,7 @@ func (server *RestBoundary) updateOrderItem(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("updateOrderItem error order item not found. The order item uuid is correct, but the order uuid is not")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, updatedOrderItem)
 	})
 }
@@ -276,4 +275,3 @@ func (server *RestBoundary) deleteOrderItem(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
 }
-

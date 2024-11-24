@@ -13,10 +13,10 @@ import (
 
 type Suite struct {
 	suite.Suite
-	ctx context.Context
-	e *echo.Echo
-	repo entity.Repository
-	authService *auth.AuthService
+	ctx          context.Context
+	e            *echo.Echo
+	repo         entity.Repository
+	authService  *auth.AuthService
 	restBoundary *RestBoundary
 }
 

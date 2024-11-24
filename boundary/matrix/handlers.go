@@ -22,7 +22,7 @@ var handlers = map[string]CommandHandler{
 	"start":          handleNewOrder,
 	"add":            handleNewOrderItem,
 	"paid":           handlePaid,
-	"toggle_paid":      handleMarkPaid,
+	"toggle_paid":    handleMarkPaid,
 }
 var (
 	ErrParsingPublicKey = errors.New("cannot parse public key")
@@ -271,7 +271,6 @@ func handleMarkPaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 	}
 
 	log.Ctx(m.ctx).Info().Msgf("found %d order items for user '%s' in order '%s'", len(orderItems), user.Name, menuName)
-
 
 	allPaid := true
 	for _, oi := range orderItems {

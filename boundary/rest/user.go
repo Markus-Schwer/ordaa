@@ -5,9 +5,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
+	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/utils"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/utils"
 	"gorm.io/gorm"
 )
 

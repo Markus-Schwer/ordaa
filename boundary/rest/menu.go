@@ -23,7 +23,7 @@ func (server *RestBoundary) newMenu(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("newMenu error creating menu")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusCreated, createdMenu)
 	})
 }
@@ -35,7 +35,7 @@ func (server *RestBoundary) allMenus(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("allMenus error getting menus")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, menus)
 	})
 }
@@ -53,7 +53,7 @@ func (server *RestBoundary) getMenu(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("getMenu error getting menu")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, menus)
 	})
 }
@@ -77,7 +77,7 @@ func (server *RestBoundary) updateMenu(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("updateMenu error updating menu")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.JSON(http.StatusOK, createdMenu)
 	})
 }
@@ -95,8 +95,7 @@ func (server *RestBoundary) deleteMenu(c echo.Context) error {
 			log.Ctx(server.ctx).Warn().Err(err).Msg("deleteMenu error deleting menu")
 			return utils.NewInternalServerError(err)
 		}
-	
+
 		return c.NoContent(http.StatusOK)
 	})
 }
-

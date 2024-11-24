@@ -67,4 +67,3 @@ func (s *Suite) TestLogin() {
 		assert.NotEmpty(s.T(), loginResponse.Jwt)
 	}
 }
-

@@ -24,9 +24,10 @@ type listItem struct {
 }
 
 func (l listItem) Title() string { return fmt.Sprintf("[%s] %s", l.order.State, l.menu.Name) }
-// func (l listItem) Description() string {
-// 	return fmt.Sprintf("deadline: %s", l.order.OrderDeadline.String())
-// }
+
+//	func (l listItem) Description() string {
+//		return fmt.Sprintf("deadline: %s", l.order.OrderDeadline.String())
+//	}
 func (l listItem) Description() string {
 	return "description"
 

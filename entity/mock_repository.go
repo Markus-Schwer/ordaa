@@ -9,26 +9,26 @@ import (
 )
 
 type MockRepository struct {
-	users []User
+	users         []User
 	passwordUsers []PasswordUser
-	matrixUsers []MatrixUser
-	sshUsers []SshUser
-	menus []Menu
-	menuItems []MenuItem
-	orders []Order
-	orderItems []OrderItem
+	matrixUsers   []MatrixUser
+	sshUsers      []SshUser
+	menus         []Menu
+	menuItems     []MenuItem
+	orders        []Order
+	orderItems    []OrderItem
 }
 
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
-		users: []User{},
+		users:         []User{},
 		passwordUsers: []PasswordUser{},
-		matrixUsers: []MatrixUser{},
-		sshUsers: []SshUser{},
-		menus: []Menu{},
-		menuItems: []MenuItem{},
-		orders: []Order{},
-		orderItems: []OrderItem{},
+		matrixUsers:   []MatrixUser{},
+		sshUsers:      []SshUser{},
+		menus:         []Menu{},
+		menuItems:     []MenuItem{},
+		orders:        []Order{},
+		orderItems:    []OrderItem{},
 	}
 }
 
@@ -609,4 +609,3 @@ func (repo *MockRepository) DeleteSshUser(tx *gorm.DB, userUuid *uuid.UUID) erro
 	repo.sshUsers = newSshUsers
 	return nil
 }
-

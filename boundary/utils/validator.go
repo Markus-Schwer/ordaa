@@ -11,6 +11,5 @@ func NewValidator() *Validator {
 }
 
 func (v *Validator) Validate(i interface{}) error {
-  return v.delegate.Struct(i)
+	return v.delegate.Struct(i)
 }
-

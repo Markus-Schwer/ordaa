@@ -23,4 +23,3 @@ func NewTestRepository(ctx context.Context) (*RepositoryImpl, error) {
 		Db:  db,
 	}, nil
 }
-

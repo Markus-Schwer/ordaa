@@ -20,7 +20,7 @@ type MenuItem struct {
 	ShortName string     `gorm:"column:short_name" json:"short_name" validate:"required"`
 	Name      string     `gorm:"column:name" json:"name" validate:"required"`
 	Price     int        `gorm:"column:price" json:"price" validate:"required"`
-	MenuUuid  *uuid.UUID  `gorm:"column:menu_uuid" json:"menu_uuid" validate:"required"`
+	MenuUuid  *uuid.UUID `gorm:"column:menu_uuid" json:"menu_uuid" validate:"required"`
 }
 
 func (menu *Menu) BeforeCreate(tx *gorm.DB) (err error) {

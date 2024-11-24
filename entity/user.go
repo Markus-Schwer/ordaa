@@ -9,8 +9,8 @@ import (
 )
 
 type User struct {
-	Uuid      *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
-	Name      string     `gorm:"column:name" json:"name"`
+	Uuid *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
+	Name string     `gorm:"column:name" json:"name"`
 }
 
 type MatrixUser struct {

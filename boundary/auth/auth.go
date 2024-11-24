@@ -201,7 +201,7 @@ func (a *AuthService) Logout(c echo.Context) {
 
 func AuthMiddleware(auth *AuthService, unauthorizedHandler func(echo.Context, error) error) echo.MiddlewareFunc {
 	return echojwt.WithConfig(echojwt.Config{
-		SigningKey:  jwtKey,
+		SigningKey:   jwtKey,
 		ErrorHandler: unauthorizedHandler,
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(Claims)

@@ -80,7 +80,7 @@ type LayoutModel struct {
 	activeBox   int
 	activeModel tea.Model
 	// subModels   map[components.ComponentKey]tea.Model
-	helpModel   tea.Model
+	helpModel tea.Model
 }
 
 func NewLayoutModel(
@@ -98,7 +98,7 @@ func NewLayoutModel(
 		activeTab:  orders.OrderSelectorComponent,
 		activeBox:  BODY,
 		// subModels:  subModels,
-		helpModel:  NewHelpModel(info),
+		helpModel: NewHelpModel(info),
 	}
 }
 
@@ -106,7 +106,7 @@ func (m *LayoutModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	m.activeTab = orders.OrderSelectorComponent
 	m.activeModel = orders.NewOrderSelectorModel(m.ctx, m.repo, m)
-	cmds = append(cmds, m.activeModel.Init())	
+	cmds = append(cmds, m.activeModel.Init())
 	cmds = append(cmds, m.helpModel.Init())
 	return tea.Batch(cmds...)
 }

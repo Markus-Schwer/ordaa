@@ -104,7 +104,7 @@ func (serv *SshTuiServer) getUserForKey(sess ssh.Session) (user *entity.User, er
 		if sess.PublicKey() == nil {
 			return fmt.Errorf("could not get public key from session: %w", err)
 		}
-		pubKey := fmt.Sprintf("%s %s",sess.PublicKey().Type(), base64.StdEncoding.EncodeToString(sess.PublicKey().Marshal()))
+		pubKey := fmt.Sprintf("%s %s", sess.PublicKey().Type(), base64.StdEncoding.EncodeToString(sess.PublicKey().Marshal()))
 		sshUser, innerErr := serv.repo.GetSshUserByPublicKey(tx, pubKey)
 		if innerErr != nil {
 			return innerErr

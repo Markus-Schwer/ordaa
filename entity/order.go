@@ -19,13 +19,13 @@ const (
 )
 
 type Order struct {
-	Uuid          *uuid.UUID  `gorm:"column:uuid;primaryKey" json:"uuid"`
-	Initiator     *uuid.UUID  `gorm:"column:initiator" json:"initiator"`
-	SugarPerson   *uuid.UUID  `gorm:"column:sugar_person" json:"sugar_person"`
-	State         OrderState  `gorm:"column:state" json:"state" validate:"omitempty,oneof=open finalized ordered delivered"`
-	OrderDeadline *time.Time  `gorm:"column:order_deadline" json:"order_deadline"`
-	Eta           *time.Time  `gorm:"column:eta" json:"eta"`
-	MenuUuid      *uuid.UUID  `gorm:"column:menu_uuid" json:"menu_uuid"`
+	Uuid          *uuid.UUID `gorm:"column:uuid;primaryKey" json:"uuid"`
+	Initiator     *uuid.UUID `gorm:"column:initiator" json:"initiator"`
+	SugarPerson   *uuid.UUID `gorm:"column:sugar_person" json:"sugar_person"`
+	State         OrderState `gorm:"column:state" json:"state" validate:"omitempty,oneof=open finalized ordered delivered"`
+	OrderDeadline *time.Time `gorm:"column:order_deadline" json:"order_deadline"`
+	Eta           *time.Time `gorm:"column:eta" json:"eta"`
+	MenuUuid      *uuid.UUID `gorm:"column:menu_uuid" json:"menu_uuid"`
 }
 
 type OrderItem struct {
@@ -122,7 +122,6 @@ func (r *RepositoryImpl) GetAllOrderItemsForOrderAndUser(tx *gorm.DB, orderUuid 
 
 	return orderItems, nil
 }
-
 
 func (*RepositoryImpl) GetOrderItem(tx *gorm.DB, uuid *uuid.UUID) (*OrderItem, error) {
 	orderItem := OrderItem{}

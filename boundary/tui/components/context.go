@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	ErrContextValueNotSet = errors.New("context value not set")
+	ErrContextValueNotSet         = errors.New("context value not set")
 	ErrContextValueUnexpectedType = errors.New("context value has unexpected type")
 )
 

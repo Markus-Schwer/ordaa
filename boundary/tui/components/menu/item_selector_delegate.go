@@ -67,7 +67,7 @@ func newItemDelegate(_ context.Context, _ entity.Repository) (d list.DefaultDele
 				// 	// })
 				// 	log.Info().Msgf("increment")
 				// }
-					return m.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Added '%s' to order", i.Name)))
+				return m.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Added '%s' to order", i.Name)))
 			case key.Matches(msg, keys.decrement):
 				return func() tea.Msg {
 					log.Info().Msgf("decrement")
