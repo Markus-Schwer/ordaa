@@ -22,8 +22,12 @@ var handlers = map[string]CommandHandler{
 	"start":          handleNewOrder,
 	"add":            handleNewOrderItem,
 	"paid":           handlePaid,
-	"toggle_paid":    handleMarkPaid,
+	"finalize":       handleStateTransition("finalize", entity.Finalized),
+	"re-open":        handleStateTransition("re-open", entity.Open),
+	"ordered":        handleStateTransition("ordered", entity.Ordered),
+	"delivered":      handleStateTransition("delivered", entity.Delivered),
 }
+
 var (
 	ErrParsingPublicKey = errors.New("cannot parse public key")
 )
@@ -299,4 +303,41 @@ func handleMarkPaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully marked all items of user '%s' in order '%s' as %s", user.Name, menuName, paidStatusStr), false)
 
 	return nil
+}
+
+func handleStateTransition(command string, state entity.OrderState) func(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
+	return func(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message string) error {
+		username := evt.Sender.String()
+		user, err := m.getUserByUsername(tx, username)
+		if err != nil {
+			return err
+		}
+
+		menuName := strings.TrimPrefix(message, fmt.Sprintf("%s ", command))
+		order, err := m.repo.GetActiveOrderByMenuName(tx, menuName)
+		if err != nil {
+			msg := fmt.Sprintf("there is no active order for menu '%s'", menuName)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
+		}
+
+		if order.State == state {
+			msg := fmt.Sprintf("order '%s' is already in state %s", menuName, state)
+			log.Ctx(m.ctx).Warn().Msg(msg)
+			return errors.New(msg)
+		}
+
+		order.State = state
+
+		_, err = m.repo.UpdateOrder(tx, order.Uuid, user.Uuid, order)
+		if err != nil {
+			msg := fmt.Sprintf("could not set order state to %s", state)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
+		}
+
+		m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully set state of order '%s' to %s", menuName, state), false)
+
+		return nil
+	}
 }
