@@ -26,6 +26,8 @@ delivered -> paypal me link of user who paid is posted
 
 ## Getting Started
 
+### With Nix Flake
+
 open dev shell
 
 ```bash
@@ -43,6 +45,24 @@ devenv up
 ```bash
 migrate -database ${DATABASE_URL} -path db/migrations up
 ```
+
+start the server
+
+```bash
+go run .
+```
+
+or start dev-server (hot-reload)
+
+```bash
+dev-server
+```
+
+### Without Nix Flake
+
+1. setup a postgres database
+2. create a `.env` file and specify database url and matrix credentials (example exists in `.env.example`)
+3. start server: `go run .`
 
 ## TUI demo
 
