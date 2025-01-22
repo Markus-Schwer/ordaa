@@ -169,7 +169,7 @@ func (r *RepositoryImpl) CreateOrderItem(tx *gorm.DB, order_uuid *uuid.UUID, ord
 func (repo *RepositoryImpl) CreateOrder(tx *gorm.DB, order *Order) (*Order, error) {
 	order.State = Open
 
-	order, err := repo.GetActiveOrderByMenu(tx, order.MenuUuid)
+	_, err := repo.GetActiveOrderByMenu(tx, order.MenuUuid)
 	if err == nil {
 		return nil, fmt.Errorf("%w: %w", ErrCreatingOrder, ErrActiveOrderForMenuAlreadyExists)
 	} else if !errors.Is(err, ErrOrderNotFound) {
