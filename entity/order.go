@@ -258,6 +258,11 @@ func (repo *RepositoryImpl) UpdateOrderItem(tx *gorm.DB, orderItemUuid *uuid.UUI
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, err)
 	}
 
+	// check if sugar persion is nil
+	if order.SugarPerson == nil {
+		return nil, ErrSugarPersonNotSet
+	}
+
 	if existingOrderItem.Paid != orderItem.Paid && *userUuid != *order.SugarPerson {
 		return nil, fmt.Errorf("%w: %w", ErrUpdatingOrderItem, ErrPaidChangeForbidden)
 	}

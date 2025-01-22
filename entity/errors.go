@@ -19,6 +19,7 @@ var (
 	ErrActiveOrderForMenuAlreadyExists = errors.New("there is already an active order the specified menu")
 	ErrUpdatingOrder                   = errors.New("could not update order")
 	ErrSugarPersonChangeForbidden      = errors.New("changing sugar person after it has already been set is forbidden")
+	ErrSugarPersonNotSet               = errors.New("the sugar person has not been set")
 	ErrOrderStateTransitionInvalid     = errors.New("invalid order state transition")
 	ErrUpdatingOrderItem               = errors.New("could not update order item")
 	ErrOrderUuidChangeForbidden        = errors.New("changing order uuid is forbidden")
