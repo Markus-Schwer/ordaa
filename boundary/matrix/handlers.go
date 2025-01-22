@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/ssh"
+	"github.com/gofrs/uuid"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
 	"gorm.io/gorm"
@@ -22,6 +23,7 @@ var handlers = map[string]CommandHandler{
 	"start":          handleNewOrder,
 	"add":            handleNewOrderItem,
 	"paid":           handlePaid,
+	"toggle_paid":    handleMarkPaid,
 	"finalize":       handleStateTransition("finalize", entity.Finalized),
 	"re-open":        handleStateTransition("re-open", entity.Open),
 	"ordered":        handleStateTransition("ordered", entity.Ordered),
@@ -250,13 +252,25 @@ func handleMarkPaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 		log.Ctx(m.ctx).Warn().Msgf("message '%s' wasn't formatted correctly", message)
 		return errors.New("message must be in the format 'toggle_paid [menu_name] [username]'")
 	}
-	menuName := args[0]
 
-	order, err := m.repo.GetActiveOrderByMenuName(tx, menuName)
-	if err != nil {
-		msg := fmt.Sprintf("there is no active order for menu '%s'", menuName)
-		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
-		return errors.New(msg)
+	// try to parse first arg as uuid
+	var order *entity.Order
+	orderUuid := uuid.FromStringOrNil(args[0])
+	if orderUuid != uuid.Nil {
+		order, err = m.repo.GetOrder(tx, &orderUuid)
+		if err != nil {
+			msg := fmt.Sprintf("there is no order with uuid '%s'", orderUuid)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
+		}
+	} else {
+		menuName := args[0]
+		order, err = m.repo.GetActiveOrderByMenuName(tx, menuName)
+		if err != nil {
+			msg := fmt.Sprintf("there is no active order for menu '%s'", menuName)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
+		}
 	}
 
 	usernameParam := args[1]
@@ -274,7 +288,7 @@ func handleMarkPaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 		return errors.New(msg)
 	}
 
-	log.Ctx(m.ctx).Info().Msgf("found %d order items for user '%s' in order '%s'", len(orderItems), user.Name, menuName)
+	log.Ctx(m.ctx).Info().Msgf("found %d order items for user '%s' in order '%s'", len(orderItems), user.Name, args[0])
 
 	allPaid := true
 	for _, oi := range orderItems {
@@ -293,14 +307,18 @@ func handleMarkPaid(m *MatrixBoundary, tx *gorm.DB, evt *event.Event, message st
 	for _, existingOrderItem := range orderItems {
 		existingOrderItem.Paid = !allPaid
 		_, err = m.repo.UpdateOrderItem(tx, existingOrderItem.Uuid, currentUser.Uuid, &existingOrderItem)
-		if err != nil {
+		if errors.Is(err, entity.ErrSugarPersonNotSet) {
+			msg := fmt.Sprintf("could not mark order items as %s, because sugar person has not been set yet", paidStatusStr)
+			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
+			return errors.New(msg)
+		} else if err != nil {
 			msg := fmt.Sprintf("could not mark order items as %s", paidStatusStr)
 			log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
 			return errors.New(msg)
 		}
 	}
 
-	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully marked all items of user '%s' in order '%s' as %s", user.Name, menuName, paidStatusStr), false)
+	m.reply(evt.RoomID, evt.ID, fmt.Sprintf("successfully marked all items of user '%s' in order '%s' as %s", user.Name, args[0], paidStatusStr), false)
 
 	return nil
 }
