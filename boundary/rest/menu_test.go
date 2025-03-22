@@ -5,17 +5,20 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/gofrs/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gorm.io/gorm"
 )
 
 func (s *Suite) TestGetAllMenus() {
 	createMenuItems := []entity.MenuItem{}
-	createMenu := &entity.Menu{Name: "testMenu", Url: "https://sangam-aalen.de", Items: createMenuItems}
-	_, err := s.repo.CreateMenu(nil, createMenu)
-	if err != nil {
-		s.T().Fatal(err)
+	menuUuid := uuid.Must(uuid.NewV4())
+	menu := entity.Menu{Uuid: &menuUuid, Name: "testMenu", Url: "https://sangam-aalen.de", Items: createMenuItems}
+
+	s.repo.GetAllMenusFunc = func(tx *gorm.DB) ([]entity.Menu, error) {
+		return []entity.Menu{menu}, nil
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/api/menus", nil)
@@ -36,6 +39,10 @@ func (s *Suite) TestGetAllMenus() {
 }
 
 func (s *Suite) TestGetAllMenusEmpty() {
+	s.repo.GetAllMenusFunc = func(tx *gorm.DB) ([]entity.Menu, error) {
+		return []entity.Menu{}, nil
+	}
+
 	req := httptest.NewRequest(http.MethodPost, "/api/menus", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
@@ -54,9 +61,15 @@ func (s *Suite) TestGetAllMenusEmpty() {
 }
 
 func (s *Suite) TestGetMenu() {
-	createdMenu, err := s.repo.CreateMenu(nil, &entity.Menu{Name: "testMenu", Url: "https://sangam-aalen.de", Items: []entity.MenuItem{}})
-	if err != nil {
-		s.T().Fatal(err)
+	menuUuid := uuid.Must(uuid.NewV4())
+	menu := &entity.Menu{Uuid: &menuUuid, Name: "testMenu", Url: "https://sangam-aalen.de", Items: []entity.MenuItem{}}
+
+	s.repo.GetMenuFunc = func(tx *gorm.DB, uuidMoqParam *uuid.UUID) (*entity.Menu, error) {
+		if *uuidMoqParam == menuUuid {
+			return menu, nil
+		}
+
+		return nil, entity.ErrMenuNotFound
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
@@ -65,7 +78,7 @@ func (s *Suite) TestGetMenu() {
 	c := s.e.NewContext(req, rec)
 	c.SetPath("/api/menus/:uuid")
 	c.SetParamNames("uuid")
-	c.SetParamValues(createdMenu.Uuid.String())
+	c.SetParamValues(menuUuid.String())
 
 	// Assertions
 	if assert.NoError(s.T(), s.restBoundary.getMenu(c)) {

@@ -7,36 +7,44 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	"github.com/gofrs/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/utils"
 	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gorm.io/gorm"
 )
 
 func (s *Suite) TestCreateOrder() {
-	menu := entity.Menu{
+	menuUuid := uuid.Must(uuid.NewV4())
+	menu := &entity.Menu{
+		Uuid: &menuUuid,
 		Items: []entity.MenuItem{
 			{Name: "Butter Chicken", ShortName: "62"},
 			{Name: "Chicken Tikka Masala", ShortName: "63"},
 		},
 	}
 
-	_, err := s.repo.CreateMenu(nil, &menu)
-	if err != nil {
-		s.T().Fatal(err)
+	s.repo.GetMenuFunc = func(tx *gorm.DB, uuidMoqParam *uuid.UUID) (*entity.Menu, error) {
+		if *uuidMoqParam == menuUuid {
+			return menu, nil
+		}
+		return nil, entity.ErrMenuNotFound
 	}
 
-	orderJson := fmt.Sprintf(`{"menu_uuid": "%s"}`, menu.Uuid.String())
+	s.repo.CreateOrderFunc = func(tx *gorm.DB, order *entity.Order) (*entity.Order, error) {
+		orderUuid := uuid.Must(uuid.NewV4())
+		order.Uuid = &orderUuid
+		return order, nil
+	}
+
+	orderJson := fmt.Sprintf(`{"menu_uuid": "%s"}`, menuUuid.String())
 	req := httptest.NewRequest(http.MethodPost, "/api/orders", strings.NewReader(orderJson))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := s.e.NewContext(req, rec)
 
-	user, err := s.repo.CreateUser(nil, &entity.User{Name: "test"})
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	c.Set("user", utils.BuildJwt(user))
+	c.Set("user", utils.BuildJwt(s.user))
 
 	// Assertions
 	if assert.NoError(s.T(), s.restBoundary.newOrder(c)) {
@@ -46,21 +54,31 @@ func (s *Suite) TestCreateOrder() {
 		json.NewDecoder(rec.Body).Decode(&createdOrder)
 
 		assert.Equal(s.T(), menu.Uuid, createdOrder.MenuUuid)
-		assert.Equal(s.T(), user.Uuid, createdOrder.Initiator)
+		assert.Equal(s.T(), s.user.Uuid, createdOrder.Initiator)
 	}
 }
 
 func (s *Suite) TestCreateOrderItem() {
-	menu := entity.Menu{
+	menuUuid := uuid.Must(uuid.NewV4())
+	menu := &entity.Menu{
+		Uuid: &menuUuid,
 		Items: []entity.MenuItem{
 			{Name: "Butter Chicken", ShortName: "62"},
 			{Name: "Chicken Tikka Masala", ShortName: "63"},
 		},
 	}
 
-	_, err := s.repo.CreateMenu(nil, &menu)
-	if err != nil {
-		s.T().Fatal(err)
+	s.repo.GetMenuFunc = func(tx *gorm.DB, uuidMoqParam *uuid.UUID) (*entity.Menu, error) {
+		if *uuidMoqParam == menuUuid {
+			return menu, nil
+		}
+		return nil, entity.ErrMenuNotFound
+	}
+
+	s.repo.CreateOrderFunc = func(tx *gorm.DB, order *entity.Order) (*entity.Order, error) {
+		orderUuid := uuid.Must(uuid.NewV4())
+		order.Uuid = &orderUuid
+		return order, nil
 	}
 
 	orderJson := fmt.Sprintf(`{"menu_uuid": "%s"}`, menu.Uuid.String())
@@ -69,11 +87,7 @@ func (s *Suite) TestCreateOrderItem() {
 	rec := httptest.NewRecorder()
 	c := s.e.NewContext(req, rec)
 
-	user, err := s.repo.CreateUser(nil, &entity.User{Name: ""})
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	c.Set("user", utils.BuildJwt(user))
+	c.Set("user", utils.BuildJwt(s.user))
 
 	// Assertions
 	if assert.NoError(s.T(), s.restBoundary.newOrder(c)) {

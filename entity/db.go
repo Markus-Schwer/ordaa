@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+//go:generate go tool moq -out repository_mock.go . Repository
+
 const DatabaseUrlKey = "DATABASE_URL"
 
 type Repository interface {
