@@ -82,7 +82,7 @@ func (s *Suite) TestLogin() {
 			}
 
 			return &entity.PasswordUser{
-				Uuid: &userUuid,
+				Uuid:     &userUuid,
 				UserUuid: &userUuid,
 				Username: "test",
 				Password: hash,
