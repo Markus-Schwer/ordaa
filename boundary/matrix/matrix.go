@@ -15,6 +15,8 @@ import (
 	"maunium.net/go/mautrix/id"
 )
 
+//go:generate go tool moq -out matrix_mock.go . MatrixBoundary
+
 const (
 	HomeserverUrlKey  = "MATRIX_HOMESERVER"
 	MatrixUsernameKey = "MATRIX_USERNAME"
@@ -22,27 +24,38 @@ const (
 	MatrixRoomsKey    = "MATRIX_ROOMS"
 )
 
-type MatrixBoundary struct {
+type MatrixBoundary interface {
+	Start()
+	loginAndJoin(roomIds []string)
+	listen()
+	handleMessageEvent(evt *event.Event)
+	message(room id.RoomID, content string)
+	react(room id.RoomID, evt id.EventID, content string)
+	reply(room id.RoomID, evt id.EventID, content string, asHtml bool) id.EventID
+	getUserByUsername(tx *gorm.DB, username string) (*entity.User, error)
+}
+
+type MatrixBoundaryImpl struct {
 	ctx              context.Context
 	repo             entity.Repository
 	client           *mautrix.Client
 	startupTimestamp int64
 }
 
-func NewMatrixBoundary(ctx context.Context, repo entity.Repository) *MatrixBoundary {
+func NewMatrixBoundary(ctx context.Context, repo entity.Repository) *MatrixBoundaryImpl {
 	client, err := mautrix.NewClient(ctx.Value(HomeserverUrlKey).(string), "", "")
 	if err != nil {
 		log.Ctx(ctx).Fatal().Err(err).Msg("could not create matrix client")
 	}
-	return &MatrixBoundary{ctx: ctx, repo: repo, client: client, startupTimestamp: time.Now().UnixMilli()}
+	return &MatrixBoundaryImpl{ctx: ctx, repo: repo, client: client, startupTimestamp: time.Now().UnixMilli()}
 }
 
-func (m *MatrixBoundary) Start() {
+func (m *MatrixBoundaryImpl) Start() {
 	m.loginAndJoin(m.ctx.Value(MatrixRoomsKey).([]string))
 	m.listen()
 }
 
-func (m *MatrixBoundary) loginAndJoin(roomIds []string) {
+func (m *MatrixBoundaryImpl) loginAndJoin(roomIds []string) {
 	log.Ctx(m.ctx).Debug().Msg("Logging in to matrix homeserver")
 	_, err := m.client.Login(m.ctx, &mautrix.ReqLogin{
 		Type:               mautrix.AuthTypePassword,
@@ -69,7 +82,7 @@ func (m *MatrixBoundary) loginAndJoin(roomIds []string) {
 	}
 }
 
-func (m *MatrixBoundary) listen() {
+func (m *MatrixBoundaryImpl) listen() {
 	log.Ctx(m.ctx).Debug().Msg("listening to matrix messages")
 	syncer := m.client.Syncer.(*mautrix.DefaultSyncer)
 	syncer.OnEventType(event.EventMessage, func(ctx context.Context, evt *event.Event) {
@@ -85,7 +98,7 @@ func (m *MatrixBoundary) listen() {
 	}
 }
 
-func (m *MatrixBoundary) handleMessageEvent(evt *event.Event) {
+func (m *MatrixBoundaryImpl) handleMessageEvent(evt *event.Event) {
 	message := evt.Content.AsMessage().Body
 	if !strings.HasPrefix(message, ".ordaa") {
 		return
@@ -96,37 +109,37 @@ func (m *MatrixBoundary) handleMessageEvent(evt *event.Event) {
 	err := m.repo.Transaction(func(tx *gorm.DB) error {
 		commands := strings.Split(message, " ")
 		if len(commands) < 0 {
-			return handleUnrecognizedCommand(m, tx, evt, message)
+			return handleUnrecognizedCommand(m.ctx, m, m.repo, tx, evt, message)
 		}
 		command := commands[0]
 
 		handler := handlers[command]
 		if handler == nil {
-			return handleUnrecognizedCommand(m, tx, evt, message)
+			return handleUnrecognizedCommand(m.ctx, m, m.repo, tx, evt, message)
 		}
 
-		return handler(m, tx, evt, message)
+		return handler(m.ctx, m, m.repo, tx, evt, message)
 	})
 	if err != nil {
 		m.reply(evt.RoomID, evt.ID, err.Error(), false)
 	}
 }
 
-func (m *MatrixBoundary) message(room id.RoomID, content string) {
+func (m *MatrixBoundaryImpl) message(room id.RoomID, content string) {
 	_, err := m.client.SendNotice(m.ctx, room, content)
 	if err != nil {
 		log.Ctx(m.ctx).Error().Err(err).Msgf("could not send message '%s'", content)
 	}
 }
 
-func (m *MatrixBoundary) react(room id.RoomID, evt id.EventID, content string) {
+func (m *MatrixBoundaryImpl) react(room id.RoomID, evt id.EventID, content string) {
 	_, err := m.client.SendReaction(m.ctx, room, evt, content)
 	if err != nil {
 		log.Ctx(m.ctx).Error().Err(err).Msg("could not react to event")
 	}
 }
 
-func (m *MatrixBoundary) reply(room id.RoomID, evt id.EventID, content string, asHtml bool) id.EventID {
+func (m *MatrixBoundaryImpl) reply(room id.RoomID, evt id.EventID, content string, asHtml bool) id.EventID {
 	contentJSON := map[string]interface{}{
 		"m.relates_to": map[string]interface{}{
 			"m.in_reply_to": map[string]interface{}{
@@ -147,7 +160,7 @@ func (m *MatrixBoundary) reply(room id.RoomID, evt id.EventID, content string, a
 	return ev.EventID
 }
 
-func (m *MatrixBoundary) getUserByUsername(tx *gorm.DB, username string) (*entity.User, error) {
+func (m *MatrixBoundaryImpl) getUserByUsername(tx *gorm.DB, username string) (*entity.User, error) {
 	matrixUser, err := m.repo.GetMatrixUserByUsername(tx, username)
 	if err != nil {
 		msg := fmt.Sprintf("could not get matrix user for username '%s'", username)
