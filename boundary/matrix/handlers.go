@@ -43,7 +43,7 @@ func handleUnrecognizedCommand(_ context.Context, m MatrixBoundary, _ entity.Rep
 func handleRegister(ctx context.Context, m MatrixBoundary, repo entity.Repository, tx *gorm.DB, evt *event.Event, message string) error {
 	username := evt.Sender.String()
 	matrixUser, err := repo.GetMatrixUserByUsername(tx, username)
-	if errors.Is(err, entity.ErrOrderNotFound) {
+	if errors.Is(err, entity.ErrUserNotFound) {
 		user, err := repo.CreateUser(tx, &entity.User{Name: username})
 		if err != nil {
 			msg := fmt.Sprintf("could not create user for sender '%s'", username)
@@ -128,6 +128,10 @@ func handleNewOrder(ctx context.Context, m MatrixBoundary, repo entity.Repositor
 		return err
 	}
 
+	if message == "start" || message == "start " {
+		return errors.New("menu must be specified")
+	}
+
 	menuName := strings.TrimPrefix(message, "start ")
 	menu, err := repo.GetMenuByName(tx, menuName)
 	if err != nil {
@@ -206,6 +210,10 @@ func handlePaid(ctx context.Context, m MatrixBoundary, repo entity.Repository, t
 		return err
 	}
 
+	if message == "paid" || message == "paid " {
+		return errors.New("message must be in the format 'paid [menu_name]'")
+	}
+
 	message = strings.TrimPrefix(message, "paid ")
 	args := strings.Split(message, " ")
 	if len(args) != 1 {
@@ -275,11 +283,9 @@ func handleMarkPaid(ctx context.Context, m MatrixBoundary, repo entity.Repositor
 	}
 
 	usernameParam := args[1]
-	user, err := repo.GetUserByName(tx, usernameParam)
+	user, err := m.getUserByUsername(tx, usernameParam)
 	if err != nil {
-		msg := fmt.Sprintf("could not get user '%s'", usernameParam)
-		log.Ctx(ctx).Warn().Err(err).Msg(msg)
-		return errors.New(msg)
+		return err
 	}
 
 	orderItems, err := repo.GetAllOrderItemsForOrderAndUser(tx, order.Uuid, user.Uuid)
@@ -303,6 +309,10 @@ func handleMarkPaid(ctx context.Context, m MatrixBoundary, repo entity.Repositor
 		paidStatusStr = "paid"
 	} else {
 		paidStatusStr = "not paid"
+	}
+
+	if len(orderItems) == 0 {
+		return errors.New(fmt.Sprintf("no order items for user '%s' in order '%s' found", user.Name, args[0]))
 	}
 
 	for _, existingOrderItem := range orderItems {
@@ -330,6 +340,10 @@ func handleStateTransition(command string, state entity.OrderState) func(ctx con
 		user, err := m.getUserByUsername(tx, username)
 		if err != nil {
 			return err
+		}
+
+		if message == command || message == fmt.Sprintf("%s ", command) {
+			return errors.New("menu must be specified")
 		}
 
 		menuName := strings.TrimPrefix(message, fmt.Sprintf("%s ", command))
