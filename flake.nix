@@ -37,7 +37,7 @@
             };
 
             scripts.dev-server.exec = ''
-              reflex -r '\.go$' -s go run main.go
+              reflex -r '\.go$' -s go run ./cmd/ordaa
             '';
           }
         ];
