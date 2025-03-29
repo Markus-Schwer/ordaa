@@ -4,7 +4,7 @@
 package matrix
 
 import (
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
 	"gorm.io/gorm"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"

@@ -1,4 +1,4 @@
-module gitlab.com/sfz.aalen/hackwerk/ordaa
+module github.com/Markus-Schwer/ordaa
 
 go 1.24
 

@@ -3,7 +3,7 @@ package components
 import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gofrs/uuid"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
 )
 
 type ComponentKey string

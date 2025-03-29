@@ -9,10 +9,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components/menu"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components/orders"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/tui/components"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/tui/components/menu"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/tui/components/orders"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
 )
 
 const (

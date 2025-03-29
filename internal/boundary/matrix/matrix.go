@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
 	"gorm.io/gorm"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"

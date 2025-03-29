@@ -7,9 +7,9 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/auth"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/utils"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/auth"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/utils"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
 	"gorm.io/gorm"
 )
 

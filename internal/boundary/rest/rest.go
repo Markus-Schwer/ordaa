@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/auth"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/utils"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/auth"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/utils"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
 )
 
 type RestBoundary struct {

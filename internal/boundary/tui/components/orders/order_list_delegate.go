@@ -8,9 +8,9 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components/menu"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/tui/components"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/tui/components/menu"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
 )
 
 type delegateKeyMap struct {

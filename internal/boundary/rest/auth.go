@@ -5,8 +5,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/auth"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/utils"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/auth"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/utils"
 	"gorm.io/gorm"
 )
 

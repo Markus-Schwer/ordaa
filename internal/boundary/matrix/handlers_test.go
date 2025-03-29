@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
-	"gitlab.com/sfz.aalen/hackwerk/ordaa/utils/ptr"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
+	"github.com/Markus-Schwer/ordaa/internal/utils"
 	"gorm.io/gorm"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
