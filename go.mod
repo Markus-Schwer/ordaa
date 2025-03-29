@@ -1,4 +1,4 @@
-module gitlab.com/sfz.aalen/hackwerk/dotinder
+module gitlab.com/sfz.aalen/hackwerk/ordaa
 
 go 1.24
 

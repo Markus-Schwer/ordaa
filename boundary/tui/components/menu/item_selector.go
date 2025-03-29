@@ -7,8 +7,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gofrs/uuid"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 	"gorm.io/gorm"
 )
 

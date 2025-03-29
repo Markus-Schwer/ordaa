@@ -9,8 +9,8 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/crypto"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/crypto"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 	"gorm.io/gorm"
 )
 

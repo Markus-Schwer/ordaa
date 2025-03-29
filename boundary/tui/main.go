@@ -18,7 +18,7 @@ import (
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 	"gorm.io/gorm"
 )
 

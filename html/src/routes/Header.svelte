@@ -22,7 +22,7 @@
     <NavBrand href="/">
         <span
             class="self-center whitespace-nowrap text-xl font-semibold dark:text-white"
-            >Dotinder</span
+            >ordaa</span
         >
     </NavBrand>
     <NavHamburger />

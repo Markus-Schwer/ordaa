@@ -9,10 +9,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components/menu"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components/orders"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components/menu"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components/orders"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 )
 
 const (
@@ -139,7 +139,7 @@ func (m *LayoutModel) Update(msg tea.Msg) (mdl tea.Model, cmd tea.Cmd) {
 // 	}
 // 	switch tab {
 // 	case HOME:
-// 		rendered = s.Render(padToSizeCenter("DOTINDER", 12))
+// 		rendered = s.Render(padToSizeCenter("ordaa", 12))
 // 	case ORDERS:
 // 		rendered = s.Render(padToSizeCenter("ORDERS", 12))
 // 	case MENUS:

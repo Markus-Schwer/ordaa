@@ -8,9 +8,9 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui/components/menu"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui/components/menu"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 )
 
 type delegateKeyMap struct {

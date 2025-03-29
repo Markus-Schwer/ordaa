@@ -12,12 +12,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/matrix"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/rest"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/tui"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/auth"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/matrix"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/rest"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/tui"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -34,7 +34,7 @@ func main() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	ctx = log.With().Str("service", "dotinder").Logger().WithContext(ctx)
+	ctx = log.With().Str("service", "ordaa").Logger().WithContext(ctx)
 	if verbose {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
@@ -60,7 +60,7 @@ func main() {
 	ctx = context.WithValue(ctx, matrix.MatrixPasswordKey, matrixPassword)
 	ctx = context.WithValue(ctx, matrix.MatrixRoomsKey, matrixRooms)
 
-	log.Ctx(ctx).Info().Msg("starting dotinder")
+	log.Ctx(ctx).Info().Msg("starting ordaa")
 
 	if err := entity.Migrate(ctx, databaseUrl); err != nil {
 		log.Ctx(ctx).Fatal().Err(err).Msg("database migration failed")

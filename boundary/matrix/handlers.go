@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/ssh"
 	"github.com/gofrs/uuid"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 	"gorm.io/gorm"
 	"maunium.net/go/mautrix/event"
 )

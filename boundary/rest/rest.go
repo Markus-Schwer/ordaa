@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/utils"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/auth"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/utils"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 )
 
 type RestBoundary struct {

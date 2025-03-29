@@ -26,14 +26,14 @@
             languages.javascript.enable = true;
             packages = with pkgs; [ go-migrate reflex gcc nodePackages.svelte-language-server delve ];
 
-            env.DATABASE_URL = "postgresql:///dotinder";
+            env.DATABASE_URL = "postgresql:///ordaa";
             env.ADDRESS = "localhost:8080";
             env.CGO_ENABLED = "0";
 
             services.postgres = {
               enable = true;
               package = pkgs.postgresql_15;
-              initialDatabases = [{ name = "dotinder"; }];
+              initialDatabases = [{ name = "ordaa"; }];
             };
 
             scripts.dev-server.exec = ''
@@ -47,7 +47,7 @@
       packages.${system} = {
         devenv-up = self.devShells.${system}.default.config.procfileScript;
         default = pkgs.buildGoModule {
-          pname = "dotinder";
+          pname = "ordaa";
           version = "1.0.0";
           # run with fake hash first and then copy actual hash from error message
           #vendorHash = nixpkgs.lib.fakeHash;

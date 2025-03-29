@@ -8,8 +8,8 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/boundary/auth"
-	"gitlab.com/sfz.aalen/hackwerk/dotinder/entity"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/boundary/auth"
+	"gitlab.com/sfz.aalen/hackwerk/ordaa/entity"
 	"gorm.io/gorm"
 )
 
