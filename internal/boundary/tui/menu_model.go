@@ -139,7 +139,7 @@ func (m *MenuModel) View() string {
 	rows := make([]table.Row, 0)
 	for _, v := range m.menu.Items {
 		s := strings.ToLower(m.it.Value())
-		if !(strings.Contains(strings.ToLower(v.ShortName), s) || strings.Contains(strings.ToLower(v.Name), s)) {
+		if !strings.Contains(strings.ToLower(v.ShortName), s) && !strings.Contains(strings.ToLower(v.Name), s) {
 			continue
 		}
 		rows = append(rows, table.Row{v.ShortName, v.Name, fmt.Sprintf("%4.2f€", float64(v.Price)/100.0)})

@@ -312,7 +312,7 @@ func handleMarkPaid(ctx context.Context, m MatrixBoundary, repo entity.Repositor
 	}
 
 	if len(orderItems) == 0 {
-		return errors.New(fmt.Sprintf("no order items for user '%s' in order '%s' found", user.Name, args[0]))
+		return fmt.Errorf("no order items for user '%s' in order '%s' found", user.Name, args[0])
 	}
 
 	for _, existingOrderItem := range orderItems {
