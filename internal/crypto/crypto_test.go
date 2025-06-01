@@ -8,12 +8,13 @@ import (
 
 func TestGeneratePasswordHash(t *testing.T) {
 	password := "supersecretpassword1234!"
+
 	hash, err := GeneratePasswordHash(password)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ok, err := ComparePasswordAndHash(password, hash)
+	ok, err := ComparePasswordAndHash(hash, password)
 	if err != nil || !ok {
 		t.Fatal("password hash comparison failed")
 	}
@@ -21,12 +22,13 @@ func TestGeneratePasswordHash(t *testing.T) {
 
 func TestGeneratePasswordHash2(t *testing.T) {
 	password := "test"
+
 	hash, err := GeneratePasswordHash(password)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ok, err := ComparePasswordAndHash(password, hash)
+	ok, err := ComparePasswordAndHash(hash, password)
 	if err != nil || !ok {
 		t.Fatal("password hash comparison failed")
 	}
@@ -34,11 +36,12 @@ func TestGeneratePasswordHash2(t *testing.T) {
 
 func TestGeneratePasswordHash3(t *testing.T) {
 	password := "test"
+
 	hash, err := GeneratePasswordHash(password)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ok, err := ComparePasswordAndHash("test2", hash)
+	ok, err := ComparePasswordAndHash(hash, "test2")
 	assert.True(t, err == nil || ok, "password hash comparison was successful, but should not have been")
 }

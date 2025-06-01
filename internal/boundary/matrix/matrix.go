@@ -8,172 +8,198 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/Markus-Schwer/ordaa/internal/entity"
-	"gorm.io/gorm"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
+
+	"github.com/Markus-Schwer/ordaa/internal/boundary/matrix/handler"
 )
 
-//go:generate go tool moq -out matrix_mock.go . MatrixBoundary
-
 const (
-	HomeserverUrlKey  = "MATRIX_HOMESERVER"
+	HomeserverURLKey  = "MATRIX_HOMESERVER"
 	MatrixUsernameKey = "MATRIX_USERNAME"
 	MatrixPasswordKey = "MATRIX_PASSWORD"
 	MatrixRoomsKey    = "MATRIX_ROOMS"
 )
 
-type MatrixBoundary interface {
-	Start()
-	loginAndJoin(roomIds []string)
-	listen()
-	handleMessageEvent(evt *event.Event)
-	message(room id.RoomID, content string)
-	react(room id.RoomID, evt id.EventID, content string)
-	reply(room id.RoomID, evt id.EventID, content string, asHtml bool) id.EventID
-	getUserByUsername(tx *gorm.DB, username string) (*entity.User, error)
+var ErrGettingDefaultSyncer = errors.New("getting DefaultSyncer")
+
+type CommandHandler interface {
+	Matches(ctx context.Context, evt *event.Event) bool
+	Handle(ctx context.Context, evt *event.Event) *handler.CommandResponse
 }
 
-type MatrixBoundaryImpl struct {
-	ctx              context.Context
-	repo             entity.Repository
+type Boundary struct {
+	matrixUsername   string
+	matrixPassword   string
+	roomIDs          []string
 	client           *mautrix.Client
 	startupTimestamp int64
+	handlers         []CommandHandler
 }
 
-func NewMatrixBoundary(ctx context.Context, repo entity.Repository) *MatrixBoundaryImpl {
-	client, err := mautrix.NewClient(ctx.Value(HomeserverUrlKey).(string), "", "")
+func NewMatrixBoundary(
+	ctx context.Context,
+	homeserverURL,
+	matrixUsername,
+	matrixPassword string,
+	roomIDs []string,
+	userService handler.UserService,
+	orderService handler.OrderService,
+) (*Boundary, error) {
+	client, err := mautrix.NewClient(homeserverURL, "", "")
 	if err != nil {
-		log.Ctx(ctx).Fatal().Err(err).Msg("could not create matrix client")
+		return nil, fmt.Errorf("creating matrix client: %w", err)
 	}
-	return &MatrixBoundaryImpl{ctx: ctx, repo: repo, client: client, startupTimestamp: time.Now().UnixMilli()}
+
+	return &Boundary{
+		matrixUsername:   matrixUsername,
+		matrixPassword:   matrixPassword,
+		roomIDs:          roomIDs,
+		client:           client,
+		startupTimestamp: time.Now().UnixMilli(),
+		handlers: []CommandHandler{
+			&handler.HelpHandler{},
+			&handler.RegisterHandler{UserService: userService},
+			&handler.StartHandler{UserService: userService, OrderService: orderService},
+			&handler.AddHandler{UserService: userService, OrderService: orderService},
+			&handler.StateTransitionHandler{UserService: userService, OrderService: orderService},
+			&handler.UnrecognizedCommandHandler{}, // must be last handler in list, because it always matches
+		},
+	}, nil
 }
 
-func (m *MatrixBoundaryImpl) Start() {
-	m.loginAndJoin(m.ctx.Value(MatrixRoomsKey).([]string))
-	m.listen()
+func (m *Boundary) Start(ctx context.Context) error {
+	if err := m.loginAndJoin(ctx, m.roomIDs); err != nil {
+		return err
+	}
+
+	return m.listen(ctx)
 }
 
-func (m *MatrixBoundaryImpl) loginAndJoin(roomIds []string) {
-	log.Ctx(m.ctx).Debug().Msg("Logging in to matrix homeserver")
-	_, err := m.client.Login(m.ctx, &mautrix.ReqLogin{
+func (m *Boundary) Stop() error {
+	log.Info().Msg("shutting down matrix boundary")
+
+	m.client.StopSync()
+
+	return nil
+}
+
+func (m *Boundary) loginAndJoin(ctx context.Context, roomIDs []string) error {
+	log.Ctx(ctx).Debug().Msg("Logging in to matrix homeserver")
+
+	req := &mautrix.ReqLogin{
 		Type:               mautrix.AuthTypePassword,
-		Identifier:         mautrix.UserIdentifier{Type: mautrix.IdentifierTypeUser, User: m.ctx.Value(MatrixUsernameKey).(string)},
-		Password:           m.ctx.Value(MatrixPasswordKey).(string),
+		Identifier:         mautrix.UserIdentifier{Type: mautrix.IdentifierTypeUser, User: m.matrixUsername},
+		Password:           m.matrixPassword,
 		StoreCredentials:   true,
 		StoreHomeserverURL: true,
-	})
-	if err != nil {
-		log.Ctx(m.ctx).Fatal().Err(err).Msg("could not login")
 	}
 
-	err = m.client.SetDisplayName(m.ctx, "Chicken Masalla legende Wollmilchsau [m]")
-	if err != nil {
-		log.Ctx(m.ctx).Err(err)
+	if _, err := m.client.Login(ctx, req); err != nil {
+		return fmt.Errorf("logging in to matrix homeserver: %w", err)
 	}
 
-	for _, roomId := range roomIds {
-		_, err = m.client.JoinRoomByID(m.ctx, id.RoomID(roomId))
-		if err != nil {
-			log.Ctx(m.ctx).Fatal().Err(err).Msg("could not join room")
+	if err := m.client.SetDisplayName(ctx, "Chicken Masalla legende Wollmilchsau [BOT]"); err != nil {
+		return fmt.Errorf("setting display name: %w", err)
+	}
+
+	for _, roomID := range roomIDs {
+		if _, err := m.client.JoinRoomByID(ctx, id.RoomID(roomID)); err != nil {
+			return fmt.Errorf("joining room: %w", err)
 		}
-		log.Ctx(m.ctx).Debug().Msgf("joined room %s", roomId)
+
+		log.Ctx(ctx).Debug().Msgf("joined room %s", roomID)
 	}
+
+	return nil
 }
 
-func (m *MatrixBoundaryImpl) listen() {
-	log.Ctx(m.ctx).Debug().Msg("listening to matrix messages")
-	syncer := m.client.Syncer.(*mautrix.DefaultSyncer)
+func (m *Boundary) listen(ctx context.Context) error {
+	log.Ctx(ctx).Debug().Msg("listening to matrix events")
+
+	syncer, ok := m.client.Syncer.(*mautrix.DefaultSyncer)
+	if !ok {
+		return ErrGettingDefaultSyncer
+	}
+
 	syncer.OnEventType(event.EventMessage, func(ctx context.Context, evt *event.Event) {
 		if evt.Timestamp < m.startupTimestamp || evt.Sender == m.client.UserID {
 			return
 		}
-		m.handleMessageEvent(evt)
+
+		m.handleMessageEvent(ctx, evt)
 	})
 
-	err := m.client.SyncWithContext(m.ctx)
-	if err != nil {
-		log.Ctx(m.ctx).Fatal().Err(err).Msg("client had a problem when syncing")
+	if err := m.client.SyncWithContext(ctx); err != nil {
+		return fmt.Errorf("listening to matrix events: %w", err)
 	}
+
+	return nil
 }
 
-func (m *MatrixBoundaryImpl) handleMessageEvent(evt *event.Event) {
-	message := evt.Content.AsMessage().Body
-	if !strings.HasPrefix(message, ".ordaa") {
+func (m *Boundary) handleMessageEvent(ctx context.Context, evt *event.Event) {
+	msg := evt.Content.AsMessage().Body
+	if !strings.HasPrefix(msg, handler.MatrixCommandPrefix) {
 		return
 	}
-	message = strings.TrimSpace(strings.TrimPrefix(message, ".ordaa "))
-	log.Ctx(m.ctx).Debug().Msgf("received message: %s", message)
 
-	err := m.repo.Transaction(func(tx *gorm.DB) error {
-		commands := strings.Split(message, " ")
-		if len(commands) < 0 {
-			return handleUnrecognizedCommand(m.ctx, m, m.repo, tx, evt, message)
-		}
-		command := commands[0]
+	log.Ctx(ctx).Debug().Msgf("received message: %s", msg)
 
-		handler := handlers[command]
-		if handler == nil {
-			return handleUnrecognizedCommand(m.ctx, m, m.repo, tx, evt, message)
+	for _, handler := range m.handlers {
+		if !handler.Matches(ctx, evt) {
+			continue
 		}
 
-		return handler(m.ctx, m, m.repo, tx, evt, message)
-	})
-	if err != nil {
-		m.reply(evt.RoomID, evt.ID, err.Error(), false)
+		resp := handler.Handle(ctx, evt)
+		if resp == nil {
+			log.Ctx(ctx).Warn().Msgf("command handler didn't return a response for message: %s", msg)
+			break
+		}
+
+		if err := m.reply(ctx, evt.RoomID, evt.ID, resp.Msg, resp.AsHTML); err != nil {
+			log.Ctx(ctx).Warn().Err(err).Msg("handling command")
+		}
+
+		break
 	}
 }
 
-func (m *MatrixBoundaryImpl) message(room id.RoomID, content string) {
-	_, err := m.client.SendNotice(m.ctx, room, content)
-	if err != nil {
-		log.Ctx(m.ctx).Error().Err(err).Msgf("could not send message '%s'", content)
-	}
-}
+// func (m *MatrixBoundary) message(ctx context.Context, room id.RoomID, content string) error {
+//	if _, err := m.client.SendNotice(ctx, room, content); err != nil {
+//		return fmt.Errorf("sending message: %w", err)
+//	}
+//
+//	return nil
+//}
 
-func (m *MatrixBoundaryImpl) react(room id.RoomID, evt id.EventID, content string) {
-	_, err := m.client.SendReaction(m.ctx, room, evt, content)
-	if err != nil {
-		log.Ctx(m.ctx).Error().Err(err).Msg("could not react to event")
-	}
-}
+// func (m *MatrixBoundary) react(ctx context.Context, room id.RoomID, evt id.EventID, content string) error {
+//	if _, err := m.client.SendReaction(ctx, room, evt, content); err != nil {
+//		return fmt.Errorf("sending reaction to event: %w", err)
+//	}
+//
+//	return nil
+//}
 
-func (m *MatrixBoundaryImpl) reply(room id.RoomID, evt id.EventID, content string, asHtml bool) id.EventID {
-	contentJSON := map[string]interface{}{
-		"m.relates_to": map[string]interface{}{
-			"m.in_reply_to": map[string]interface{}{
+func (m *Boundary) reply(ctx context.Context, room id.RoomID, evt id.EventID, content string, asHTML bool) error {
+	contentJSON := map[string]any{
+		"m.relates_to": map[string]any{
+			"m.in_reply_to": map[string]any{
 				"event_id": evt,
 			},
 		},
 		"msgtype": "m.text",
 		"body":    content,
 	}
-	if asHtml {
+
+	if asHTML {
 		contentJSON["format"] = "org.matrix.custom.html"
 		contentJSON["formatted_body"] = strings.TrimSuffix(content, "\n")
 	}
-	ev, err := m.client.SendMessageEvent(m.ctx, room, event.EventMessage, contentJSON)
-	if err != nil {
-		log.Ctx(m.ctx).Error().Err(err).Msgf("could not respond to event '%s'", content)
-	}
-	return ev.EventID
-}
 
-func (m *MatrixBoundaryImpl) getUserByUsername(tx *gorm.DB, username string) (*entity.User, error) {
-	matrixUser, err := m.repo.GetMatrixUserByUsername(tx, username)
-	if err != nil {
-		msg := fmt.Sprintf("could not get matrix user for username '%s'", username)
-		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
-		return nil, errors.New(msg)
+	if _, err := m.client.SendMessageEvent(ctx, room, event.EventMessage, contentJSON); err != nil {
+		return fmt.Errorf("responding to event: %w", err)
 	}
 
-	user, err := m.repo.GetUser(tx, matrixUser.UserUuid)
-	if err != nil {
-		msg := fmt.Sprintf("could not get user for matrix user '%s'", matrixUser.Username)
-		log.Ctx(m.ctx).Warn().Err(err).Msg(msg)
-		return nil, errors.New(msg)
-	}
-
-	return user, nil
+	return nil
 }

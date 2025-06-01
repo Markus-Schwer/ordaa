@@ -3,7 +3,7 @@ package entity
 import "errors"
 
 var (
-	ErrCannotCreatUuid                 = errors.New("cannot create uuid")
+	ErrCannotCreatUUID                 = errors.New("cannot create uuid")
 	ErrCannotGetAllOrder               = errors.New("could not get all orders from db")
 	ErrOrderNotFound                   = errors.New("order not found")
 	ErrGettingOrder                    = errors.New("could not get order from db")
@@ -14,7 +14,7 @@ var (
 	ErrOrderItemNotFound               = errors.New("order item not found")
 	ErrCreatingOrderItem               = errors.New("could not create order item")
 	ErrOrderNotOpen                    = errors.New("order is not in state open")
-	ErrMenuItemUuidMissing             = errors.New("menu item uuid missing")
+	ErrMenuItemUUIDMissing             = errors.New("menu item uuid missing")
 	ErrCreatingOrder                   = errors.New("could not create order")
 	ErrActiveOrderForMenuAlreadyExists = errors.New("there is already an active order the specified menu")
 	ErrUpdatingOrder                   = errors.New("could not update order")
@@ -22,8 +22,8 @@ var (
 	ErrSugarPersonNotSet               = errors.New("the sugar person has not been set")
 	ErrOrderStateTransitionInvalid     = errors.New("invalid order state transition")
 	ErrUpdatingOrderItem               = errors.New("could not update order item")
-	ErrOrderUuidChangeForbidden        = errors.New("changing order uuid is forbidden")
-	ErrMenuItemUuidChangeForbidden     = errors.New("changing menu item uuid is forbidden")
+	ErrOrderUUIDChangeForbidden        = errors.New("changing order uuid is forbidden")
+	ErrMenuItemUUIDChangeForbidden     = errors.New("changing menu item uuid is forbidden")
 	ErrUserChangeForbidden             = errors.New("changing user is forbidden")
 	ErrPaidChangeForbidden             = errors.New("paid status can only be changed by sugar person")
 	ErrDeletingOrderItem               = errors.New("could not delete order item")
@@ -45,4 +45,5 @@ var (
 	ErrDeletingMenu                    = errors.New("could not delete menu")
 	ErrMigrationPreparationFailed      = errors.New("database migration preparation failed")
 	ErrMigrationFailed                 = errors.New("database migration execution failed")
+	ErrSettingPublicKey                = errors.New("setting public key for user")
 )

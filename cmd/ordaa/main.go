@@ -2,105 +2,101 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
-	"github.com/labstack/echo/v4"
+	_ "github.com/joho/godotenv/autoload"
+	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/Markus-Schwer/ordaa/internal/boundary"
-	"github.com/Markus-Schwer/ordaa/internal/boundary/auth"
-	"github.com/Markus-Schwer/ordaa/internal/boundary/matrix"
-	"github.com/Markus-Schwer/ordaa/internal/boundary/rest"
-	"github.com/Markus-Schwer/ordaa/internal/boundary/tui"
-	"github.com/Markus-Schwer/ordaa/internal/entity"
+	"golang.org/x/sync/errgroup"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"github.com/Markus-Schwer/ordaa/internal/boundary/matrix"
+	"github.com/Markus-Schwer/ordaa/internal/entity"
+	"github.com/Markus-Schwer/ordaa/internal/repository"
+	"github.com/Markus-Schwer/ordaa/internal/service"
 )
 
 func main() {
+	if err := Run(); err != nil {
+		log.Fatal().Err(err).Msg("running ordaa")
+	}
+}
+
+func Run() error {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	var verbose, jsonFormat bool
+
 	flag.BoolVar(&verbose, "v", false, "verbose output: sets the log level to debug")
 	flag.BoolVar(&jsonFormat, "j", false, "logging in json format")
 	flag.Parse()
 
-	ctx, cancel := context.WithCancel(context.Background())
 	if !jsonFormat {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
 	ctx = log.With().Str("service", "ordaa").Logger().WithContext(ctx)
+
 	if verbose {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Ctx(ctx).Fatal().Err(err).Msg("Error loading .env file")
-	}
-
-	databaseUrl := os.Getenv(entity.DatabaseUrlKey)
-	address := os.Getenv(boundary.AddressKey)
-	homeserver := os.Getenv(matrix.HomeserverUrlKey)
-	matrixUsername := os.Getenv(matrix.MatrixUsernameKey)
-	matrixPassword := os.Getenv(matrix.MatrixPasswordKey)
-	matrixRooms := strings.Split(os.Getenv(matrix.MatrixRoomsKey), ",")
-
-	ctx = context.WithValue(ctx, entity.DatabaseUrlKey, databaseUrl)
-	ctx = context.WithValue(ctx, boundary.AddressKey, address)
-	ctx = context.WithValue(ctx, matrix.HomeserverUrlKey, homeserver)
-	ctx = context.WithValue(ctx, matrix.MatrixUsernameKey, matrixUsername)
-	ctx = context.WithValue(ctx, matrix.MatrixPasswordKey, matrixPassword)
-	ctx = context.WithValue(ctx, matrix.MatrixRoomsKey, matrixRooms)
+	databaseURL := os.Getenv("DATABASE_URL")
+	homeserver := os.Getenv("MATRIX_HOMESERVER")
+	matrixUsername := os.Getenv("MATRIX_USERNAME")
+	matrixPassword := os.Getenv("MATRIX_PASSWORD")
+	matrixRooms := strings.Split(os.Getenv("MATRIX_ROOMS"), ",")
 
 	log.Ctx(ctx).Info().Msg("starting ordaa")
 
-	if err := entity.Migrate(ctx, databaseUrl); err != nil {
-		log.Ctx(ctx).Fatal().Err(err).Msg("database migration failed")
+	if err := entity.Migrate(ctx, databaseURL); err != nil {
+		return fmt.Errorf("database migration failed: %w", err)
 	}
 
-	repo, err := entity.NewRepository(ctx, databaseUrl)
+	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
-		log.Ctx(ctx).Fatal().Err(err).Msg(err.Error())
+		return err
 	}
 
-	router := echo.New()
-	authService := auth.NewAuthService(ctx, repo)
+	userRepository := &repository.UserRepository{DB: db}
+	menuRepository := &repository.MenuRepository{DB: db}
+	orderRepository := &repository.OrderRepository{DB: db, MenuRepository: *menuRepository}
 
-	rest.NewRestBoundary(ctx, repo, authService).Start(router)
-	go matrix.NewMatrixBoundary(ctx, repo).Start()
+	userService := &service.UserService{UserRepository: userRepository}
+	orderService := &service.OrderService{OrderRepository: orderRepository, MenuRepository: menuRepository}
 
-	go boundary.StartHttpServer(ctx, router)
+	g, gCtx := errgroup.WithContext(ctx)
 
-	tuiServer := tui.NewSshTuiServer(ctx, repo)
-	go tuiServer.Start()
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
-	log.Ctx(ctx).Info().Msg("received shutdown signal")
-	cancel()
-	log.Ctx(ctx).Info().Msg("finished graceful shutdown")
-	os.Exit(0)
-}
-
-func importMenu(filename string) (*entity.Menu, error) {
-	bytes, err := os.ReadFile(filename)
+	matrixBoundary, err := matrix.NewMatrixBoundary(ctx, homeserver, matrixUsername, matrixPassword, matrixRooms, userService, orderService)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var menu entity.Menu
-	if err := json.Unmarshal(bytes, &menu); err != nil {
-		return nil, err
+	g.Go(func() error {
+		return matrixBoundary.Start(ctx)
+	})
+
+	g.Go(func() error {
+		<-gCtx.Done()
+		return matrixBoundary.Stop()
+	})
+
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("shutting down: %w", err)
 	}
 
-	return &menu, nil
+	return nil
 }
