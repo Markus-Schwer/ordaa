@@ -13,13 +13,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"github.com/Markus-Schwer/ordaa/internal/boundary/matrix/handler"
-)
-
-const (
-	HomeserverURLKey  = "MATRIX_HOMESERVER"
-	MatrixUsernameKey = "MATRIX_USERNAME"
-	MatrixPasswordKey = "MATRIX_PASSWORD"
-	MatrixRoomsKey    = "MATRIX_ROOMS"
+	"github.com/Markus-Schwer/ordaa/internal/config"
 )
 
 var ErrGettingDefaultSyncer = errors.New("getting DefaultSyncer")
@@ -30,9 +24,7 @@ type CommandHandler interface {
 }
 
 type Boundary struct {
-	matrixUsername   string
-	matrixPassword   string
-	roomIDs          []string
+	cfg              *config.MatrixConfig
 	client           *mautrix.Client
 	startupTimestamp int64
 	handlers         []CommandHandler
@@ -40,22 +32,17 @@ type Boundary struct {
 
 func NewMatrixBoundary(
 	ctx context.Context,
-	homeserverURL,
-	matrixUsername,
-	matrixPassword string,
-	roomIDs []string,
+	cfg *config.MatrixConfig,
 	userService handler.UserService,
 	orderService handler.OrderService,
 ) (*Boundary, error) {
-	client, err := mautrix.NewClient(homeserverURL, "", "")
+	client, err := mautrix.NewClient(cfg.HomeserverURL, "", "")
 	if err != nil {
 		return nil, fmt.Errorf("creating matrix client: %w", err)
 	}
 
 	return &Boundary{
-		matrixUsername:   matrixUsername,
-		matrixPassword:   matrixPassword,
-		roomIDs:          roomIDs,
+		cfg:              cfg,
 		client:           client,
 		startupTimestamp: time.Now().UnixMilli(),
 		handlers: []CommandHandler{
@@ -70,7 +57,7 @@ func NewMatrixBoundary(
 }
 
 func (m *Boundary) Start(ctx context.Context) error {
-	if err := m.loginAndJoin(ctx, m.roomIDs); err != nil {
+	if err := m.loginAndJoin(ctx, m.cfg.Rooms); err != nil {
 		return err
 	}
 
@@ -90,8 +77,8 @@ func (m *Boundary) loginAndJoin(ctx context.Context, roomIDs []string) error {
 
 	req := &mautrix.ReqLogin{
 		Type:               mautrix.AuthTypePassword,
-		Identifier:         mautrix.UserIdentifier{Type: mautrix.IdentifierTypeUser, User: m.matrixUsername},
-		Password:           m.matrixPassword,
+		Identifier:         mautrix.UserIdentifier{Type: mautrix.IdentifierTypeUser, User: m.cfg.Username},
+		Password:           m.cfg.Password,
 		StoreCredentials:   true,
 		StoreHomeserverURL: true,
 	}
@@ -100,7 +87,7 @@ func (m *Boundary) loginAndJoin(ctx context.Context, roomIDs []string) error {
 		return fmt.Errorf("logging in to matrix homeserver: %w", err)
 	}
 
-	if err := m.client.SetDisplayName(ctx, "Chicken Masalla legende Wollmilchsau [BOT]"); err != nil {
+	if err := m.client.SetDisplayName(ctx, m.cfg.DisplayName); err != nil {
 		return fmt.Errorf("setting display name: %w", err)
 	}
 

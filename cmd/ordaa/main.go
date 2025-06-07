@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -19,6 +17,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/Markus-Schwer/ordaa/internal/boundary/matrix"
+	"github.com/Markus-Schwer/ordaa/internal/config"
 	"github.com/Markus-Schwer/ordaa/internal/entity"
 	"github.com/Markus-Schwer/ordaa/internal/repository"
 	"github.com/Markus-Schwer/ordaa/internal/service"
@@ -34,37 +33,41 @@ func Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	var verbose, jsonFormat bool
+	logConfig, err := config.LoadLogConfig()
+	if err != nil {
+		return err
+	}
 
-	flag.BoolVar(&verbose, "v", false, "verbose output: sets the log level to debug")
-	flag.BoolVar(&jsonFormat, "j", false, "logging in json format")
-	flag.Parse()
+	dbConfig, err := config.LoadDatabaseConfig()
+	if err != nil {
+		return err
+	}
 
-	if !jsonFormat {
+	matrixConfig, err := config.LoadMatrixConfig()
+	if err != nil {
+		return err
+	}
+
+	if !logConfig.JSON {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
 	ctx = log.With().Str("service", "ordaa").Logger().WithContext(ctx)
 
-	if verbose {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	} else {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	level, err := zerolog.ParseLevel(logConfig.Level)
+	if err != nil {
+		return err
 	}
 
-	databaseURL := os.Getenv("DATABASE_URL")
-	homeserver := os.Getenv("MATRIX_HOMESERVER")
-	matrixUsername := os.Getenv("MATRIX_USERNAME")
-	matrixPassword := os.Getenv("MATRIX_PASSWORD")
-	matrixRooms := strings.Split(os.Getenv("MATRIX_ROOMS"), ",")
+	zerolog.SetGlobalLevel(level)
 
 	log.Ctx(ctx).Info().Msg("starting ordaa")
 
-	if err := entity.Migrate(ctx, databaseURL); err != nil {
+	if err := entity.Migrate(ctx, dbConfig.URL); err != nil {
 		return fmt.Errorf("database migration failed: %w", err)
 	}
 
-	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(dbConfig.URL), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
@@ -80,7 +83,7 @@ func Run() error {
 
 	g, gCtx := errgroup.WithContext(ctx)
 
-	matrixBoundary, err := matrix.NewMatrixBoundary(ctx, homeserver, matrixUsername, matrixPassword, matrixRooms, userService, orderService)
+	matrixBoundary, err := matrix.NewMatrixBoundary(ctx, matrixConfig, userService, orderService)
 	if err != nil {
 		return err
 	}
