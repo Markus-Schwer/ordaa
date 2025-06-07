@@ -47,6 +47,7 @@ func NewMatrixBoundary(
 		startupTimestamp: time.Now().UnixMilli(),
 		handlers: []CommandHandler{
 			&handler.HelpHandler{},
+			&handler.StatusHandler{OrderService: orderService},
 			&handler.RegisterHandler{UserService: userService},
 			&handler.StartHandler{UserService: userService, OrderService: orderService},
 			&handler.AddHandler{UserService: userService, OrderService: orderService},
